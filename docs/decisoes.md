@@ -574,3 +574,44 @@ apertar depois quebraria acervo.
 **O que não muda em hipótese nenhuma.** A nulabilidade que vem do próprio caminho
 (`{seller.spouse.name}`) continua valendo dentro de qualquer bloco: nenhuma regra sobre
 o sujeito diz coisa alguma sobre `spouse`.
+
+---
+
+## D-021 — Grupo cujas interpolações diretas são todas garantidas também é erro
+
+*2026-09-04 · aceita · surgida ao implementar a F2.3*
+
+**Decisão.** `[no valor de {price}]`, com `price` obrigatório, é erro (`K2011`), pelo
+mesmo motivo e com a mesma força com que a §4.4 já torna erro o grupo **sem** nenhuma
+interpolação direta (`K2010`): nenhum dos dois pode elidir.
+
+**A lacuna da especificação.** A §4.4 escreve a regra como "um grupo sem nenhuma
+interpolação direta nunca poderia ser elidido: é erro", e dá a razão — *nunca poderia
+ser elidido*. Essa razão vale igualmente para um grupo cujas interpolações diretas são
+todas obrigatórias ou com padrão: a regra de elisão diz que o grupo sai se **alguma
+direta resolve para nulo**, e uma direta que o contrato garante nunca resolve para nulo.
+A especificação enunciou o caso extremo de uma regra mais geral e parou nele.
+
+**Alternativas.** (a) Seguir a letra e aceitar o grupo garantido. (b) Aviso em vez de
+erro. (c) Erro (escolhida).
+
+**Por quê.** Contra (a): o grupo garantido é pior que ruído — ele **mente**. O redator
+que escreve `[pelo preço de {price}]` está declarando "este trecho é dispensável", e o
+motor entrega um trecho que nunca sai. Quem lê o modelo depois acredita na intenção
+escrita, não no comportamento. Contra (b): um aviso que ninguém corrige é a lacuna
+silenciosa em outro disfarce, e a linguagem não tem severidade intermediária para
+verdade estrutural. Com (c), a correção é sempre uma das duas que a mensagem sugere, e
+ambas são de uma edição: tornar o campo opcional, ou tirar os colchetes.
+
+**Momento.** É a hora de decidir, porque não há acervo. Depois do congelamento da
+sintaxe, apertar essa regra quebraria modelos existentes; afrouxá-la, não. Errar para o
+lado apertado é o único que continua reversível.
+
+**Efeito colateral aceito: aninhar grupos passa a exigir intenção.** `[[{notes}]]` é
+`K2010` e `[a [b {notes}] c {price}]` é `K2011`, porque em ambos o grupo externo não tem
+nenhuma direta nulável própria. O aninhamento legítimo continua valendo, e é o que a
+prática de fato produz — cada grupo com a sua nulável:
+
+```
+[casado com {spouse.name}[, sob o regime de {spouse.regime}]]
+```

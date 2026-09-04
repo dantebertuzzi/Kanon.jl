@@ -8,7 +8,7 @@
 |---|---|---|
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
-| **F2** Validador | 🔨 em curso | **F2.1 e F2.2 concluídas**: protocolo de tipo, ambiente, `analyze` de caminhos e formatadores |
+| **F2** Validador | 🔨 em curso | **F2.1 a F2.3 concluídas**: protocolo de tipo, ambiente, `analyze`, **teorema da lacuna verificado** |
 | F3 Renderizador | ⬜ | — |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
@@ -20,12 +20,12 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **457 testes**, ~10 s.
+Suíte: **520 testes**, ~10 s.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 457 testes, ~10 s
+julia --project=. -e 'using Pkg; Pkg.test()'     # 520 testes, ~10 s
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -45,7 +45,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/environment.jl` | `EnvironmentBuilder` → `Environment` congelado; conflitos de nome |
 | `src/core_types.jl` | `text`, `number`, `money`, `date`, `boolean`, `list` |
 | `src/analysis.jl` | `ResolvedPath`, `Analysis`, `Model` — as tabelas laterais |
-| `src/analyze.jl` | resolução de caminho e de formatador; `load_string` / `load_template` |
+| `src/analyze.jl` | caminhos, formatadores, grupos e o teorema; `load_string` / `load_template` |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -107,15 +107,25 @@ O que a fase acrescentou ao previsto:
   `name` é o erro de digitação mais comum, e com Levenshtein puro ele custa 2 e a
   sugestão não sai.
 
-**F2.3 — A tabela `guarded` e o teorema da lacuna.** ⬅ **a próxima**
-Interpolação de caminho nulável fora de qualquer grupo é **erro**. Grupo sem
-interpolação direta é erro ("nunca elide"). Parênteses e aspas desbalanceados dentro de
-um grupo são erro. Nulabilidade atravessa tipo composto: se `person.spouse` é opcional,
-`{seller.spouse.name}` é nulável.
-*É o incremento mais importante da fase.* Sem ele o teorema vale só no primeiro nível,
-o que é o mesmo que não valer.
+**F2.3 — A tabela `guarded` e o teorema da lacuna.** ✅ **concluída em 4 de setembro de 2026.**
+Cinco códigos `K2010`–`K2014`. A implicação do §14 é verificada nó a nó, e há um teste
+de propriedade que a afirma sobre um corpus: se `analyze` não acusou nada, então toda
+interpolação nulável está dentro de algum grupo.
 
-**F2.4 — Referências.**
+O que a fase acrescentou ao previsto:
+
+- **D-021**: grupo cujas diretas são todas garantidas também é erro. A §4.4 tinha
+  enunciado o caso extremo (`nenhuma` direta) de uma regra mais geral e parado nele; o
+  grupo garantido *mente* para quem lê o modelo, prometendo um trecho dispensável que
+  nunca sai.
+- **A mensagem nomeia o segmento culpado.** `{seller.spouse.name}` não é nulável por
+  causa de `seller`, que é obrigatório — é por causa de `spouse`, opcional em `person`.
+  Dizer "o contrato o declara opcional" mandaria o redator corrigir o campo errado.
+- **A contagem de pontuação atravessa grupos aninhados**, e o parêntese escrito `((`
+  conta como qualquer outro: o problema não é a origem do caractere, é o par ter ficado
+  do lado de fora.
+
+**F2.4 — Referências.** ⬅ **a próxima**
 `{::x}` aponta para bloco existente; regra nomeia bloco existente; remissão a bloco
 repetido por `one for each` é erro; remissão a bloco que uma regra pode remover é aviso.
 

@@ -68,7 +68,7 @@ data
   buyer     : person
   price     : money  !
   notes     : text
-  witnesses : person[2]
+  witnesses : person[2] !
   signed    : boolean = true
 
 text
@@ -106,6 +106,7 @@ modelo(corpo) = CONTRATO * corpo * "\n"
         @test rp.typename === :person
         @test Kanon.islist(rp.card)
         @test rp.card.kind === EXACT && rp.card.lo == 2
+        @test rp.nullable == false
     end
 
     @testset "today é constante de data, não campo" begin
@@ -228,6 +229,8 @@ end
 """)
         interps = [n for p in t.text.blocks[2].children for n in p.children if n isa Interp]
         @test resolved(a, interps[1]).nullable == true      # `buyer` é opcional
+        # e, por ser nulável, exige grupo — é D-020 em ação
+        @test [d.code for d in a.diagnostics] == ["K2012"]
     end
 
     @testset "fora do bloco com sujeito, o escopo volta ao contrato" begin
@@ -429,7 +432,7 @@ end
 
     @testset "as tabelas das fases seguintes existem e estão vazias" begin
         _, a = anl2(fonte)
-        @test all(!, a.guarded)                     # F2.3
+        @test any(a.guarded)                        # há um grupo na fonte
         @test isempty(a.numbering)                  # F5
         @test isempty(a.block_rule) && isempty(a.block_foreach)
     end

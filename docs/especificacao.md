@@ -379,10 +379,25 @@ contam (nunca são nulas).
 diretas resolve para nulo. Grupos aninhados elidem por conta própria e não afetam o
 grupo externo.
 
-**Erro de validação.** Um grupo sem nenhuma interpolação direta nunca poderia ser
-elidido: é erro ("grupo opcional que nunca elide"). Um grupo com parênteses ou aspas
-desbalanceados no seu conteúdo é erro (a elisão deixaria pontuação órfã que o reparo
-de emenda não conserta).
+**Erro de validação.** Um grupo que **não pode elidir** é erro. Há duas formas disso, e
+a razão é a mesma nas duas:
+
+- nenhuma interpolação direta (`K2010`, "grupo opcional que nunca elide");
+- interpolações diretas todas garantidas pelo contrato — obrigatórias ou com padrão
+  (`K2011`). **[acrescentado na F2.3 — D-021]**: a regra de elisão exige que *alguma*
+  direta possa ser nula, e uma direta garantida nunca é.
+
+Um grupo com parênteses ou aspas desbalanceados no seu conteúdo é erro (`K2013`,
+`K2014`): a elisão deixaria pontuação órfã que o reparo de emenda não conserta. A
+contagem atravessa os grupos aninhados, e um parêntese escrito `((` conta como
+qualquer outro — o problema não é de onde o caractere veio, e sim que o par dele ficou
+do lado de fora. Apóstrofo não é contado como aspa (`d'água` seria falso positivo); as
+aspas contadas são as retas.
+
+**Exigência do teorema da lacuna.** Toda interpolação de caminho nulável tem de estar
+lexicalmente dentro de pelo menos um grupo (`K2012`). É a verificação que a
+demonstração da §14 supõe, e a nulabilidade que ela consulta é a que atravessa o tipo
+composto (§3.1): `{seller.spouse.name}` exige grupo mesmo com `seller` obrigatório.
 
 ---
 

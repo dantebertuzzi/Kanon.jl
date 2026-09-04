@@ -77,6 +77,26 @@ function nodes1(t::Template)
     out
 end
 
+"""
+Toda interpolação do primeiro bloco, **inclusive as de dentro de grupos**. `nodes1` só
+achata os filhos diretos do parágrafo, e uma interpolação protegida por colchetes não
+aparece lá.
+"""
+function all_interps(t::Template)
+    out = Interp[]
+    for p in t.text.blocks[1].children
+        collect_interps!(out, p.children)
+    end
+    out
+end
+
+function collect_interps!(out, ns)
+    for n in ns
+        n isa Interp && push!(out, n)
+        n isa Group && collect_interps!(out, n.children)
+    end
+end
+
 "Dump canônico da árvore. Serve de comparação estrutural e de documentação do formato."
 function dump_tree(t::Template)
     io = IOBuffer()

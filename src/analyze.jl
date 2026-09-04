@@ -341,6 +341,175 @@ function resolve_formatter!(ctx::AnalysisCtx, n::Interp, rp::ResolvedPath)
     return nothing
 end
 
+# --- grupos opcionais e o teorema da lacuna ----------------------------------
+
+"""
+As interpolações **diretas** de um grupo (§4.4): as que estão lexicalmente dentro dele e
+fora de qualquer grupo aninhado nele. Remissões `{::x}` não contam — nunca são nulas.
+
+São elas, e só elas, que decidem a elisão: um grupo aninhado elide por conta própria e
+não afeta o de fora.
+"""
+direct_interps(g::Group) = Interp[n for n in g.children if n isa Interp]
+
+"""
+Todo o texto literal de dentro de um grupo, incluindo o dos grupos aninhados.
+
+Pontos de flexão ficam de fora: os parênteses de `portador(a)` são notação da
+linguagem, não pontuação do redator, e desaparecem na flexão.
+"""
+function group_text(g::Group)
+    io = IOBuffer()
+    collect_text!(io, g.children)
+    String(take!(io))
+end
+
+function collect_text!(io::IO, nodes)
+    for n in nodes
+        n isa TextLit && print(io, n.value)
+        n isa Group && collect_text!(io, n.children)
+    end
+end
+
+"""
+Conta a pontuação que a elisão deixaria órfã.
+
+Um parêntese literal escrito `((` conta como qualquer outro, de propósito: o problema
+não é de onde o caractere veio, e sim que o par dele ficou do lado de fora do grupo —
+elidir o grupo deixa o outro lado sozinho no texto.
+
+Aspas retas são contadas pela paridade, porque não têm lado. Apóstrofo não é contado:
+`d\'água` e `l\'état` fariam disso um gerador de falso positivo. Aspas curvas ficam para
+a camada de saída, que é quem as introduz.
+"""
+function unbalanced(text::AbstractString)
+    depth = 0
+    lowest = 0
+    quotes = 0
+    for c in text
+        if c == '('
+            depth += 1
+        elseif c == ')'
+            depth -= 1
+            lowest = min(lowest, depth)
+        elseif c == '"'
+            quotes += 1
+        end
+    end
+    (parens = depth != 0 || lowest < 0, quotes = isodd(quotes))
+end
+
+"""
+As três verificações que a §4.4 exige de um grupo, mais a extensão de D-021.
+
+A pergunta que todas respondem é a mesma: **este grupo pode elidir?** Um grupo que não
+pode não é opcional coisa nenhuma — é ruído que faz o redator acreditar ter tornado o
+texto dispensável quando não tornou.
+"""
+function check_group!(ctx::AnalysisCtx, g::Group)
+    diretas = direct_interps(g)
+
+    if isempty(diretas)
+        err!(ctx, "K2010", g.span,
+             "este grupo opcional não tem nenhuma interpolação direta, e por isso nunca elide.";
+             hint = "Um grupo elide quando um valor seu falta. Sem valor dentro, " *
+                    "escreva o texto sem os colchetes.")
+    else
+        resolvidas = [rp for rp in (ctx.out.paths[id(n)] for n in diretas) if rp !== nothing]
+        # Nenhuma resolveu: o erro já foi dito no caminho, não se diz de novo aqui.
+        if !isempty(resolvidas) && !any(rp -> rp.nullable, resolvidas)
+            nomes = join(sort!(unique!(["`" * string(n.path) * "`" for n in diretas])), ", ")
+            err!(ctx, "K2011", g.span,
+                 "este grupo opcional nunca elide: $nomes " *
+                 (length(diretas) == 1 ? "é um valor que o contrato sempre garante." :
+                                         "são valores que o contrato sempre garante.");
+                 hint = "Marque o campo como opcional no plano de dados, ou escreva o " *
+                        "texto sem os colchetes.")
+        end
+    end
+
+    p, q = unbalanced(group_text(g))
+    p && err!(ctx, "K2013", g.span,
+              "os parênteses dentro deste grupo opcional não fecham dentro dele.";
+              hint = "Elidir o grupo deixaria o parêntese do par sozinho no texto. " *
+                     "Ponha o par inteiro dentro do grupo, ou o inteiro fora.")
+    q && err!(ctx, "K2014", g.span,
+              "as aspas dentro deste grupo opcional não fecham dentro dele.";
+              hint = "Elidir o grupo deixaria a outra aspa sozinha no texto. " *
+                     "Ponha o par inteiro dentro do grupo, ou o inteiro fora.")
+    return nothing
+end
+
+"""
+Por que este caminho é nulável, em uma oração — porque mandar o redator procurar sozinho
+é o que transforma um erro correto numa mensagem inútil. `{seller.spouse.name}` não é
+nulável por causa de `seller`, que é obrigatório; é por causa de `spouse`, que é
+opcional dentro de `person`, e é isso que a mensagem tem de dizer.
+
+Refaz a descida em vez de guardar a origem no `ResolvedPath`: o custo é uma travessia
+de caminho no momento do erro, e a forma do `ResolvedPath` é normativa (`ast.md` §7).
+"""
+function nullability_reason(ctx::AnalysisCtx, p::Path, rp::ResolvedPath)
+    segs = p.segments
+    typename = :?
+    start = 2
+
+    if rp.kind === :subject_field
+        subj = ctx.subject
+        subj === nothing && return "o valor é opcional"
+        subj.nullable &&
+            return "vem de `$(string(ctx.subject_path))`, o sujeito deste bloco, que pode faltar"
+        T = typefor(ctx.env, subj.typename)
+        T === nothing && return "o valor é opcional"
+        spec = findspec(kanon_schema(T), segs[1])
+        spec === nothing && return "o valor é opcional"
+        spec.optional && return "`$(segs[1])` é opcional em `$(subj.typename)`"
+        typename = spec.type
+    else
+        decl = fielddecl(ctx.tmpl, segs[1])
+        decl === nothing && return "o valor é opcional"
+        decl.presence === OPTIONAL && return "o contrato declara `$(segs[1])` opcional"
+        typename = decl.type
+    end
+
+    for i in start:length(segs)
+        T = typefor(ctx.env, typename)
+        T === nothing && break
+        spec = findspec(kanon_schema(T), segs[i])
+        spec === nothing && break
+        spec.optional && return "`$(segs[i])` é opcional em `$typename`"
+        typename = spec.type
+    end
+    return "o valor é opcional"
+end
+
+function findspec(schema, name::Symbol)
+    i = findfirst(f -> f.name === name, schema)
+    i === nothing ? nothing : schema[i]
+end
+
+"""
+O teorema da lacuna, no ponto em que ele deixa de ser enunciado e vira verificação:
+toda interpolação de caminho nulável tem de estar dentro de pelo menos um grupo.
+
+Sem isto, `{seller.spouse.name}` com cônjuge ausente renderizaria vazio, e nenhum
+princípio teria sido formalmente violado — que é exatamente como a lacuna silenciosa
+voltaria.
+"""
+function check_guarded!(ctx::AnalysisCtx, n::Interp, rp::ResolvedPath, depth::Int)
+    ctx.out.guarded[id(n)] = depth > 0
+    (rp.nullable && depth == 0) || return nothing
+
+    err!(ctx, "K2012", n.span,
+         "`$(string(n.path))` pode faltar, porque $(nullability_reason(ctx, n.path, rp)), " *
+         "e está fora de qualquer grupo opcional.";
+         hint = "Envolva o trecho que depende dele em colchetes: " *
+                "`[..., $(string(n.path)) ...]`. Assim o trecho inteiro sai quando o " *
+                "valor falta, em vez de deixar um buraco.",
+         path = string(n.path))
+    return nothing
+end
+
 # --- travessia ---------------------------------------------------------------
 
 """
@@ -393,15 +562,19 @@ function analyze_subject!(ctx::AnalysisCtx, b::Block)
     return nothing
 end
 
-function analyze_nodes!(ctx::AnalysisCtx, nodes)
+function analyze_nodes!(ctx::AnalysisCtx, nodes, depth::Int = 0)
     for n in nodes
         if n isa Interp
             rp = resolve!(ctx, n.path, n.span)
             rp === nothing && continue
             ctx.out.paths[id(n)] = rp
             resolve_formatter!(ctx, n, rp)
+            check_guarded!(ctx, n, rp, depth)
         elseif n isa Group
-            analyze_nodes!(ctx, n.children)
+            # Os filhos primeiro: decidir se o grupo pode elidir exige saber a
+            # nulabilidade das interpolações que ele contém.
+            analyze_nodes!(ctx, n.children, depth + 1)
+            check_group!(ctx, n)
         end
     end
 end
