@@ -1,0 +1,187 @@
+# Diagnósticos.
+#
+# Erro é interface de usuário aqui, não detalhe de implementação (especificacao.md §10).
+# Três regras governam este arquivo:
+#
+#   1. Todo diagnóstico tem um CÓDIGO ESTÁVEL. A suíte afirma sobre o código; a redação
+#      da mensagem pode melhorar sem quebrar teste.
+#   2. Erros são ACUMULADOS e reportados juntos, em ordem determinística.
+#   3. A mensagem usa vocabulário de redator, nunca de implementação.
+
+"""
+    Diagnostic
+
+Um problema encontrado em um modelo ou nos seus dados. `code` é estável entre versões
+e está registrado em [`CODE_TITLES`](@ref).
+"""
+struct Diagnostic
+    code::String
+    severity::Symbol          # :error | :warning
+    category::Symbol          # :syntax | :reference | :contract | :resource
+    file::String
+    line::Int32
+    col::Int32
+    endline::Int32
+    endcol::Int32
+    path::Union{Nothing,String}   # caminho do campo, quando aplicável
+    message::String
+    hint::Union{Nothing,String}
+end
+
+"""
+    CODE_TITLES
+
+Registro de todos os códigos de diagnóstico. O título é a linha curta que aparece no
+cabeçalho do problema; a mensagem completa vem do ponto de emissão.
+
+Um código, uma vez publicado, nunca muda de significado (política de compatibilidade,
+`docs/especificacao.md` §13). Códigos novos são aditivos.
+
+    K10xx  estrutura do arquivo e pragma
+    K11xx  plano de dados
+    K12xx  plano do texto
+    K13xx  plano das regras
+    K2xxx  referência   (F2)
+    K3xxx  contrato     (F2)
+    K4xxx  recurso      (F3)
+"""
+const CODE_TITLES = Dict{String,String}(
+    # --- estrutura do arquivo e pragma ---
+    "K1001" => "marca de ordem de byte (BOM) no início do arquivo",
+    "K1002" => "arquivo sem a linha de versão",
+    "K1003" => "linha de versão malformada",
+    "K1004" => "versão maior da linguagem não suportada",
+    "K1005" => "versão menor da linguagem não suportada",
+    "K1006" => "idioma desconhecido",
+    "K1007" => "arquivo não está em UTF-8",
+    "K1010" => "conteúdo fora de qualquer plano",
+    "K1011" => "plano declarado duas vezes",
+    "K1012" => "planos fora de ordem",
+    "K1013" => "plano de texto ausente",
+    # --- plano de dados ---
+    "K1101" => "declaração de campo malformada",
+    "K1102" => "cardinalidade malformada",
+    "K1103" => "marca de campo malformada",
+    "K1104" => "valor padrão malformado",
+    "K1105" => "campo declarado duas vezes",
+    "K1106" => "tipo-soma não existe na versão 1",
+    # --- plano do texto ---
+    "K1201" => "cabeçalho de bloco malformado",
+    "K1202" => "bloco declarado duas vezes",
+    "K1203" => "interpolação não fechada",
+    "K1204" => "interpolação vazia",
+    "K1205" => "caminho malformado na interpolação",
+    "K1206" => "encadeamento de formatadores não existe na versão 1",
+    "K1207" => "argumentos de formatador não existem na versão 1",
+    "K1208" => "grupo opcional não fechado",
+    "K1209" => "colchete de fechamento sem abertura",
+    "K1210" => "texto fora de qualquer bloco",
+    "K1211" => "remissão malformada",
+    "K1212" => "nível de bloco acima do teto da versão 1",
+    "K1213" => "marcador de bloco desconhecido",
+    # --- plano das regras ---
+    "K1301" => "regra malformada",
+    "K1302" => "expressão malformada",
+    "K1303" => "parêntese não fechado",
+    "K1304" => "operador desconhecido",
+)
+
+function Diagnostic(code::AbstractString, category::Symbol, span::Span, file::AbstractString,
+                    message::AbstractString; hint = nothing, path = nothing,
+                    severity::Symbol = :error)
+    @assert haskey(CODE_TITLES, code) "código de diagnóstico não registrado: $code"
+    Diagnostic(String(code), severity, category, String(file),
+               span.line, span.col, span.endline, span.endcol,
+               path === nothing ? nothing : String(path),
+               String(message), hint === nothing ? nothing : String(hint))
+end
+
+"""
+    DiagnosticSet
+
+Coleção ordenada de diagnósticos. A ordem é determinística — arquivo, linha, coluna,
+código — para que a saída seja comparável em `diff` e estável em teste.
+"""
+struct DiagnosticSet
+    diagnostics::Vector{Diagnostic}
+end
+
+DiagnosticSet() = DiagnosticSet(Diagnostic[])
+
+Base.isempty(s::DiagnosticSet) = isempty(s.diagnostics)
+Base.length(s::DiagnosticSet) = length(s.diagnostics)
+Base.iterate(s::DiagnosticSet, st...) = iterate(s.diagnostics, st...)
+Base.getindex(s::DiagnosticSet, i) = s.diagnostics[i]
+
+sortkey(d::Diagnostic) = (d.file, d.line, d.col, d.code)
+
+"Ordena e devolve um conjunto novo. Nunca muta o argumento."
+sorted(s::DiagnosticSet) = DiagnosticSet(sort(s.diagnostics; by = sortkey))
+
+haserrors(s::DiagnosticSet) = any(d -> d.severity === :error, s.diagnostics)
+
+# --- exceções ---------------------------------------------------------------
+
+abstract type KanonError <: Exception end
+
+"Modelo malformado. Reportado na leitura, sem dados e sem ambiente."
+struct KanonSyntaxError <: KanonError
+    diagnostics::DiagnosticSet
+end
+
+"Campo, formatador ou bloco inexistente. Detectável sem dados."
+struct KanonReferenceError <: KanonError
+    diagnostics::DiagnosticSet
+end
+
+"Modelo válido, dados incompatíveis."
+struct KanonContractError <: KanonError
+    diagnostics::DiagnosticSet
+end
+
+diagnostics(e::KanonError) = e.diagnostics
+
+const CATEGORY_LABEL = Dict(
+    :syntax    => "sintaxe",
+    :reference => "referência",
+    :contract  => "contrato",
+    :resource  => "recurso",
+)
+
+"""
+    format_diagnostics(io, set)
+
+Escreve os diagnósticos no formato de `docs/especificacao.md` §10.4.
+"""
+function format_diagnostics(io::IO, set::DiagnosticSet)
+    ds = sorted(set).diagnostics
+    isempty(ds) && return nothing
+
+    files = unique(d.file for d in ds)
+    header = length(files) == 1 ? files[1] : "$(length(files)) arquivos"
+    n = length(ds)
+    println(io, header, ": ", n, n == 1 ? " problema encontrado" : " problemas encontrados")
+
+    for d in ds
+        println(io)
+        title = "  $(CATEGORY_LABEL[d.category]), $(CODE_TITLES[d.code])"
+        pad = max(1, 66 - length(title))
+        println(io, title, " "^pad, "[", d.code, "]")
+        loc = d.line > 0 ? "linha $(d.line), coluna $(d.col): " : ""
+        println(io, "    ", loc, d.message)
+        d.hint === nothing || println(io, "    ", d.hint)
+    end
+    return nothing
+end
+
+function format_diagnostics(set::DiagnosticSet)
+    io = IOBuffer()
+    format_diagnostics(io, set)
+    String(take!(io))
+end
+
+function Base.showerror(io::IO, e::KanonError)
+    format_diagnostics(io, e.diagnostics)
+end
+
+Base.show(io::IO, ::MIME"text/plain", s::DiagnosticSet) = format_diagnostics(io, s)

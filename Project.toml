@@ -1,0 +1,19 @@
+name = "Kanon"
+uuid = "3c1f7a2e-9b4d-4a6f-8e21-5d0c7b3f9a14"
+authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
+version = "0.1.0-DEV"
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+
+[compat]
+Dates = "1"
+Unicode = "1"
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
