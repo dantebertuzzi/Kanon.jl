@@ -18,4 +18,5 @@ include("helpers.jl")
     include("test_rule_semantics.jl")
     include("test_acceptance.jl")
     include("test_check.jl")
+    include("test_contract.jl")
 end

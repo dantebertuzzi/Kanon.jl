@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "kanon:report.kanon",
+  "type": "object",
+  "required": [
+    "effect",
+    "sample",
+    "method"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "effect": {
+      "$ref": "#/$defs/measure",
+      "x-kanon": {
+        "type": "measure",
+        "line": 4,
+        "presence": "required"
+      }
+    },
+    "sample": {
+      "$ref": "#/$defs/number",
+      "x-kanon": {
+        "type": "number",
+        "line": 5,
+        "presence": "required"
+      }
+    },
+    "method": {
+      "$ref": "#/$defs/text",
+      "x-kanon": {
+        "type": "text",
+        "line": 6,
+        "presence": "required"
+      }
+    },
+    "caveat": {
+      "$ref": "#/$defs/text",
+      "x-kanon": {
+        "type": "text",
+        "line": 7,
+        "presence": "optional"
+      }
+    }
+  },
+  "$defs": {
+    "measure": {
+      "x-kanon": {
+        "type": "measure"
+      }
+    },
+    "number": {
+      "type": "number"
+    },
+    "text": {
+      "type": "string"
+    }
+  }
+}

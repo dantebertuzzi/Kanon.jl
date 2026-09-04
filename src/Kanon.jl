@@ -34,6 +34,7 @@ include("core_types.jl")
 include("analysis.jl")
 include("analyze.jl")
 include("check.jl")
+include("contract.jl")
 
 # --- árvore ---
 export Template, LangVersion
@@ -71,6 +72,7 @@ export UndecodableValue, IncomparableValues
 export Analysis, ResolvedPath, Model
 export analyze, load_string, load_template
 export Bound, check, bind, value
+export contract
 export resolved, formatter
 
 # --- entrada ---

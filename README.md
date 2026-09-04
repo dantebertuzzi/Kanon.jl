@@ -22,7 +22,7 @@ text
 
 ## Estado
 
-**Fase 1 concluída; fase 2 em curso.** O que existe: léxico, gramática dos três planos,
+**Fases 1 e 2 concluídas.** O que existe: léxico, gramática dos três planos,
 árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
 análise completa do modelo sem dados — caminhos, tipos, formatadores, grupos opcionais,
 remissões e regras — e a validação dos dados contra o contrato, tudo com erros que
@@ -70,7 +70,15 @@ report.kanon: 1 problema encontrado
     linha 4, coluna 3: `effect` é exigido pelo modelo (linha 4) e não foi informado.
 ```
 
-Ainda não existe: o checklist em JSON Schema (F2.7) nem a renderização (F3).
+E o contrato vira checklist, em JSON Schema draft 2020-12 — determinístico, para ser
+versionado ao lado do modelo:
+
+```julia
+contract(tmpl, "escritura.contract.json")
+```
+
+Ainda não existe a renderização (F3): por enquanto o Kanon diz o que está errado, e
+ainda não escreve o documento.
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).

@@ -8,7 +8,7 @@
 |---|---|---|
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
-| **F2** Validador | 🔨 em curso | **F2.1 a F2.6 concluídas**: o critério de aceite da fase passa inteiro; falta `contract` |
+| **F2** Validador | ✅ concluída | protocolo de tipo, ambiente, `analyze`, teorema da lacuna, `check` e o checklist |
 | F3 Renderizador | ⬜ | — |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
@@ -20,12 +20,12 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **730 testes**, ~15 s.
+Suíte: **782 testes**, ~17 s.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 730 testes, ~15 s
+julia --project=. -e 'using Pkg; Pkg.test()'     # 782 testes, ~17 s
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -47,13 +47,14 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/analysis.jl` | `ResolvedPath`, `Analysis`, `Model` — as tabelas laterais |
 | `src/analyze.jl` | caminhos, formatadores, grupos, remissões, regras; `load_string` / `load_template` |
 | `src/check.jl` | os dados contra o contrato; `check`, `bind`, `Bound` |
+| `src/contract.jl` | o checklist em JSON Schema, com emissor determinístico próprio |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
 
 ---
 
-## F2 — Validador (em curso)
+## F2 — Validador (concluída em 4 de setembro de 2026)
 
 **Objetivo.** Tudo que é verificável **sem dados** (erros de referência, `K2xxx`) e a
 validação dos dados contra o contrato (erros de contrato, `K3xxx`), acumulados e no
@@ -187,10 +188,42 @@ Duas decisões, e a segunda era um furo:
 analisa sem dados, e `check` recusa o JSON sem `effect` nomeando o campo e apontando a
 linha 4 (`test/test_check.jl`, último bloco).
 
-**F2.7 — `contract(tmpl)`.** ⬅ **a próxima, e a última da fase**
-JSON Schema draft 2020-12 + `x-kanon`, saída determinística e comparável em `diff`
-(D-009). O `additionalProperties: false` fica, e a divergência com D-022 é deliberada:
-o schema descreve o documento de dados do modelo, e o motor recebe de fontes ricas.
+**F2.7 — `contract(tmpl)`.** ✅ **concluída em 4 de setembro de 2026.**
+JSON Schema draft 2020-12 com `x-kanon`, e um emissor de JSON escrito à mão — nenhuma
+biblioteca garante ordem de chaves, e sem ordem não há `diff`. `properties` na ordem de
+declaração, `required` na ordem do arquivo, `$defs` em ordem alfabética, indentação fixa.
+
+O checklist do modelo de aceite está versionado em `test/golden/report.contract.json` e
+é comparado byte a byte (regenerável com `KANON_REGEN_GOLDEN=1`). É o primeiro artefato
+do corpus golden, e resolve metade da dívida que a F3 herdaria.
+
+Os `$defs` dos seis tipos do núcleo têm forma JSON de verdade; um composto de camada sai
+de `kanon_schema`, com `required` e `additionalProperties: false`. **Um escalar de camada
+vira `{}` com o nome em `x-kanon`**: o protocolo não revela a forma JSON de um `measure`,
+e afirmar uma inventada seria pior que não afirmar nenhuma.
+
+Os formatadores listados são os que o modelo **usa**, não os que o tipo oferece — é isso
+que interessa a quem lê o checklist para saber o que precisa funcionar.
+
+---
+
+## O que a F2 entregou
+
+`load_template` → `check` → `contract`, as três funções da API de alto nível que não
+dependem de renderizar. Um modelo é recusado sem dados por caminho, tipo, formatador,
+grupo, remissão, nível, regra ou lacuna; e com dados por ausência, tipo, cardinalidade,
+branco ou esquema descumprido.
+
+Cinco decisões saíram da implementação, e três delas fecharam buracos que a F0 não via:
+
+| | O que estava errado |
+|---|---|
+| **D-019** | a fachada com closures era incompatível com a proibição de `eval` **e** com a obrigação 5-A ao mesmo tempo |
+| **D-021** | a §4.4 enunciou o caso extremo de uma regra mais geral e parou nele |
+| **D-023** | a API listava oito funções do protocolo e **nenhuma lia um campo** — o teorema tinha um furo do tamanho de um tipo composto |
+
+As outras duas — D-020 (revista no mesmo dia) e D-022 — são escolhas de calibragem, e
+ambas erram para o lado apertado, que é o único reversível enquanto não há acervo.
 
 **Critério de aceite da F2:** o modelo científico de `docs/exemplos.md` §2.1 valida sem
 dados e `check` recusa, com mensagens nomeando campo e linha, um JSON a que falte
@@ -198,7 +231,7 @@ dados e `check` recusa, com mensagens nomeando campo e linha, um JSON a que falt
 
 ---
 
-## F3 — Renderizador
+## F3 — Renderizador (a próxima)
 
 Interpolação, blocos com sujeito, algoritmo dos colchetes, tipos base. Saída em texto
 puro, **ainda sem nada de português**.
@@ -291,8 +324,9 @@ de `KanonLegal`.
 | O exemplo jurídico de `docs/exemplos.md` ainda não analisa | precisa da camada `pt` | F4 |
 | A camada `Science` de `test_acceptance.jl` é de mentira e vive na suíte | `test/` | vira pacote de verdade na F6 |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
+| Escalar de camada vira `{}` no checklist; falta um `kanon_json_type` para a camada descrevê-lo | `contract.jl` | aditivo, cabe numa versão menor |
 | CLI não existe | — | depois da F3 |
-| Corpus golden ainda não é artefato versionado | `test/golden/` | F3 |
+| Corpus golden tem só o checklist; faltam os treze casos de elisão | `test/golden/` | F3 |
 | Sem CI, sem Aqua, sem Documenter | — | F10 |
 | `K1213` está no registro e nunca é emitido: a unidade fora do conjunto fechado nunca vira cabeçalho | `diagnostics.jl` | remover ou dar uso na F3 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | quando a primeira camada de idioma existir (F4) |
