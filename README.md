@@ -25,8 +25,8 @@ text
 **Fase 1 concluída; fase 2 em curso.** O que existe: léxico, gramática dos três planos,
 árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
 análise completa do modelo sem dados — caminhos, tipos, formatadores, grupos opcionais,
-remissões e regras —, tudo com erros que trazem linha, coluna, código estável e sugestão
-de correção.
+remissões e regras — e a validação dos dados contra o contrato, tudo com erros que
+trazem linha, coluna, código estável e sugestão de correção.
 
 ```julia
 using Kanon
@@ -57,8 +57,20 @@ igual.
     em `person`, e está fora de qualquer grupo opcional.
 ```
 
-Ainda não existe: a validação dos dados contra o contrato (F2.6) nem a renderização
-(F3).
+Os dados também já são verificados contra o contrato:
+
+```julia
+check(tmpl, dados)          # DiagnosticSet; vazio quer dizer que passou
+```
+
+```
+report.kanon: 1 problema encontrado
+
+  contrato, campo obrigatório ausente                             [K3001]
+    linha 4, coluna 3: `effect` é exigido pelo modelo (linha 4) e não foi informado.
+```
+
+Ainda não existe: o checklist em JSON Schema (F2.7) nem a renderização (F3).
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).

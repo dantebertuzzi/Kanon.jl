@@ -17,4 +17,5 @@ include("helpers.jl")
     include("test_references.jl")
     include("test_rule_semantics.jl")
     include("test_acceptance.jl")
+    include("test_check.jl")
 end

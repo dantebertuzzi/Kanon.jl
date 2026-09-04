@@ -42,7 +42,7 @@ Um código, uma vez publicado, nunca muda de significado (política de compatibi
     K12xx  plano do texto
     K13xx  plano das regras
     K20xx  referência: caminhos, tipos e formatadores
-    K3xxx  contrato     (F2)
+    K30xx  contrato: os dados contra o contrato
     K4xxx  recurso      (F3)
 """
 const CODE_TITLES = Dict{String,String}(
@@ -119,6 +119,17 @@ const CODE_TITLES = Dict{String,String}(
     "K2047" => "condição sempre verdadeira ou sempre falsa",
     # --- referência: formatadores ---
     "K2020" => "formatador desconhecido",
+    # --- contrato ---
+    "K3001" => "campo obrigatório ausente",
+    "K3002" => "cardinalidade violada",
+    "K3003" => "texto em branco em campo garantido",
+    "K3004" => "texto em branco lido como ausente",
+    "K3005" => "o modelo usa `today` e a data não foi informada",
+    "K3010" => "tipo incompatível",
+    "K3011" => "valor recusado pelo tipo",
+    "K3012" => "o valor não tem um campo que o esquema promete",
+    "K3021" => "campo nos dados que o contrato não declara",
+    "K3030" => "valor aninhado fundo demais",
 )
 
 function Diagnostic(code::AbstractString, category::Symbol, span::Span, file::AbstractString,

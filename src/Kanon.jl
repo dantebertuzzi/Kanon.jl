@@ -33,6 +33,7 @@ include("environment.jl")
 include("core_types.jl")
 include("analysis.jl")
 include("analyze.jl")
+include("check.jl")
 
 # --- árvore ---
 export Template, LangVersion
@@ -51,6 +52,7 @@ export KanonError, KanonSyntaxError, KanonReferenceError, KanonContractError
 export FieldSpec
 export kanon_typename, kanon_schema, kanon_validate, kanon_formats
 export kanon_attribute, kanon_attributes, kanon_decode, kanon_compare
+export kanon_getfield
 export format
 export Money, NumberValue
 
@@ -68,6 +70,7 @@ export UndecodableValue, IncomparableValues
 # --- análise ---
 export Analysis, ResolvedPath, Model
 export analyze, load_string, load_template
+export Bound, check, bind, value
 export resolved, formatter
 
 # --- entrada ---

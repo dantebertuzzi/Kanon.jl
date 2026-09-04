@@ -626,3 +626,69 @@ prática de fato produz — cada grupo com a sua nulável:
 ```
 [casado com {spouse.name}[, sob o regime de {spouse.regime}]]
 ```
+
+---
+
+## D-022 — Campo a mais nos dados é aviso, não erro
+
+*2026-09-04 · aceita · surgida ao implementar a F2.6*
+
+**Decisão.** Um campo que a entrada traz e o contrato não declara é aviso (`K3021`), com
+sugestão de nome. Ele é ignorado: só o que o modelo declara chega ao documento.
+
+**Alternativas.** (a) Erro, coerente com o `additionalProperties: false` que
+`contract(tmpl)` emite. (b) Silêncio. (c) Aviso (escolhida).
+
+**Por quê.** Contra (a): a mesma fonte alimenta vários modelos — uma tabela de quarenta
+colunas serve cinco documentos que usam seis campos cada — e recusar tornaria a ingestão
+da F7 inútil sem uma projeção manual por modelo. Contra (b): o campo a mais é o sintoma
+mais visível de um nome digitado errado, e desperdiçá-lo é perder a chance de dizer
+"você quis dizer `seller`?" no momento certo.
+
+**O que torna (c) seguro, e não uma frouxidão.** Um campo a mais **nunca esconde um erro
+sozinho**: se o nome foi digitado errado, o campo declarado aparece como ausente e o erro
+sai por `K3001`, que é erro de verdade. O aviso não substitui nada — ele acrescenta a
+explicação ao erro que já existe. Nenhum dado não declarado alcança o documento, e a
+garantia da §11 continua inteira.
+
+**A tensão com o checklist, assumida.** `contract(tmpl)` continua emitindo
+`additionalProperties: false`, porque descreve o **documento de dados do modelo** — a
+forma canônica que um gerador de formulário deve produzir. O motor é mais tolerante que
+o schema de propósito: ele recebe de fontes ricas, e o schema descreve um payload feito
+sob medida. Se a divergência incomodar, a saída é uma opção no `contract`, nunca
+apertar o `check`.
+
+---
+
+## D-023 — `kanon_getfield`: o esquema é a interface, a `struct` é a implementação
+
+*2026-09-04 · aceita · surgida ao implementar a F2.6*
+
+**Decisão.** Uma nona função genérica no protocolo de tipo:
+
+```julia
+kanon_getfield(v, ::Val{name})            # padrão: getproperty(v, name)
+```
+
+É por ela que o motor lê `seller.name`. O padrão serve quando o nome do esquema é o nome
+da propriedade Julia; um tipo cujo esquema não espelha a `struct` define os métodos dele.
+
+**O que faltava.** `api-extensao.md` §2 lista oito funções e **nenhuma lê um campo**.
+`kanon_schema` promete que `person` tem `name`, e nada no protocolo dizia como obter esse
+`name` de um valor. A F3 bateria nisso de frente; a F2.6 bateu antes, e por um motivo
+mais grave que a conveniência.
+
+**Por que isso era um furo no teorema.** `{seller.name}` é não-nulável *porque o esquema
+declara `name` obrigatório*. Sem uma forma de ler o campo, `check` não tinha como
+verificar que o `person` recebido cumpre a própria declaração — e um `Pessoa("", …)`
+atravessaria a validação inteira para abrir no texto exatamente o buraco que a §14 supõe
+impossível. A verificação existe agora, desce nos aninhados e nas coleções, e tem teto de
+profundidade porque nada impede um ciclo nos dados.
+
+**Por que não `getproperty` direto.** Amarrar o esquema aos nomes das propriedades Julia
+faria de `kanon_schema` uma promessa sobre a implementação: renomear um campo interno
+quebraria os modelos do acervo. O esquema é a interface pública do tipo, e uma interface
+que vaza a implementação não é interface.
+
+**Consequência para a F6.** `@kanon_type` gera os `kanon_getfield` junto com o resto, e o
+teste normativo da §2.3 continua valendo — tudo que a macro gera é escrevível à mão.

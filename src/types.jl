@@ -197,6 +197,19 @@ presença do valor, e nenhum tipo os implementa.
 const UNIVERSAL_ATTRIBUTES = (:absent, :present)
 
 """
+    kanon_getfield(v, ::Val{name})
+
+Lê um campo declarado por [`kanon_schema`](@ref). O padrão é `getproperty(v, name)`, que
+serve quando o nome do campo no esquema é o nome da propriedade Julia; um tipo cujo
+esquema não espelha a `struct` define métodos seus.
+
+Existe porque o esquema é a **interface** do tipo e a `struct` é a implementação dele:
+sem separar as duas, `kanon_schema` viraria uma promessa sobre nomes de campos Julia, e
+renomear um campo interno quebraria os modelos do acervo (D-023).
+"""
+kanon_getfield(v, ::Val{name}) where {name} = getproperty(v, name)
+
+"""
     kanon_decode(::Type{T}, raw, ctx) -> T
 
 Converte um valor da entrada externa (JSON, planilha, `DataFrame`) para o tipo. É o

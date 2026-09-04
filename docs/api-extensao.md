@@ -26,7 +26,8 @@ está lutando contra a linguagem. Pare e reveja.
 
 ## 2. O protocolo de tipo
 
-Oito funções genéricas. Um tipo escalar implementa quatro; um composto, seis.
+Nove funções genéricas. Um tipo escalar implementa quatro; um composto, seis, mais um
+`kanon_getfield` por campo cujo nome não seja o da propriedade Julia.
 
 ```julia
 kanon_typename(::Type{T})            -> Symbol            # obrigatória
@@ -37,6 +38,7 @@ format(v::T, ::Val{name}, ctx)       -> AbstractString    # zero ou mais
 kanon_formats(::Type{T})             -> Tuple{Vararg{Symbol}}      # sem :default; ver 2.1
 kanon_attribute(v::T, ::Val{name})   -> Bool
 kanon_attributes(::Type{T})          -> Tuple{Vararg{Symbol}}
+kanon_getfield(v::T, ::Val{name})    -> valor do campo declarado por kanon_schema
 kanon_decode(::Type{T}, raw, ctx)    -> T                 # da entrada externa
 kanon_compare(a::T, b)               -> Int               # -1, 0, 1; ou erro
 ```
@@ -53,6 +55,13 @@ end
 `kanon_schema` e o campo `optional` de `FieldSpec` são o que torna
 `{seller.spouse.name}` verificável sem dados e o que estende o teorema da lacuna aos
 tipos compostos (ver `especificacao.md`, seções 3.1 e 14).
+
+**[acrescentada na F2.6 — D-023]** `kanon_getfield` é como o motor lê o campo que o
+esquema promete. O padrão é `getproperty(v, name)`; um tipo cujo esquema não espelha a
+`struct` define os métodos dele. Sem essa separação, `kanon_schema` viraria uma promessa
+sobre nomes de propriedades Julia, e renomear um campo interno quebraria o acervo. É
+também o que permite a `check` verificar que um composto cumpre o próprio esquema — sem
+isso o teorema da lacuna tem um furo do tamanho de um tipo composto.
 
 ### 2.1 `kanon_formats` e a promessa da seção 9 do projeto
 

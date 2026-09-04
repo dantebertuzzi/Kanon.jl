@@ -8,7 +8,7 @@
 |---|---|---|
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
-| **F2** Validador | 🔨 em curso | **F2.1 a F2.5 concluídas**: o modelo de aceite de `exemplos.md` §2.1 já analisa limpo |
+| **F2** Validador | 🔨 em curso | **F2.1 a F2.6 concluídas**: o critério de aceite da fase passa inteiro; falta `contract` |
 | F3 Renderizador | ⬜ | — |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
@@ -20,12 +20,12 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **659 testes**, ~11 s.
+Suíte: **730 testes**, ~15 s.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 659 testes, ~11 s
+julia --project=. -e 'using Pkg; Pkg.test()'     # 730 testes, ~15 s
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -46,6 +46,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/core_types.jl` | `text`, `number`, `money`, `date`, `boolean`, `list` |
 | `src/analysis.jl` | `ResolvedPath`, `Analysis`, `Model` — as tabelas laterais |
 | `src/analyze.jl` | caminhos, formatadores, grupos, remissões, regras; `load_string` / `load_template` |
+| `src/check.jl` | os dados contra o contrato; `check`, `bind`, `Bound` |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -165,15 +166,31 @@ resolvidos contra o tipo com `present`/`absent` valendo para todo campo.
 científico de `exemplos.md` §2.1 analisa limpo, e sem a camada `Science` é recusado
 nomeando o tipo `measure` e o marcador `@` que faltam (`test/test_acceptance.jl`).
 
-**F2.6 — `check(tmpl, dados)`.** ⬅ **a próxima**
-Obrigatório ausente, tipo incompatível, cardinalidade violada, decodificação da entrada
-externa. **Texto em branco**: erro em campo obrigatório, normalizado para nulo em campo
-opcional com aviso listado (D-008). `nothing`, `missing`, `null` e chave ausente são o
-mesmo nulo.
+**F2.6 — `check(tmpl, dados)`.** ✅ **concluída em 4 de setembro de 2026.**
+Dez códigos `K3001`–`K3030`, e um `Bound` que guarda os valores já decodificados para
+que o render não redecodifique nada. As quatro formas de entrada — `Dict` de string,
+`Dict` de símbolo, `NamedTuple` e `struct` — atravessam sem adaptador por formato.
 
-**F2.7 — `contract(tmpl)`.**
+Duas decisões, e a segunda era um furo:
+
+- **D-022**: campo a mais nos dados é aviso. Ele nunca esconde um erro sozinho — o campo
+  declarado aparece como ausente e o erro sai por `K3001` —, e recusar tornaria
+  impossível alimentar vários modelos com a mesma tabela.
+- **D-023 — `kanon_getfield`, a nona função do protocolo.** A API listava oito e
+  **nenhuma lia um campo**. Sem ela, `{seller.name}` é não-nulável porque o esquema
+  declara `name` obrigatório, e nada verificava que o `person` recebido cumpre a própria
+  declaração: um `Pessoa("", …)` atravessaria tudo para abrir no texto o buraco que a
+  §14 supõe impossível. A verificação existe agora, desce nos aninhados e nas coleções,
+  e tem teto de profundidade porque nada impede um ciclo nos dados.
+
+**Critério de aceite da F2: cumprido.** O modelo científico de `exemplos.md` §2.1
+analisa sem dados, e `check` recusa o JSON sem `effect` nomeando o campo e apontando a
+linha 4 (`test/test_check.jl`, último bloco).
+
+**F2.7 — `contract(tmpl)`.** ⬅ **a próxima, e a última da fase**
 JSON Schema draft 2020-12 + `x-kanon`, saída determinística e comparável em `diff`
-(D-009).
+(D-009). O `additionalProperties: false` fica, e a divergência com D-022 é deliberada:
+o schema descreve o documento de dados do modelo, e o motor recebe de fontes ricas.
 
 **Critério de aceite da F2:** o modelo científico de `docs/exemplos.md` §2.1 valida sem
 dados e `check` recusa, com mensagens nomeando campo e linha, um JSON a que falte
@@ -273,6 +290,7 @@ de `KanonLegal`.
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | O exemplo jurídico de `docs/exemplos.md` ainda não analisa | precisa da camada `pt` | F4 |
 | A camada `Science` de `test_acceptance.jl` é de mentira e vive na suíte | `test/` | vira pacote de verdade na F6 |
+| Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
 | CLI não existe | — | depois da F3 |
 | Corpus golden ainda não é artefato versionado | `test/golden/` | F3 |
 | Sem CI, sem Aqua, sem Documenter | — | F10 |

@@ -169,6 +169,7 @@ Existe **um** conceito de ausência. Na entrada:
 | `""` ou só espaços em campo `text` **obrigatório** | **erro de contrato** |
 | `""` ou só espaços em campo `text` **opcional** | normalizado para nulo, com aviso listado por `check` |
 | `[]` em campo de lista | lista vazia (não é nulo) |
+| chave nos dados que o contrato não declara | **aviso**, e o campo é ignorado (D-022) |
 
 *Por quê:* "chave ausente" e `null` como conceitos distintos seriam um segundo tipo de
 ausência, o que a seção 6.3 do documento de projeto proíbe — e a distinção é ruído em
