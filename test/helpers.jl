@@ -4,6 +4,7 @@
 # É o que permite melhorar as mensagens — que são o produto — sem quebrar a suíte.
 
 using Kanon
+using Dates
 using Kanon: CODE_TITLES, sorted, Cursor, canonical_keywords
 
 "Códigos emitidos ao analisar `src`, ordenados. Vazio se não houve erro."

@@ -1,15 +1,14 @@
 # Roadmap
 
-> Estado em 3 de setembro de 2026, fim do dia. Escrito para retomar amanhã sem
-> depender de memória.
+> Estado em 4 de setembro de 2026. Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
 | Fase | Estado | O que existe |
 |---|---|---|
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
-| **F1** Núcleo mínimo | ✅ concluída | `src/` 1.849 linhas, `test/` 750 linhas, **199 testes passando**, 34 códigos de diagnóstico |
-| **F2** Validador | ⬜ próxima | — |
+| **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
+| **F2** Validador | 🔨 em curso | **F2.1 concluída**: protocolo de tipo, seis tipos do núcleo, ambiente congelado |
 | F3 Renderizador | ⬜ | — |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
@@ -21,15 +20,7 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-## Antes de qualquer coisa: isto aqui não é um repositório git
-
-O diretório não está sob controle de versão. Dois dias de especificação e um parser
-existem apenas como arquivos no disco. Primeiro comando de amanhã:
-
-```bash
-cd ~/Documentos/my-projects/julia/packages/Kanon.jl
-git init && git add -A && git commit -m "F0: especificação; F1: léxico, parser e árvore"
-```
+Suíte: **335 testes**, ~7 s.
 
 ## Como retomar
 
@@ -50,6 +41,9 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/parse_rules.jl` | expressões com precedência |
 | `src/ast.jl` | a árvore, com as quatro invariantes comentadas |
 | `src/diagnostics.jl` | `CODE_TITLES` — o registro de códigos estáveis |
+| `src/types.jl` | as oito funções genéricas; `kanon_formats` por introspecção |
+| `src/environment.jl` | `EnvironmentBuilder` → `Environment` congelado; conflitos de nome |
+| `src/core_types.jl` | `text`, `number`, `money`, `date`, `boolean`, `list` |
 
 Leituras obrigatórias antes de escrever a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -70,18 +64,29 @@ um `analyze` que passa duas vezes na mesma árvore.
 
 ### Incrementos, cada um com teste antes de avançar
 
-**F2.1 — Ambiente e protocolo de tipo.**
-`EnvironmentBuilder` mutável → `Environment` imutável e congelado. Conflito de nome
-entre domínios detectado **na construção**, não no render. As oito funções genéricas de
-`api-extensao.md` §2, com os seis tipos do núcleo (`text`, `number`, `money`, `date`,
-`boolean`, `list`).
-*Ponto delicado:* `kanon_formats(T)` por introspecção da tabela de métodos, ordenada.
-É o que faz o despacho direto funcionar igual à fachada (§2.1). Nada de `Dict` de
-formatadores mantido à mão — se aparecer um, a implementação está lutando contra Julia.
-*Teste:* um formatador acrescentado só por despacho aparece na validação e na mensagem
-de erro, sem registro adicional.
+**F2.1 — Ambiente e protocolo de tipo.** ✅ **concluída em 4 de setembro de 2026.**
+`EnvironmentBuilder` mutável → `Environment` imutável e congelado; conflito de nome
+entre domínios detectado na construção, com os dois domínios na mensagem. As oito
+funções genéricas de `api-extensao.md` §2 e os seis tipos do núcleo.
 
-**F2.2 — `analyze`: caminhos e tipos.**
+`kanon_formats(T)` saiu por introspecção da tabela de métodos, ordenada e sem
+`:default`, e nenhum `Dict` de formatadores foi preciso. O teste que sustenta a fase
+passa: um formatador acrescentado só por despacho aparece na validação e na mensagem de
+erro, sem registro nenhum.
+
+Três coisas que a implementação forçou e que a F0 não previa:
+
+- **D-019**, a decisão da fase: a fachada `register_type!` registra o nome; o
+  comportamento é sempre despacho. A forma com closures de `api-extensao.md` §2.2 era
+  incompatível com a proibição de `eval` e com a obrigação 5-A ao mesmo tempo, e passou
+  para `@kanon_type` (macro, F6).
+- **`Bool` não é `number`.** Em Julia `Bool <: Integer`; definir `number` sobre `Real`
+  faria `{flag:fixed2}` passar na validação. Daí `NumberValue`, que exclui `Bool`.
+- **Arredondamento por `Rational{BigInt}`, nunca por `BigFloat`**, cuja precisão é
+  estado global (`setprecision`) — o determinismo não pode depender dela. Meio para
+  longe do zero, que é a convenção de documento.
+
+**F2.2 — `analyze`: caminhos e tipos.** ⬅ **a próxima**
 Tabela `paths` e tabela `formatter` da `Analysis`. Resolução em duas etapas dentro de um
 bloco com sujeito: campos do sujeito, depois campos de primeiro nível; **resolver nos
 dois é erro de ambiguidade**, nunca precedência silenciosa. Formatador inexistente é
@@ -211,12 +216,13 @@ de `KanonLegal`.
 
 | Dívida | Onde | Quando resolver |
 |---|---|---|
-| Não há controle de versão | raiz | **amanhã, antes de tudo** |
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | O exemplo jurídico de `docs/exemplos.md` ainda não analisa | precisa da camada `pt` | F4 |
 | CLI não existe | — | depois da F3 |
 | Corpus golden ainda não é artefato versionado | `test/golden/` | F3 |
 | Sem CI, sem Aqua, sem Documenter | — | F10 |
+| A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | quando a primeira camada de idioma existir (F4) |
+| `money` emite duas casas para toda moeda; JPY não tem centavos | `core_types.jl` | quando alguém precisar — exige casas por moeda no ambiente |
 
 ## Invariantes que nenhuma fase pode quebrar
 

@@ -497,3 +497,46 @@ escrever modelos científicos.
 
 **Momento da decisão.** Esta é a hora de mexer: não há acervo. Depois do congelamento da
 sintaxe, trocar qualquer uma das duas convenções é versão maior.
+
+---
+
+## D-019 — A fachada registra o **nome**; o comportamento é sempre despacho
+
+*2026-09-04 · aceita · surgida ao implementar a F2.1*
+
+**Decisão.** `register_type!(b, T; aliases)` registra apenas o vínculo entre o tipo
+Julia `T` e o nome que ele tem na linguagem, mais os apelidos de idioma desse nome. O
+que o tipo **faz** — validar, formatar, decodificar, comparar, responder atributo — é
+sempre método de função genérica, definido no módulo da camada, sem passar pelo
+ambiente.
+
+**O problema.** `api-extensao.md` §2.2 desenha a fachada recebendo *closures*
+(`validate = ...`, `formats = (written = ...,)`) em tempo de execução, dentro de
+`configure!(builder)`. Isso é incompatível com duas exigências já escritas no mesmo
+documento: a proibição de `eval` (§1) e a obrigação 5-A, que veta manter um `Dict` de
+formatadores. Uma fachada que recebe closures em runtime só pode guardá-las num
+dicionário consultado pelo motor — que é exatamente o que 5-A proíbe — ou gerar métodos
+com `eval`, que §1 proíbe. Não havia terceira saída, e a contradição só apareceu quando
+o código foi escrito.
+
+**Alternativas.** (a) Guardar as closures no ambiente e consultá-las no render: viola
+5-A, e quebra a promessa da §2.1 de que despacho direto e fachada são equivalentes —
+seriam dois caminhos com semânticas diferentes. (b) `eval` na construção do ambiente:
+viola §1, introduz *world age* no meio do render e torna a construção do ambiente não
+reentrante. (c) Separar nome de comportamento (escolhida).
+
+**Por quê.** A separação já estava implícita na própria §5: "o que é global (métodos) é
+aditivo e o que é conflitante (nomes) é local ao ambiente". Nome precisa ser local
+porque dois domínios podem disputar `party`; comportamento não precisa, porque
+`format(::Money, ::Val{:written}, ctx)` é um método e métodos são aditivos. A fachada
+tentava carregar as duas coisas, e só a primeira exige um ambiente.
+
+**Consequência para a F6.** `@kanon_type` continua sendo o açúcar prometido, e é ela
+que passa a aceitar a forma da §2.2 — mas como **macro**, expandindo em tempo de carga
+do módulo da camada para os métodos da §2 mais uma chamada a `register_type!`. As duas
+obrigações da §2.3 continuam valendo e ficam mais fáceis de honrar: tudo que a macro
+gera é escrevível à mão, e `@macroexpand` não menciona nada de não exportado.
+
+**O que isso preserva.** O teste normativo "um formatador acrescentado só por despacho
+aparece na validação e na mensagem de erro, sem registro adicional" passa a valer por
+construção, e não por coincidência de implementação: não existe outro caminho.

@@ -34,7 +34,7 @@ kanon_schema(::Type{T})              -> Tuple{Vararg{FieldSpec}}   # () se escal
 kanon_validate(v::T, ctx)            -> Nothing | Vector{Diagnostic}
 format(v::T, ::Val{:default}, ctx)   -> AbstractString    # obrigatória
 format(v::T, ::Val{name}, ctx)       -> AbstractString    # zero ou mais
-kanon_formats(::Type{T})             -> Tuple{Vararg{Symbol}}      # ver 2.1
+kanon_formats(::Type{T})             -> Tuple{Vararg{Symbol}}      # sem :default; ver 2.1
 kanon_attribute(v::T, ::Val{name})   -> Bool
 kanon_attributes(::Type{T})          -> Tuple{Vararg{Symbol}}
 kanon_decode(::Type{T}, raw, ctx)    -> T                 # da entrada externa
@@ -63,7 +63,9 @@ formatadores para (a) validar `{x:written}` sem dados e (b) escrever a mensagem
 
 **Resolução:** `kanon_formats(T)` tem uma implementação padrão no núcleo que **introspecta
 a tabela de métodos** de `format` procurando assinaturas `Tuple{typeof(format), T′, Val{S}, Any}`
-com `T <: T′` e `S::Symbol`, e devolve os `S` **ordenados**. Uma camada pode
+com `T <: T′` e `S::Symbol`, e devolve os `S` **ordenados**, **sem** `:default` — que
+não é nome escrevível numa interpolação: quem quer o padrão escreve `{price}`, e
+`{price:default}` é erro de referência. Uma camada pode
 sobrescrevê-la para documentar ou para cobrir métodos genéricos (`format(v::T, ::Val{N}, ctx) where N`),
 que a introspecção não consegue enumerar.
 
@@ -72,19 +74,12 @@ código do modelo, não viola a seção 11 da especificação, e é determiníst
 ordenação. Um formatador adicionado por despacho direto passa a existir para a validação
 e para a mensagem de erro sem nenhum registro adicional — que é a promessa.
 
-### 2.2 Fachada
+### 2.2 Fachada **[revista na F2.1 — D-019]**
+
+A fachada registra o **nome** do tipo no ambiente. O comportamento não passa por ela:
 
 ```julia
-register_type!(b, :money;
-    julia_type = Money,
-    validate   = v -> v.amount ≥ 0,
-    default    = (v, ctx) -> format_currency(v, ctx),
-    formats    = (written = (v, ctx) -> spell_out(v, ctx),),
-    attributes = (zero = v -> iszero(v.amount),),
-    decode     = (raw, ctx) -> Money(raw, ctx.currency),
-    compare    = (a, b) -> cmp(a.amount, b),
-    aliases    = (pt = :dinheiro,),
-)
+register_type!(b, Money; aliases = (pt = :dinheiro,))
 ```
 
 `aliases` dá ao tipo um nome por idioma. É necessário porque nome de tipo **não** é
@@ -93,13 +88,36 @@ coberto por `register_aliases!`. Sem ele, um modelo em português teria metade d
 vocabulário do plano de dados em inglês (`docs/exemplos.md`, seção 3.3). O idioma ativo é
 o declarado no pragma do arquivo; o nome canônico continua valendo sempre.
 
-A fachada **expande para os métodos da seção 2**, nada mais. Teste normativo da F6:
-para cada tipo de `KanonLegal`, a definição por fachada e a definição manual equivalente
-produzem a mesma saída em todo o corpus golden.
+O nome canônico vem de `kanon_typename(T)` — o mesmo método que a seção 2 exige. Validar,
+formatar, decodificar, comparar e responder atributo são métodos definidos no módulo da
+camada, e existem para o motor **sem** que o ambiente saiba deles.
+
+**Por que não closures aqui.** A forma originalmente desenhada nesta seção
+(`validate = ...`, `formats = (written = ...,)` passados em runtime) só poderia ser
+implementada guardando as funções num dicionário consultado pelo motor — proibido pela
+obrigação 5-A — ou gerando métodos com `eval`, proibido pela seção 1. Essa forma passa
+para `@kanon_type` (seção 2.3), que é macro e expande em tempo de carga. O registro da
+decisão está em `docs/decisoes.md`, D-019.
 
 ### 2.3 `@kanon_type`
 
-Açúcar sobre a fachada, escopo da F6. Duas obrigações da F0:
+Açúcar sobre a fachada, escopo da F6, e o lugar da forma declarativa com closures:
+
+```julia
+@kanon_type money Money begin
+    validate   = v -> v.amount ≥ 0
+    default    = (v, ctx) -> format_currency(v, ctx)
+    formats    = (written = (v, ctx) -> spell_out(v, ctx),)
+    attributes = (zero = v -> iszero(v.amount),)
+    decode     = (raw, ctx) -> Money(raw, ctx.currency)
+    compare    = (a, b) -> cmp(a.amount, b)
+    aliases    = (pt = :dinheiro,)
+end
+```
+
+Por ser macro, ela expande em tempo de carga do módulo para os métodos da seção 2 mais
+uma chamada a `register_type!` — sem `eval` em runtime e sem tabela de despacho. Duas
+obrigações da F0:
 
 1. Tudo que a macro gera deve ser escrevível à mão pelo caminho da seção 2.
 2. **Teste normativo:** `@macroexpand` da macro não pode conter nenhuma referência a um
@@ -160,6 +178,11 @@ estilos de bloco, marcas de flexão, constantes, limites.
 ```julia
 env = Environment(locale = :pt, domains = [Legal])
 ```
+
+O idioma é ele próprio despacho: `Extenso.jl` define
+`Kanon.configure_locale!(b, ::Val{:pt})`, e carregar o módulo basta para o idioma
+existir. Um `locale` sem camada carregada é erro na construção, nomeando o idioma. Os
+domínios são módulos, e o construtor chama `configure!` de cada um se ele o define.
 
 O construtor:
 
@@ -235,3 +258,22 @@ Enumerado para que não volte como pedido no meio da implementação:
 - ler arquivo ou rede durante o render;
 - mutar um `Environment` já construído;
 - estado global compartilhado entre ambientes.
+
+## 9. O que o ambiente guarda, além dos tipos
+
+Registrado pelas camadas, congelado na construção, e ordenado — toda lista que pode
+alcançar uma mensagem de erro é ordenada, por I4:
+
+| Registro | Quem registra | Conflito |
+|---|---|---|
+| nome de tipo e apelido | `register_type!` | dois domínios, mesmo nome |
+| palavra-chave do idioma | `register_aliases!` | duas formas para canônicas diferentes |
+| estilo de bloco | `register_block_style!` | dois domínios, mesma unidade de marcador |
+| marcas de flexão e `apply` | `register_inflection!` | duas camadas de idioma |
+| gancho de reparo | `register_repair_hook!` | duas camadas de idioma |
+| símbolo de moeda | `register_currency!` | dois símbolos para a mesma moeda |
+| separadores decimal e de milhar | `register_separators!` | último vence (é do idioma) |
+| padrão de `date:numeric` | `register_date_pattern!` | último vence (é do idioma) |
+
+O contexto que os formatadores recebem é `FormatContext(env, today)`, e nada mais.
+`today` é injetado, nunca lido do relógio.

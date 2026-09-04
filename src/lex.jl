@@ -50,6 +50,9 @@ const CANONICAL_KEYWORDS = ("data", "text", "rules", "when", "one", "for", "each
 const KW_TRUE = Symbol("true")
 const KW_FALSE = Symbol("false")
 
+"As mesmas palavras, como símbolos — para validar apelido registrado por uma camada."
+const CANONICAL_KEYWORD_SYMBOLS = Tuple(Symbol(w) for w in CANONICAL_KEYWORDS)
+
 "Tabela do inglês canônico, a única que o núcleo conhece sozinho."
 function canonical_keywords()
     forms = Dict{String,Symbol}()

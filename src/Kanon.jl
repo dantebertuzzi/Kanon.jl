@@ -6,8 +6,9 @@ Linguagem de modelos de documento e seu motor.
 O modelo declara seu contrato; o que não satisfaz o contrato não renderiza. Tudo mais
 no desenho serve a isso.
 
-Esta é a **fase 1**: léxico, gramática dos três planos, árvore sintática e erros de
-sintaxe com linha e coluna. Ainda não há validação (F2) nem renderização (F3).
+Esta é a **fase 2, em andamento**: sobre o léxico e a gramática da F1, o protocolo de
+tipo e o ambiente. Ainda não há análise de referência (F2.2 em diante) nem renderização
+(F3).
 
 A especificação normativa está em `docs/`; o registro das decisões, em
 `docs/decisoes.md`.
@@ -27,6 +28,9 @@ include("parse.jl")
 include("parse_data.jl")
 include("parse_text.jl")
 include("parse_rules.jl")
+include("types.jl")
+include("environment.jl")
+include("core_types.jl")
 
 # --- árvore ---
 export Template, LangVersion
@@ -40,6 +44,24 @@ export Node, Path, Literal, Span, NodeId
 # --- diagnóstico ---
 export Diagnostic, DiagnosticSet, format_diagnostics
 export KanonError, KanonSyntaxError, KanonReferenceError, KanonContractError
+
+# --- protocolo de tipo ---
+export FieldSpec
+export kanon_typename, kanon_schema, kanon_validate, kanon_formats
+export kanon_attribute, kanon_attributes, kanon_decode, kanon_compare
+export format
+export Money, NumberValue
+
+# --- ambiente ---
+export Environment, EnvironmentBuilder, FormatContext, BlockStyle
+export register_type!, register_aliases!, register_block_style!
+export register_inflection!, register_repair_hook!, register_currency!
+export register_separators!, register_date_pattern!
+export configure!, configure_locale!
+export typefor, typenames, stylefor, hasmark, currency_symbol
+export KanonEnvironmentError, KanonProtocolError
+export UnregisteredType, UnknownFormatter, UnknownAttribute
+export UndecodableValue, IncomparableValues
 
 # --- entrada ---
 export parse_string, parse_file
