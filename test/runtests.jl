@@ -14,4 +14,5 @@ include("helpers.jl")
     include("test_environment.jl")
     include("test_analyze.jl")
     include("test_guarded.jl")
+    include("test_references.jl")
 end

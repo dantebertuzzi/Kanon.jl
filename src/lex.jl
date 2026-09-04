@@ -22,6 +22,13 @@ const MARKER_UNITS = Set{Char}([':', '§', '¶', '@', '%', '&', '*', '+', '~', '
 
 is_marker_unit(c::Char) = c in MARKER_UNITS
 
+"""
+A única unidade com forma **não numerada**: `:` sozinho é um bloco sem número. Para
+qualquer outro estilo, a unidade sozinha é erro — `§` é a unidade de `§§`, não uma
+forma dela (§6.1).
+"""
+const NUMBERING_FREE_UNIT = ':'
+
 "Teto de níveis numerados na versão 1 (D-001)."
 const MAX_BLOCK_LEVEL = 3
 

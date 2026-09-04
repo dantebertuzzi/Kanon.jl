@@ -298,5 +298,14 @@ function configure!(b::EnvironmentBuilder)
     register_type!(b, Date)
     register_type!(b, Bool)
     register_type!(b, AbstractVector)
+
+    # O estilo do núcleo: numera `1`, `2`, `3.1` e remete como `3.1` (§6.3). Por
+    # extenso e ordinal são da camada de idioma, que registra o estilo dela.
+    register_block_style!(b, :section;
+        unit      = NUMBERING_FREE_UNIT,
+        layout    = :prefix,
+        separator = ". ",
+        number    = (path, ctx) -> join(path, '.'),
+        ref       = (path, ctx) -> join(path, '.'))
     return b
 end

@@ -24,8 +24,8 @@ text
 
 **Fase 1 concluída; fase 2 em curso.** O que existe: léxico, gramática dos três planos,
 árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
-análise de caminhos, tipos, formatadores e grupos opcionais — tudo com erros que trazem
-linha, coluna, código estável e sugestão de correção.
+análise de caminhos, tipos, formatadores, grupos opcionais, remissões e regras — tudo
+com erros que trazem linha, coluna, código estável e sugestão de correção.
 
 ```julia
 using Kanon
@@ -56,7 +56,7 @@ igual.
     em `person`, e está fora de qualquer grupo opcional.
 ```
 
-Ainda não existe: remissões e regras validadas (F2.4 e F2.5), a validação dos dados
+Ainda não existe: a semântica das expressões de regra (F2.5), a validação dos dados
 contra o contrato (F2.6) nem a renderização (F3).
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de

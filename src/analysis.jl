@@ -32,9 +32,9 @@ const NO_FORMATTER = Symbol("")
 O resultado de `analyze`: tabelas laterais endereçadas por `NodeId`, mais os
 diagnósticos acumulados.
 
-Preenchimento por fase, para que a leitura do arquivo não engane: `paths`, `formatter`
-e `block_index` são da F2.2; `guarded` é da F2.3; `numbering`, `block_rule` e
-`block_foreach` são da F5.
+Preenchimento por fase, para que a leitura do arquivo não engane: `paths` e `formatter`
+são da F2.2; `guarded` é da F2.3; `block_index`, `block_rule` e `block_foreach` são da
+F2.4; `numbering` é da F5.
 """
 struct Analysis
     # por nó
@@ -42,10 +42,11 @@ struct Analysis
     formatter::Vector{Symbol}
     guarded::Vector{Bool}
 
-    # por bloco
+    # por bloco, indexadas pela POSIÇÃO em `template.text.blocks` — a ordem do arquivo,
+    # que é também a ordem da saída (D-015)
     numbering::Vector{Vector{Int32}}
-    block_rule::Vector{Int32}
-    block_foreach::Vector{Int32}
+    block_rule::Vector{Int32}       # índice da regra `when` que prende o bloco; 0 se nenhuma
+    block_foreach::Vector{Int32}    # idem para `one for each`
 
     # globais
     block_index::Vector{Pair{Symbol,NodeId}}

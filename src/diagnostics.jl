@@ -99,6 +99,16 @@ const CODE_TITLES = Dict{String,String}(
     "K2012" => "valor que pode faltar, fora de grupo opcional",
     "K2013" => "parênteses que não fecham dentro do grupo",
     "K2014" => "aspas que não fecham dentro do grupo",
+    # --- referência: blocos, níveis, remissões e regras ---
+    "K2030" => "marcador de bloco sem estilo neste ambiente",
+    "K2031" => "nível de bloco sem o nível anterior",
+    "K2032" => "marcador sem forma não numerada",
+    "K2033" => "remissão a bloco inexistente",
+    "K2034" => "remissão a bloco repetido",
+    "K2035" => "remissão a bloco que uma regra pode remover",
+    "K2036" => "regra nomeia bloco inexistente",
+    "K2037" => "duas regras da mesma espécie para o mesmo bloco",
+    "K2038" => "remissão a bloco não numerado",
     # --- referência: formatadores ---
     "K2020" => "formatador desconhecido",
 )

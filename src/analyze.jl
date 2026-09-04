@@ -27,6 +27,8 @@ mutable struct AnalysisCtx
     # o escopo do bloco em curso; `nothing` fora de bloco e em bloco sem sujeito
     subject::Union{Nothing,ResolvedPath}
     subject_path::Union{Nothing,Path}
+    # o caminho que o bloco corrente itera, quando uma regra `one for each` o repete
+    iterating::Union{Nothing,Path}
     # campos cujo tipo declarado não existe: caminhos que passem por eles não geram
     # erro em cascata, porque o erro já foi dito na declaração
     poisoned::Vector{Symbol}
@@ -35,7 +37,7 @@ end
 function AnalysisCtx(env::Environment, tmpl::Template)
     AnalysisCtx(env, tmpl, Analysis(tmpl.nnodes),
                 isempty(tmpl.sources) ? "<string>" : tmpl.sources[1],
-                nothing, nothing, Symbol[])
+                nothing, nothing, nothing, Symbol[])
 end
 
 function err!(ctx::AnalysisCtx, code::AbstractString, sp::Span, msg::AbstractString;
@@ -175,6 +177,19 @@ end
 
 # --- as duas resoluções ------------------------------------------------------
 
+"""
+Dentro de um bloco que `one for each` repete, o caminho iterado denota o **elemento
+corrente**, não a coleção (§8.3). É por isso que `: cada <- witnesses` com
+`cada one for each witnesses` faz `{witnesses}` valer uma testemunha e
+`{witnesses.name}` valer o nome dela.
+
+Sem isto, `{witnesses}` renderizaria a lista inteira em cada iteração — e em silêncio,
+que é a pior forma de estar errado.
+"""
+iterated_head(ctx::AnalysisCtx, head::Symbol) =
+    ctx.iterating !== nothing && length(ctx.iterating.segments) == 1 &&
+    ctx.iterating.segments[1] === head
+
 "Resolve contra os campos de primeiro nível do contrato."
 function resolve_in_contract(ctx::AnalysisCtx, p::Path)
     segs = p.segments
@@ -193,10 +208,15 @@ function resolve_in_contract(ctx::AnalysisCtx, p::Path)
 
     head in ctx.poisoned && return nothing, SILENT
 
-    length(segs) == 1 &&
-        return ResolvedPath(:field, decl.type, decl.presence === OPTIONAL, decl.card, decl.id), nothing
+    # a iteração entrega um elemento, e um elemento nunca é a lista nem é nulo
+    iterado = iterated_head(ctx, head)
+    card = iterado ? Cardinality() : decl.card
+    nulo = iterado ? false : decl.presence === OPTIONAL
 
-    descend(ctx, segs, 2, decl.type, decl.card, decl.presence === OPTIONAL, :field, decl.id)
+    length(segs) == 1 &&
+        return ResolvedPath(:field, decl.type, nulo, card, decl.id), nothing
+
+    descend(ctx, segs, 2, decl.type, card, nulo, :field, decl.id)
 end
 
 "Resolve contra os campos do sujeito do bloco (§4.2)."
@@ -510,6 +530,172 @@ function check_guarded!(ctx::AnalysisCtx, n::Interp, rp::ResolvedPath, depth::In
     return nothing
 end
 
+# --- blocos, estilos e níveis ------------------------------------------------
+
+"A posição de um bloco em `text.blocks`, ou `nothing`. É por ela que as tabelas por bloco são indexadas."
+function blockpos(ctx::AnalysisCtx, name::Symbol)
+    findfirst(b -> b.name === name, ctx.tmpl.text.blocks)
+end
+
+blocknames(ctx::AnalysisCtx) = [b.name for b in ctx.tmpl.text.blocks]
+
+"O nível de um bloco: a unidade repetida *n*+1 vezes é o nível *n*; `:` sozinho é 0, o não numerado."
+level(b::Block) = Int(b.repeat) - 1
+
+"""
+Valida os marcadores e a sequência de níveis, e monta o índice de blocos.
+
+A sequência é verificação estática pura — nível 2 sem nível 1 antes é erro **sem
+dados** — e por isso mora aqui, e não na F5 com os contadores.
+"""
+function index_blocks!(ctx::AnalysisCtx)
+    aberto = Pair{Char,Int}[]      # nível do último bloco visto, por estilo
+
+    for b in ctx.tmpl.text.blocks
+        push!(ctx.out.block_index, b.name => id(b))
+
+        estilo = stylefor(ctx.env, b.unit)
+        if estilo === nothing
+            marcadores = sort!([string(s.unit) for s in ctx.env.styles])
+            err!(ctx, "K2030", b.span,
+                 "o marcador `$(b.unit)` não tem estilo registrado neste ambiente.";
+                 hint = isempty(marcadores) ?
+                     "Nenhum estilo de bloco está registrado." :
+                     "Marcadores deste ambiente: $(join(marcadores, ", ")). " *
+                     "Carregue a camada que registra `$(b.unit)`.")
+            continue
+        end
+
+        n = level(b)
+        if n == 0 && b.unit != NUMBERING_FREE_UNIT
+            err!(ctx, "K2032", b.span,
+                 "`$(b.unit)` sozinho não é um cabeçalho: o estilo `$(estilo.name)` só " *
+                 "tem formas numeradas.";
+                 hint = "O nível 1 é a unidade repetida duas vezes: `$(b.unit)$(b.unit)`.")
+            continue
+        end
+        n == 0 && continue          # não numerado: fora da sequência de níveis
+
+        i = findfirst(p -> first(p) == b.unit, aberto)
+        anterior = i === nothing ? 0 : last(aberto[i])
+        if n > anterior + 1
+            err!(ctx, "K2031", b.span,
+                 "este bloco é de nível $n, e nenhum bloco de nível $(n - 1) o precede " *
+                 "no estilo `$(estilo.name)`.";
+                 hint = "Um nível só existe dentro do anterior. Insira um bloco " *
+                        "`$(repeat(b.unit, n))` antes deste, ou escreva este como " *
+                        "`$(repeat(b.unit, anterior + 2))`.")
+        end
+        i === nothing ? push!(aberto, b.unit => n) : (aberto[i] = b.unit => n)
+    end
+
+    sort!(ctx.out.block_index; by = first)
+end
+
+# --- regras: a que bloco cada uma se prende ----------------------------------
+
+"""
+Prende cada regra ao seu bloco e preenche `block_rule` e `block_foreach`.
+
+Roda **antes** do plano do texto porque a validação das remissões precisa saber quais
+blocos uma regra repete ou pode remover (§6.3).
+
+D-002 é verificada aqui, e não com a semântica das expressões, porque é aqui que o
+conflito aparece: duas regras da mesma espécie disputam a mesma casa da tabela, e
+guardar uma delas em silêncio seria escolher por conta própria qual das duas o redator
+quis dizer.
+"""
+function bind_rules!(ctx::AnalysisCtx)
+    nb = length(ctx.tmpl.text.blocks)
+    resize!(ctx.out.block_rule, nb); fill!(ctx.out.block_rule, Int32(0))
+    resize!(ctx.out.block_foreach, nb); fill!(ctx.out.block_foreach, Int32(0))
+
+    for (k, r) in enumerate(ctx.tmpl.rules.rules)
+        pos = blockpos(ctx, r.block)
+        if pos === nothing
+            nomes = blocknames(ctx)
+            err!(ctx, "K2036", r.span,
+                 "a regra nomeia o bloco `$(r.block)`, que o plano do texto não tem.";
+                 hint = did_you_mean(r.block, nomes,
+                     isempty(nomes) ? "O modelo não tem bloco nenhum." :
+                                      "Blocos deste modelo: $(join(sort(nomes), ", "))."))
+            continue
+        end
+
+        r.when === nothing || bind_one!(ctx, ctx.out.block_rule, pos, k, r, "when")
+        r.foreach === nothing || bind_one!(ctx, ctx.out.block_foreach, pos, k, r, "one for each")
+    end
+end
+
+function bind_one!(ctx::AnalysisCtx, tabela::Vector{Int32}, pos::Int, k::Int,
+                   r::Rule, especie::AbstractString)
+    if tabela[pos] != 0
+        anterior = ctx.tmpl.rules.rules[tabela[pos]]
+        err!(ctx, "K2037", r.span,
+             "o bloco `$(r.block)` já tem uma regra `$especie`, na linha $(anterior.span.line).";
+             hint = especie == "when" ?
+                 "Um bloco admite um `when` só. Junte as duas condições numa expressão " *
+                 "com `and` ou `or` — combinação implícita é a pergunta que o leitor não " *
+                 "deveria ter de fazer." :
+                 "Um bloco se repete sobre uma coleção só.")
+        return nothing
+    end
+    tabela[pos] = Int32(k)
+    return nothing
+end
+
+# --- remissões ---------------------------------------------------------------
+
+"""
+`{::nome}` — a remissão (§6.3). Três verificações, e a terceira é aviso de propósito.
+
+Remissão a bloco que uma regra pode remover é **aviso**, não erro: o autor pode saber
+que as duas condições coincidem — que o bloco que remete e o remetido saem juntos — e o
+motor não tem como provar que ele está errado. Mas ele precisa ser avisado, porque o
+caso em que não coincidem produz uma remissão a um bloco que não está no documento.
+"""
+function check_blockref!(ctx::AnalysisCtx, n::BlockRef)
+    pos = blockpos(ctx, n.target)
+    if pos === nothing
+        nomes = blocknames(ctx)
+        err!(ctx, "K2033", n.span,
+             "a remissão aponta o bloco `$(n.target)`, que o plano do texto não tem.";
+             hint = did_you_mean(n.target, nomes,
+                 isempty(nomes) ? "O modelo não tem bloco nenhum." :
+                                  "Blocos deste modelo: $(join(sort(nomes), ", "))."))
+        return nothing
+    end
+
+    alvo = ctx.tmpl.text.blocks[pos]
+    if level(alvo) == 0
+        err!(ctx, "K2038", n.span,
+             "o bloco `$(n.target)` não é numerado, e uma remissão rende um número.";
+             hint = "Numere o bloco escrevendo `$(alvo.unit)$(alvo.unit) $(n.target)`, " *
+                    "ou repita o texto em vez de remeter.")
+        return nothing
+    end
+
+    if !isempty(ctx.out.block_foreach) && ctx.out.block_foreach[pos] != 0
+        regra = ctx.tmpl.rules.rules[ctx.out.block_foreach[pos]]
+        err!(ctx, "K2034", n.span,
+             "o bloco `$(n.target)` se repete (`one for each`, linha $(regra.span.line)), " *
+             "e não há como nomear uma das cópias.";
+             hint = "Remeta a um bloco que ocorre uma vez só.")
+        return nothing
+    end
+
+    if !isempty(ctx.out.block_rule) && ctx.out.block_rule[pos] != 0
+        regra = ctx.tmpl.rules.rules[ctx.out.block_rule[pos]]
+        err!(ctx, "K2035", n.span,
+             "o bloco `$(n.target)` pode ser removido por uma regra (linha $(regra.span.line)), " *
+             "e então esta remissão apontaria para o que não está no documento.";
+             hint = "Se as duas condições coincidem de propósito, não há o que corrigir. " *
+                    "Senão, prenda este trecho à mesma condição.",
+             severity = :warning)
+    end
+    return nothing
+end
+
 # --- travessia ---------------------------------------------------------------
 
 """
@@ -530,9 +716,14 @@ function analyze_data!(ctx::AnalysisCtx)
 end
 
 "Resolve o sujeito do cabeçalho e o guarda em `paths[bloco]` — nó nenhum o carrega (I2)."
-function analyze_subject!(ctx::AnalysisCtx, b::Block)
+function analyze_subject!(ctx::AnalysisCtx, b::Block, pos::Int)
     ctx.subject = nothing
     ctx.subject_path = nothing
+    ctx.iterating = nothing
+
+    k = isempty(ctx.out.block_foreach) ? Int32(0) : ctx.out.block_foreach[pos]
+    k == 0 || (ctx.iterating = ctx.tmpl.rules.rules[k].foreach)
+
     b.subject === nothing && return nothing
 
     rp, f = resolve_in_contract(ctx, b.subject)
@@ -545,8 +736,10 @@ function analyze_subject!(ctx::AnalysisCtx, b::Block)
         return nothing
     end
 
+    # Um sujeito escalar é legítimo no bloco iterado: o redator refere o elemento
+    # inteiro, e não campos dele.
     T = typefor(ctx.env, rp.typename)
-    if T !== nothing && isempty(kanon_schema(T))
+    if ctx.iterating === nothing && T !== nothing && isempty(kanon_schema(T))
         err!(ctx, "K2007", b.subject.span,
              "o bloco `$(b.name)` toma `$(string(b.subject))` por sujeito, e " *
              "`$(rp.typename)` não tem campos.";
@@ -570,6 +763,8 @@ function analyze_nodes!(ctx::AnalysisCtx, nodes, depth::Int = 0)
             ctx.out.paths[id(n)] = rp
             resolve_formatter!(ctx, n, rp)
             check_guarded!(ctx, n, rp, depth)
+        elseif n isa BlockRef
+            check_blockref!(ctx, n)
         elseif n isa Group
             # Os filhos primeiro: decidir se o grupo pode elidir exige saber a
             # nulabilidade das interpolações que ele contém.
@@ -580,16 +775,15 @@ function analyze_nodes!(ctx::AnalysisCtx, nodes, depth::Int = 0)
 end
 
 function analyze_text!(ctx::AnalysisCtx)
-    for b in ctx.tmpl.text.blocks
-        push!(ctx.out.block_index, b.name => id(b))
-        analyze_subject!(ctx, b)
+    for (pos, b) in enumerate(ctx.tmpl.text.blocks)
+        analyze_subject!(ctx, b, pos)
         for p in b.children
             analyze_nodes!(ctx, p.children)
         end
     end
     ctx.subject = nothing
     ctx.subject_path = nothing
-    sort!(ctx.out.block_index; by = first)
+    ctx.iterating = nothing
 end
 
 """
@@ -599,9 +793,10 @@ fora, e seus caminhos são do contrato.
 A **semântica** — tipagem dos operadores, atributos, veracidade implícita, `one for
 each` sobre lista — é a F2.5. Aqui só se resolve o que os caminhos apontam.
 """
-function analyze_rules!(ctx::AnalysisCtx)
+function analyze_rule_paths!(ctx::AnalysisCtx)
     ctx.subject = nothing
     ctx.subject_path = nothing
+    ctx.iterating = nothing
     for r in ctx.tmpl.rules.rules
         r.when === nothing || analyze_expr!(ctx, r.when)
         if r.foreach !== nothing
@@ -636,8 +831,10 @@ Resolve o modelo contra o ambiente. Não muta o `Template` e não lança: devolv
 function analyze(env::Environment, tmpl::Template)
     ctx = AnalysisCtx(env, tmpl)
     analyze_data!(ctx)
+    index_blocks!(ctx)
+    bind_rules!(ctx)          # antes do texto: as remissões consultam as tabelas
     analyze_text!(ctx)
-    analyze_rules!(ctx)
+    analyze_rule_paths!(ctx)
     sort!(ctx.out.diagnostics; by = sortkey)
     return ctx.out
 end

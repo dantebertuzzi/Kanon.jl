@@ -8,7 +8,7 @@
 |---|---|---|
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
-| **F2** Validador | 🔨 em curso | **F2.1 a F2.3 concluídas**: protocolo de tipo, ambiente, `analyze`, **teorema da lacuna verificado** |
+| **F2** Validador | 🔨 em curso | **F2.1 a F2.4 concluídas**: protocolo de tipo, ambiente, `analyze`, teorema da lacuna, remissões |
 | F3 Renderizador | ⬜ | — |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
@@ -20,12 +20,12 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **520 testes**, ~10 s.
+Suíte: **577 testes**, ~11 s.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 520 testes, ~10 s
+julia --project=. -e 'using Pkg; Pkg.test()'     # 577 testes, ~11 s
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -125,15 +125,40 @@ O que a fase acrescentou ao previsto:
   conta como qualquer outro: o problema não é a origem do caractere, é o par ter ficado
   do lado de fora.
 
-**F2.4 — Referências.** ⬅ **a próxima**
-`{::x}` aponta para bloco existente; regra nomeia bloco existente; remissão a bloco
-repetido por `one for each` é erro; remissão a bloco que uma regra pode remover é aviso.
+**F2.4 — Referências.** ✅ **concluída em 4 de setembro de 2026.**
+Nove códigos `K2030`–`K2038`. Remissão a bloco inexistente, repetido ou não numerado é
+erro; a bloco que uma regra pode remover, aviso — que não impede carregar, porque o
+autor pode saber que as duas condições coincidem e o motor não tem como provar que ele
+está errado.
 
-**F2.5 — Semântica das regras.**
+O que a fase absorveu de outras, e por quê:
+
+- **D-002 veio da F2.5 para cá.** É aqui que o conflito aparece fisicamente: duas
+  regras da mesma espécie disputam a mesma casa de `block_rule`, e guardar uma delas em
+  silêncio seria escolher por conta própria qual das duas o redator quis dizer.
+- **A sequência de níveis da §6.2 veio da F5.** Nível 2 sem nível 1 antes é erro *sem
+  dados*, e a fronteira aceita é "a F2 fica com tudo que é estático". Os contadores
+  continuam na F5.
+- **A semântica do elemento no bloco iterado (§8.3) teve de vir junto.** Dentro de
+  `cada one for each witnesses`, o caminho `{witnesses}` denota **uma** testemunha, não
+  a lista. Sem isso a lista inteira sairia por iteração, em silêncio; e um `one for each`
+  sobre lista de escalares seria impossível, porque o sujeito sem campos era recusado.
+  A concordância entre `<- C` e `one for each C` continua sendo F2.5.
+
+O núcleo passou a registrar o estilo `:section` — `unit = ':'`, `layout = :prefix`,
+`separator = ". "`, numerando `1`, `2`, `3.1` (§6.3 e §6.4).
+
+**F2.5 — Semântica das regras.** ⬅ **a próxima**
 Sem veracidade implícita: `when notes` é erro, escreve-se `when notes is present`.
-Dois `when` para o mesmo bloco é erro (D-002). `one for each C` exige que `C` seja lista
-e que o cabeçalho declare `<- C`. Comparação entre valor tipado e literal só se o tipo
-declarar `kanon_compare`. Atributos `present` e `absent` no núcleo; os demais das camadas.
+`one for each C` exige que `C` seja lista e que o cabeçalho declare `<- C` — o mesmo
+caminho. Comparação entre valor tipado e literal só se o tipo declarar `kanon_compare`.
+Atributos `present` e `absent` no núcleo; os demais das camadas.
+
+Já feito na F2.4: a ligação regra-bloco, D-002 e a resolução do elemento iterado.
+
+**Não esquecer o refinamento de D-020**: agora que `block_rule` e `block_foreach`
+existem, um bloco preso por `when C is present` ou repetido por `one for each C` tem o
+sujeito presente por construção, e não deveria propagar nulabilidade.
 
 **F2.6 — `check(tmpl, dados)`.**
 Obrigatório ausente, tipo incompatível, cardinalidade violada, decodificação da entrada
@@ -245,6 +270,7 @@ de `KanonLegal`.
 | CLI não existe | — | depois da F3 |
 | Corpus golden ainda não é artefato versionado | `test/golden/` | F3 |
 | Sem CI, sem Aqua, sem Documenter | — | F10 |
+| `K1213` está no registro e nunca é emitido: a unidade fora do conjunto fechado nunca vira cabeçalho | `diagnostics.jl` | remover ou dar uso na F3 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | quando a primeira camada de idioma existir (F4) |
 | `money` emite duas casas para toda moeda; JPY não tem centavos | `core_types.jl` | quando alguém precisar — exige casas por moeda no ambiente |
 

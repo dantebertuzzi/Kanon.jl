@@ -430,11 +430,12 @@ end
         @test Set(first.(a.block_index)) == Set([:preamble, :g])
     end
 
-    @testset "as tabelas das fases seguintes existem e estão vazias" begin
+    @testset "as tabelas por bloco acompanham a ordem do arquivo" begin
         _, a = anl2(fonte)
         @test any(a.guarded)                        # há um grupo na fonte
         @test isempty(a.numbering)                  # F5
-        @test isempty(a.block_rule) && isempty(a.block_foreach)
+        @test length(a.block_rule) == 2 && length(a.block_foreach) == 2
+        @test all(iszero, a.block_rule)             # a fonte não tem regra
     end
 end
 

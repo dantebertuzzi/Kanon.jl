@@ -518,10 +518,20 @@ tem seu próprio contador.
 ### 6.3 Remissão
 
 `{::nome}` rende o texto de remissão do estilo. Remissão a bloco inexistente é erro de
-referência (sem dados). Remissão a bloco **repetido** por `one for each` é erro: não há
-como nomear uma instância. Remissão a bloco que uma regra pode remover é **aviso** —
-não erro, porque o autor pode saber que as duas condições coincidem, mas ele precisa
-ser avisado.
+referência (`K2033`, sem dados). Remissão a bloco **repetido** por `one for each` é erro
+(`K2034`): não há como nomear uma instância. Remissão a bloco que uma regra pode remover
+é **aviso** (`K2035`) — não erro, porque o autor pode saber que as duas condições
+coincidem, mas ele precisa ser avisado.
+
+**[acrescentado na F2.3/F2.4]** Remissão a bloco **não numerado** é erro (`K2038`): a
+remissão rende um número, e o bloco de forma simples não tem nenhum. E os marcadores
+são resolvidos contra o ambiente aqui: uma unidade sem estilo registrado é `K2030`, e a
+forma simples de uma unidade que não seja `:` é `K2032` — só o núcleo tem forma não
+numerada (§6.1).
+
+A checagem de sequência de níveis da §6.2 é **estática** — nível 2 sem nível 1 antes é
+erro sem dados (`K2031`) — e por isso acontece na validação do modelo, e não com os
+contadores.
 
 Formato do número e da remissão vêm das camadas (`register_block_style!`). O núcleo,
 sozinho, numera `1`, `2`, `3.1` e remete como `3.1`.
