@@ -8,7 +8,7 @@
 |---|---|---|
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
-| **F2** Validador | 🔨 em curso | **F2.1 concluída**: protocolo de tipo, seis tipos do núcleo, ambiente congelado |
+| **F2** Validador | 🔨 em curso | **F2.1 e F2.2 concluídas**: protocolo de tipo, ambiente, `analyze` de caminhos e formatadores |
 | F3 Renderizador | ⬜ | — |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
@@ -20,13 +20,13 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **335 testes**, ~7 s.
+Suíte: **457 testes**, ~10 s.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 335 testes, ~7 s
-julia --project=. -e 'using Kanon; parse_file("modelo.kanon")'
+julia --project=. -e 'using Pkg; Pkg.test()'     # 457 testes, ~10 s
+julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
 Pontos de entrada, na ordem em que o código executa:
@@ -44,6 +44,8 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/types.jl` | as oito funções genéricas; `kanon_formats` por introspecção |
 | `src/environment.jl` | `EnvironmentBuilder` → `Environment` congelado; conflitos de nome |
 | `src/core_types.jl` | `text`, `number`, `money`, `date`, `boolean`, `list` |
+| `src/analysis.jl` | `ResolvedPath`, `Analysis`, `Model` — as tabelas laterais |
+| `src/analyze.jl` | resolução de caminho e de formatador; `load_string` / `load_template` |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -86,14 +88,26 @@ Três coisas que a implementação forçou e que a F0 não previa:
   estado global (`setprecision`) — o determinismo não pode depender dela. Meio para
   longe do zero, que é a convenção de documento.
 
-**F2.2 — `analyze`: caminhos e tipos.** ⬅ **a próxima**
-Tabela `paths` e tabela `formatter` da `Analysis`. Resolução em duas etapas dentro de um
-bloco com sujeito: campos do sujeito, depois campos de primeiro nível; **resolver nos
-dois é erro de ambiguidade**, nunca precedência silenciosa. Formatador inexistente é
-erro aqui, com a lista dos disponíveis.
-*Nada disso pode ir para dentro do nó* — invariante I2, D-011.
+**F2.2 — `analyze`: caminhos e tipos.** ✅ **concluída em 4 de setembro de 2026.**
+Tabelas `paths` e `formatter`, nove códigos `K20xx`, e `load_string` / `load_template`
+devolvendo um `Model` (árvore + análise + ambiente) reutilizável sem reparse. A
+resolução em duas etapas do §4.2 tenta **sempre** os dois escopos: resolver nos dois é
+ambiguidade, e nenhum caminho tem precedência silenciosa. Nada entrou no nó (I2): o
+sujeito do bloco mora em `paths[bloco]`.
 
-**F2.3 — A tabela `guarded` e o teorema da lacuna.**
+O que a fase acrescentou ao previsto:
+
+- **D-020**: a nulabilidade do sujeito atravessa o bloco. Conservador de propósito, e
+  com o refinamento que a F2.5 deve fazer já escrito na decisão.
+- **Nulabilidade que atravessa composto** já está no `ResolvedPath` — a F2.3 herda isso
+  pronto e só precisa da tabela `guarded` e da regra de exigência.
+- **Tipo desconhecido é dito uma vez, na declaração**, e os usos não repetem: sem isso
+  um `person` faltando produziria um erro por interpolação.
+- **Sugestão de nome por distância de Damerau**, com transposição valendo 1 — `nmae` por
+  `name` é o erro de digitação mais comum, e com Levenshtein puro ele custa 2 e a
+  sugestão não sai.
+
+**F2.3 — A tabela `guarded` e o teorema da lacuna.** ⬅ **a próxima**
 Interpolação de caminho nulável fora de qualquer grupo é **erro**. Grupo sem
 interpolação direta é erro ("nunca elide"). Parênteses e aspas desbalanceados dentro de
 um grupo são erro. Nulabilidade atravessa tipo composto: se `person.spouse` é opcional,

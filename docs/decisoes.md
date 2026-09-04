@@ -540,3 +540,37 @@ gera é escrevível à mão, e `@macroexpand` não menciona nada de não exporta
 **O que isso preserva.** O teste normativo "um formatador acrescentado só por despacho
 aparece na validação e na mensagem de erro, sem registro adicional" passa a valer por
 construção, e não por coincidência de implementação: não existe outro caminho.
+
+---
+
+## D-020 — A nulabilidade do sujeito atravessa o bloco inteiro
+
+*2026-09-04 · aceita · surgida ao implementar a F2.2*
+
+**Decisão.** Um bloco cujo sujeito é um caminho nulável torna nulável **todo** caminho
+lido dentro dele pela via do sujeito. `: b <- buyer` com `buyer` opcional faz `{name}`
+nulável, e portanto exigir grupo (F2.3).
+
+**Alternativas.** (a) Tratar o sujeito como sempre presente dentro do bloco, deixando a
+ausência para o render. (b) Propagar (escolhida).
+
+**Por quê.** Contra (a): o bloco existiria com o sujeito nulo e `{name}` renderizaria
+vazio — a lacuna silenciosa que o teorema da §14 proíbe, aberta justamente no ponto em
+que o modelo parece mais seguro. A propagação é a leitura conservadora, e a
+conservadora é a única compatível com "falhar alto".
+
+**Consequência, e o que a F2.5 precisa saber.** Hoje a única saída do redator é envolver
+o texto em grupo. Isso é correto mas incômodo, e há duas construções que deveriam
+dispensá-lo, porque tornam o sujeito presente por construção:
+
+- `b when buyer is present` — a regra já garante que o bloco só existe com o sujeito;
+- `b one for each buyers` — a iteração entrega um elemento, nunca o nulo.
+
+Ambas dependem da tabela de regras por bloco, que só existe na F2.5. Quando ela existir,
+o refinamento é: o sujeito de um bloco assim **não** propaga nulabilidade. Até lá a
+exigência de grupo vale, o que é o lado seguro de errar — afrouxar depois é aditivo,
+apertar depois quebraria acervo.
+
+**O que não muda em hipótese nenhuma.** A nulabilidade que vem do próprio caminho
+(`{seller.spouse.name}`) continua valendo dentro de qualquer bloco: nenhuma regra sobre
+o sujeito diz coisa alguma sobre `spouse`.

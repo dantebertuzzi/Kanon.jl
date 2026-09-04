@@ -23,20 +23,31 @@ text
 ## Estado
 
 **Fase 1 concluída; fase 2 em curso.** O que existe: léxico, gramática dos três planos,
-árvore sintática, erros de sintaxe com linha, coluna e código estável — e, da F2, o
-protocolo de tipo, os seis tipos do núcleo e o ambiente.
+árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
+análise de caminhos, tipos e formatadores — tudo com erros que trazem linha, coluna,
+código estável e sugestão de correção.
 
 ```julia
 using Kanon
-tmpl = parse_file("escritura.kanon")   # ou parse_string(texto)
 
-env = Environment()                    # o núcleo puro, sem idioma nem domínio
-ctx = FormatContext(env)
-format(Money("1234.57", :BRL), Val(:code), ctx)   # "BRL 1234.57"
+env  = Environment()                    # o núcleo puro, sem idioma nem domínio
+tmpl = load_template(env, "escritura.kanon")
 ```
 
-Ainda não existe: análise de referências, validação de contrato (F2.2 em diante) nem
-renderização (F3).
+```
+escritura.kanon: 2 problemas encontrados
+
+  referência, campo não existe no tipo                            [K2003]
+    linha 10, coluna 1: `person` não tem o campo `nmae`.
+    Você quis dizer `name`? Campos de `person`: name, spouse.
+
+  referência, formatador desconhecido                             [K2020]
+    linha 10, coluna 25: `writen` não existe para o tipo `money`.
+    Formatadores de `money`: code, plain, symbol.
+```
+
+Ainda não existe: a exigência de grupo para caminho nulável (F2.3), a validação dos
+dados contra o contrato (F2.6) nem a renderização (F3).
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).

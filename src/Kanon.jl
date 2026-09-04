@@ -31,6 +31,8 @@ include("parse_rules.jl")
 include("types.jl")
 include("environment.jl")
 include("core_types.jl")
+include("analysis.jl")
+include("analyze.jl")
 
 # --- árvore ---
 export Template, LangVersion
@@ -62,6 +64,11 @@ export typefor, typenames, stylefor, hasmark, currency_symbol
 export KanonEnvironmentError, KanonProtocolError
 export UnregisteredType, UnknownFormatter, UnknownAttribute
 export UndecodableValue, IncomparableValues
+
+# --- análise ---
+export Analysis, ResolvedPath, Model
+export analyze, load_string, load_template
+export resolved, formatter
 
 # --- entrada ---
 export parse_string, parse_file

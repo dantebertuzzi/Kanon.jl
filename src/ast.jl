@@ -194,7 +194,15 @@ TextPlane() = TextPlane(Block[])
 
 # --- plano das regras --------------------------------------------------------
 
+"""
+Expressão do plano das regras. Não descende de `Node`, mas carrega `id` e `span` pelo
+mesmo motivo: `analyze` endereça o caminho resolvido de cada expressão por `NodeId`, e
+o contador de identificadores é o mesmo da árvore.
+"""
 abstract type RuleExpr end
+
+id(e::RuleExpr) = e.id
+span(e::RuleExpr) = e.span
 
 struct PathExpr <: RuleExpr
     id::NodeId

@@ -239,6 +239,27 @@ end
 
 `numbering` é a tabela que sustenta a invariante I2: nenhum `Block` sabe seu número.
 
+**Precisões da F2.2.** `paths` é indexada por `NodeId` e recebe mais do que as
+interpolações:
+
+| Entrada | Quem a ocupa |
+|---|---|
+| `paths[interp]` | o caminho da interpolação |
+| `paths[block]` | o **sujeito** do cabeçalho — nenhum `Block` carrega o sujeito resolvido |
+| `paths[pathexpr]`, `paths[attrexpr]` | os caminhos do plano das regras |
+| `paths[rule]` | o caminho de `one for each` |
+
+Por isso as expressões de regra carregam `id` e `span` como os nós, embora não
+descendam de `Node`: o contador de identificadores é o mesmo da árvore, e `NodeId`
+continua denso.
+
+`formatter[i]` vale `:default` quando a interpolação não nomeia formatador, e o símbolo
+vazio nos nós que não são interpolação. Escrever `{x:default}` é erro de referência:
+`default` não é nome escrevível, e quem quer o padrão escreve `{x}`.
+
+Um caminho de cardinalidade de lista é formatado **como lista** — `{witnesses:count}`
+vale, `{witnesses:formal}` não, mesmo que `formal` exista em `person`.
+
 ## 8. Os passos, e o que cada um pode e não pode fazer
 
 ```

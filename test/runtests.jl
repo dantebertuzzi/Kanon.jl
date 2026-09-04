@@ -12,4 +12,5 @@ include("helpers.jl")
     include("test_invariants.jl")
     include("test_types.jl")
     include("test_environment.jl")
+    include("test_analyze.jl")
 end

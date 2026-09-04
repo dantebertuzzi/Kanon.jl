@@ -41,7 +41,7 @@ Um código, uma vez publicado, nunca muda de significado (política de compatibi
     K11xx  plano de dados
     K12xx  plano do texto
     K13xx  plano das regras
-    K2xxx  referência   (F2)
+    K20xx  referência: caminhos, tipos e formatadores
     K3xxx  contrato     (F2)
     K4xxx  recurso      (F3)
 """
@@ -84,6 +84,17 @@ const CODE_TITLES = Dict{String,String}(
     "K1302" => "expressão malformada",
     "K1303" => "parêntese não fechado",
     "K1304" => "operador desconhecido",
+    # --- referência: caminhos e tipos ---
+    "K2001" => "campo não declarado",
+    "K2002" => "nome ambíguo",
+    "K2003" => "campo não existe no tipo",
+    "K2004" => "o valor não tem campos",
+    "K2005" => "tipo desconhecido neste ambiente",
+    "K2006" => "sujeito não declarado no contrato",
+    "K2007" => "sujeito sem campos",
+    "K2008" => "caminho atravessa uma lista",
+    # --- referência: formatadores ---
+    "K2020" => "formatador desconhecido",
 )
 
 function Diagnostic(code::AbstractString, category::Symbol, span::Span, file::AbstractString,
