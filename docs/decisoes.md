@@ -545,7 +545,18 @@ construção, e não por coincidência de implementação: não existe outro cam
 
 ## D-020 — A nulabilidade do sujeito atravessa o bloco inteiro
 
-*2026-09-04 · aceita · surgida ao implementar a F2.2*
+*2026-09-04 · aceita, **revista na F2.5** no mesmo dia · surgida ao implementar a F2.2*
+
+**Revisão (F2.5).** O refinamento previsto abaixo foi feito assim que `block_rule` e
+`block_foreach` passaram a existir. Um sujeito **não** propaga nulabilidade quando o
+bloco tem `one for each C` — a iteração entrega um elemento, nunca o nulo — ou quando o
+`when` do bloco afirma a presença do sujeito.
+
+O reconhecimento da afirmação é deliberadamente conservador: uma conjunção em que algum
+termo seja `C is present`, `C is not absent` ou `not (C is absent)`. Um `or` não garante;
+uma condição que implique a presença por caminho indireto também não. Dizer que garante
+quando não garante reabriria a lacuna que a F2.3 fechou; o custo de não reconhecer é um
+par de colchetes a mais, e o redator sempre pode escrevê-lo.
 
 **Decisão.** Um bloco cujo sujeito é um caminho nulável torna nulável **todo** caminho
 lido dentro dele pela via do sujeito. `: b <- buyer` com `buyer` opcional faz `{name}`

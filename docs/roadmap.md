@@ -8,7 +8,7 @@
 |---|---|---|
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
-| **F2** Validador | 🔨 em curso | **F2.1 a F2.4 concluídas**: protocolo de tipo, ambiente, `analyze`, teorema da lacuna, remissões |
+| **F2** Validador | 🔨 em curso | **F2.1 a F2.5 concluídas**: o modelo de aceite de `exemplos.md` §2.1 já analisa limpo |
 | F3 Renderizador | ⬜ | — |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
@@ -20,12 +20,12 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **577 testes**, ~11 s.
+Suíte: **659 testes**, ~11 s.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 577 testes, ~11 s
+julia --project=. -e 'using Pkg; Pkg.test()'     # 659 testes, ~11 s
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -45,7 +45,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/environment.jl` | `EnvironmentBuilder` → `Environment` congelado; conflitos de nome |
 | `src/core_types.jl` | `text`, `number`, `money`, `date`, `boolean`, `list` |
 | `src/analysis.jl` | `ResolvedPath`, `Analysis`, `Model` — as tabelas laterais |
-| `src/analyze.jl` | caminhos, formatadores, grupos e o teorema; `load_string` / `load_template` |
+| `src/analyze.jl` | caminhos, formatadores, grupos, remissões, regras; `load_string` / `load_template` |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -148,19 +148,24 @@ O que a fase absorveu de outras, e por quê:
 O núcleo passou a registrar o estilo `:section` — `unit = ':'`, `layout = :prefix`,
 `separator = ". "`, numerando `1`, `2`, `3.1` (§6.3 e §6.4).
 
-**F2.5 — Semântica das regras.** ⬅ **a próxima**
-Sem veracidade implícita: `when notes` é erro, escreve-se `when notes is present`.
-`one for each C` exige que `C` seja lista e que o cabeçalho declare `<- C` — o mesmo
-caminho. Comparação entre valor tipado e literal só se o tipo declarar `kanon_compare`.
-Atributos `present` e `absent` no núcleo; os demais das camadas.
+**F2.5 — Semântica das regras.** ✅ **concluída em 4 de setembro de 2026.**
+Sete códigos `K2040`–`K2047`. Sem veracidade implícita, `one for each` com a redundância
+`<- C` verificada, comparação só quando o tipo declara `kanon_compare`, e atributos
+resolvidos contra o tipo com `present`/`absent` valendo para todo campo.
 
-Já feito na F2.4: a ligação regra-bloco, D-002 e a resolução do elemento iterado.
+- **`can_compare` é `which`, não `hasmethod`.** O padrão de `kanon_compare` casa com
+  tudo, e `hasmethod` seria sempre verdadeiro; a pergunta certa é se o método escolhido
+  é o recuso genérico. Mesma técnica de `kanon_formats`, e pelo mesmo motivo.
+- **D-020 revisto**, como estava previsto: `one for each` e `when C is present` tornam o
+  sujeito presente por construção. O reconhecimento é conservador de propósito.
+- **`K2047` é aviso**, não erro: `is present` sobre campo garantido é tautologia e a
+  regra é decoração — mas um modelo em edição passa legitimamente por esse estado.
 
-**Não esquecer o refinamento de D-020**: agora que `block_rule` e `block_foreach`
-existem, um bloco preso por `when C is present` ou repetido por `one for each C` tem o
-sujeito presente por construção, e não deveria propagar nulabilidade.
+**O critério de aceite da F2 já passa na metade que não precisa de dados**: o modelo
+científico de `exemplos.md` §2.1 analisa limpo, e sem a camada `Science` é recusado
+nomeando o tipo `measure` e o marcador `@` que faltam (`test/test_acceptance.jl`).
 
-**F2.6 — `check(tmpl, dados)`.**
+**F2.6 — `check(tmpl, dados)`.** ⬅ **a próxima**
 Obrigatório ausente, tipo incompatível, cardinalidade violada, decodificação da entrada
 externa. **Texto em branco**: erro em campo obrigatório, normalizado para nulo em campo
 opcional com aviso listado (D-008). `nothing`, `missing`, `null` e chave ausente são o
@@ -267,6 +272,7 @@ de `KanonLegal`.
 |---|---|---|
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | O exemplo jurídico de `docs/exemplos.md` ainda não analisa | precisa da camada `pt` | F4 |
+| A camada `Science` de `test_acceptance.jl` é de mentira e vive na suíte | `test/` | vira pacote de verdade na F6 |
 | CLI não existe | — | depois da F3 |
 | Corpus golden ainda não é artefato versionado | `test/golden/` | F3 |
 | Sem CI, sem Aqua, sem Documenter | — | F10 |

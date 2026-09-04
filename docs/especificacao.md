@@ -631,7 +631,19 @@ demais atributos vêm das camadas.
 Comparação entre valor tipado e literal só é válida se o tipo declarar `comparar` para
 aquele literal. `price > 0` funciona porque `money` compara com número; `date >
 2026-01-01` funciona porque `date` compara com literal de data; `name > 3` é erro de
-validação.
+validação (`K2043`).
+
+**[precisões da F2.5]**
+
+- A exigência vale para os **seis** operadores, `==` e `!=` inclusive. Igualdade não é
+  um caso à parte: um tipo que não sabe se ordenar com outro também não sabe se comparar
+  com ele, e abrir exceção para `==` faria o redator descobrir a diferença por acidente.
+- A ordem dos operandos não importa: `0 < price` vale tanto quanto `price > 0`.
+- Comparar com `null` é erro (`K2044`), e não uma forma de testar ausência: ausência não
+  é valor. A mensagem manda escrever `is absent`.
+- `is present` sobre um campo que o contrato garante é **aviso** (`K2047`): a condição é
+  uma tautologia e a regra que depende dela nunca remove nada. Aviso, e não erro, porque
+  um modelo em edição passa legitimamente por esse estado.
 
 ### 8.2 Uma regra de cada espécie por bloco **[resposta à questão 15.2]**
 

@@ -109,6 +109,14 @@ const CODE_TITLES = Dict{String,String}(
     "K2036" => "regra nomeia bloco inexistente",
     "K2037" => "duas regras da mesma espécie para o mesmo bloco",
     "K2038" => "remissão a bloco não numerado",
+    # --- referência: semântica das regras ---
+    "K2040" => "condição que não é verdadeira nem falsa",
+    "K2041" => "atributo desconhecido no tipo",
+    "K2043" => "valores que não se comparam",
+    "K2044" => "comparação com nulo",
+    "K2045" => "one for each sobre um valor único",
+    "K2046" => "o cabeçalho do bloco não declara o sujeito repetido",
+    "K2047" => "condição sempre verdadeira ou sempre falsa",
     # --- referência: formatadores ---
     "K2020" => "formatador desconhecido",
 )

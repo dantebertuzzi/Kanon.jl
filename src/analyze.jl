@@ -715,6 +715,38 @@ function analyze_data!(ctx::AnalysisCtx)
     end
 end
 
+"""
+A regra `when` do bloco garante que este caminho está presente?
+
+Deliberadamente conservadora: reconhece uma conjunção de termos em que algum afirme a
+presença do caminho, e nada além disso. Um `or` não garante, e uma condição que implique
+a presença por caminho indireto também não — dizer que garante quando não garante
+reabriria a lacuna que a F2.3 fechou, e o custo de não reconhecer é apenas um par de
+colchetes a mais.
+"""
+function guaranteed_present(ctx::AnalysisCtx, pos::Int, p::Path)
+    isempty(ctx.out.block_rule) && return false
+    k = ctx.out.block_rule[pos]
+    k == 0 && return false
+    asserts_present(ctx.tmpl.rules.rules[k].when, p)
+end
+
+function asserts_present(e::Union{Nothing,RuleExpr}, p::Path)
+    e === nothing && return false
+    if e isa AttrExpr
+        e.subject.segments == p.segments || return false
+        e.attr === :present && return !e.negated
+        e.attr === :absent && return e.negated
+        return false
+    end
+    e isa NotExpr && return e.operand isa AttrExpr &&
+        e.operand.subject.segments == p.segments &&
+        e.operand.attr === :absent && !e.operand.negated
+    e isa BinExpr && e.op === :and &&
+        return asserts_present(e.lhs, p) || asserts_present(e.rhs, p)
+    return false
+end
+
 "Resolve o sujeito do cabeçalho e o guarda em `paths[bloco]` — nó nenhum o carrega (I2)."
 function analyze_subject!(ctx::AnalysisCtx, b::Block, pos::Int)
     ctx.subject = nothing
@@ -727,6 +759,12 @@ function analyze_subject!(ctx::AnalysisCtx, b::Block, pos::Int)
     b.subject === nothing && return nothing
 
     rp, f = resolve_in_contract(ctx, b.subject)
+    # D-020, refinado agora que `block_rule` existe: um bloco que só existe quando o
+    # sujeito está presente tem o sujeito presente por construção, e não precisa
+    # espalhar nulabilidade pelo texto inteiro.
+    if rp !== nothing && rp.nullable && guaranteed_present(ctx, pos, b.subject)
+        rp = ResolvedPath(rp.kind, rp.typename, false, rp.card, rp.decl)
+    end
     if rp === nothing
         if f !== SILENT && f !== nothing
             code = f.code == "K2001" ? "K2006" : f.code
@@ -786,6 +824,192 @@ function analyze_text!(ctx::AnalysisCtx)
     ctx.iterating = nothing
 end
 
+# --- semântica das regras ----------------------------------------------------
+
+"""
+O método padrão de `kanon_compare` — o que recusa. Serve para distinguir "este tipo
+declara comparação com aquele" de "caiu no recuso genérico": `hasmethod` sozinho é
+sempre verdadeiro, porque o padrão casa com tudo.
+
+Calculado na chamada, e não numa constante, porque uma camada carregada depois muda a
+resposta — e é exatamente isso que tem de acontecer.
+"""
+compare_fallback() = which(kanon_compare, Tuple{Any,Any})
+
+"O tipo declara como comparar um valor seu com um de `R`? (§8.1)"
+can_compare(L::Type, R::Type) = which(kanon_compare, Tuple{L,R}) !== compare_fallback()
+
+"Tipo Kanon e tipo Julia de um literal escrito no plano das regras."
+function literal_types(lit::Literal)
+    lit.kind === :constant && return (:date, Date)      # `today`
+    lit.kind === :null && return (:null, Nothing)
+    (lit.kind, typeof(lit.value))
+end
+
+"O nome de tipo efetivo de um caminho: `list` quando a cardinalidade é de lista."
+effective_typename(rp::ResolvedPath) = islist(rp.card) ? :list : rp.typename
+
+"""
+Verifica uma expressão de regra e devolve o nome do tipo do seu valor, `:boolean` para
+as que já são condições, ou `:?` quando o erro já foi dito e encadear outro só faria
+ruído.
+
+Não há veracidade implícita (§8.1): um caminho isolado só é condição se o tipo dele for
+`boolean`. `when notes` é erro, e a mensagem diz o que escrever no lugar.
+"""
+function check_expr!(ctx::AnalysisCtx, e::RuleExpr)
+    if e isa PathExpr
+        rp = resolve!(ctx, e.path, e.span)
+        rp === nothing && return :?
+        ctx.out.paths[id(e)] = rp
+        return effective_typename(rp)
+
+    elseif e isa LitExpr
+        return first(literal_types(e.lit))
+
+    elseif e isa NotExpr
+        require_boolean!(ctx, e.operand, check_expr!(ctx, e.operand))
+        return :boolean
+
+    elseif e isa AttrExpr
+        rp = resolve!(ctx, e.subject, e.span)
+        rp === nothing && return :?
+        ctx.out.paths[id(e)] = rp
+        check_attribute!(ctx, e, rp)
+        return :boolean
+
+    elseif e isa BinExpr
+        if e.op === :and || e.op === :or
+            require_boolean!(ctx, e.lhs, check_expr!(ctx, e.lhs))
+            require_boolean!(ctx, e.rhs, check_expr!(ctx, e.rhs))
+        else
+            check_comparison!(ctx, e)
+        end
+        return :boolean
+    end
+    return :?
+end
+
+"""
+Uma condição tem de ser verdadeira ou falsa. Este é o ponto em que a linguagem recusa a
+veracidade implícita — a conveniência que faria `when notes` significar "quando houver
+notas" em um leitor e "quando notas for verdadeiro" em outro.
+"""
+function require_boolean!(ctx::AnalysisCtx, e::RuleExpr, tn::Symbol)
+    (tn === :boolean || tn === :?) && return nothing
+    hint = tn === :null ?
+        "Para testar ausência, escreva `is absent`." :
+        "Escreva `is present`, `is absent`, uma comparação, ou um atributo do tipo — " *
+        "a linguagem não tem veracidade implícita."
+    err!(ctx, "K2040", span(e),
+         "esta condição é do tipo `$tn`, e uma condição precisa ser verdadeira ou falsa.";
+         hint)
+    return nothing
+end
+
+"`present` e `absent` valem para todo campo; os demais atributos vêm do tipo."
+function check_attribute!(ctx::AnalysisCtx, e::AttrExpr, rp::ResolvedPath)
+    if e.attr in UNIVERSAL_ATTRIBUTES
+        # Um campo que o contrato garante torna `is present` uma tautologia, e a regra
+        # que depende dela, decoração. Aviso, não erro: pode ser um modelo em edição.
+        rp.nullable && return nothing
+        sempre = (e.attr === :present) != e.negated
+        err!(ctx, "K2047", e.span,
+             "`$(string(e.subject))` é um valor que o contrato sempre garante, " *
+             "e por isso esta condição é sempre $(sempre ? "verdadeira" : "falsa").";
+             hint = sempre ? "A regra não remove o bloco nunca; ela pode sair." :
+                             "A regra remove o bloco sempre; ou o bloco, ou a regra, sobra.",
+             severity = :warning, path = string(e.subject))
+        return nothing
+    end
+
+    tn = effective_typename(rp)
+    T = typefor(ctx.env, tn)
+    T === nothing && return nothing
+    attrs = kanon_attributes(T)
+    e.attr in attrs && return nothing
+
+    todos = sort!(collect(Symbol, (attrs..., UNIVERSAL_ATTRIBUTES...)))
+    err!(ctx, "K2041", e.span,
+         "`$tn` não tem o atributo `$(e.attr)`.";
+         hint = did_you_mean(e.attr, todos, "Atributos de `$tn`: $(join(todos, ", "))."),
+         path = string(e.subject))
+    return nothing
+end
+
+"""
+Comparar exige que o tipo diga como (§8.1): `price > 0` vale porque `money` compara com
+número, e `name > 3` não vale porque `text` não compara com número.
+
+Sem essa exigência, comparar seria uma promessa que o núcleo não tem como cumprir — e a
+falha apareceria no render, com dados, que é tarde demais.
+"""
+function check_comparison!(ctx::AnalysisCtx, e::BinExpr)
+    lt = check_expr!(ctx, e.lhs)
+    rt = check_expr!(ctx, e.rhs)
+    (lt === :? || rt === :?) && return nothing
+
+    if lt === :null || rt === :null
+        outro = lt === :null ? string_of(e.rhs) : string_of(e.lhs)
+        err!(ctx, "K2044", e.span,
+             "não se compara um valor com `null`.";
+             hint = "Ausência não é um valor: escreva `$outro is absent` ou " *
+                    "`$outro is present`.")
+        return nothing
+    end
+
+    L, R = typefor(ctx.env, lt), typefor(ctx.env, rt)
+    (L === nothing || R === nothing) && return nothing
+    (can_compare(L, R) || can_compare(R, L)) && return nothing
+
+    err!(ctx, "K2043", e.span,
+         "`$lt` e `$rt` não se comparam.";
+         hint = "O tipo é quem declara com o que se compara. `$lt` não declara " *
+                "comparação com `$rt`.")
+    return nothing
+end
+
+"O texto de um operando, para a mensagem. Vazio quando não é um caminho."
+string_of(e::RuleExpr) = e isa PathExpr ? string(e.path) : "o valor"
+
+"""
+`bloco one for each C` exige que `C` seja lista e que o cabeçalho declare `<- C` — o
+mesmo caminho (§8.3).
+
+A redundância é deliberada, e verificá-la é o que a torna útil: o plano do texto precisa
+ser legível sozinho, e `<- seller` é o que diz ao leitor de `{name}` o que `name` é.
+"""
+function check_foreach!(ctx::AnalysisCtx, r::Rule, pos::Int)
+    rp = resolve!(ctx, r.foreach, r.span)
+    rp === nothing && return nothing
+    ctx.out.paths[id(r)] = rp
+
+    if !islist(rp.card)
+        err!(ctx, "K2045", r.span,
+             "`$(string(r.foreach))` é um valor único, do tipo `$(rp.typename)`, e " *
+             "`one for each` repete sobre uma coleção.";
+             hint = "Declare o campo com cardinalidade — `$(string(r.foreach)) : " *
+                    "$(rp.typename)[]` — ou remova a regra.",
+             path = string(r.foreach))
+        return nothing
+    end
+
+    b = ctx.tmpl.text.blocks[pos]
+    if b.subject === nothing
+        err!(ctx, "K2046", b.span,
+             "o bloco `$(b.name)` se repete sobre `$(string(r.foreach))`, e o cabeçalho " *
+             "dele não declara o sujeito.";
+             hint = "Escreva `$(repeat(b.unit, b.repeat)) $(b.name) <- " *
+                    "$(string(r.foreach))`: o plano do texto precisa ser legível sozinho.")
+    elseif b.subject.segments != r.foreach.segments
+        err!(ctx, "K2046", b.span,
+             "o bloco `$(b.name)` declara o sujeito `$(string(b.subject))` e a regra o " *
+             "repete sobre `$(string(r.foreach))`.";
+             hint = "Os dois caminhos têm de ser o mesmo.")
+    end
+    return nothing
+end
+
 """
 Resolve os caminhos do plano das regras. Regra não tem sujeito: ela nomeia o bloco de
 fora, e seus caminhos são do contrato.
@@ -796,30 +1020,24 @@ each` sobre lista — é a F2.5. Aqui só se resolve o que os caminhos apontam.
 function analyze_rule_paths!(ctx::AnalysisCtx)
     ctx.subject = nothing
     ctx.subject_path = nothing
-    ctx.iterating = nothing
-    for r in ctx.tmpl.rules.rules
-        r.when === nothing || analyze_expr!(ctx, r.when)
-        if r.foreach !== nothing
-            rp = resolve!(ctx, r.foreach, r.span)
-            rp === nothing || (ctx.out.paths[id(r)] = rp)
-        end
-    end
-end
 
-function analyze_expr!(ctx::AnalysisCtx, e::RuleExpr)
-    if e isa PathExpr
-        rp = resolve!(ctx, e.path, e.span)
-        rp === nothing || (ctx.out.paths[id(e)] = rp)
-    elseif e isa AttrExpr
-        rp = resolve!(ctx, e.subject, e.span)
-        rp === nothing || (ctx.out.paths[id(e)] = rp)
-    elseif e isa NotExpr
-        analyze_expr!(ctx, e.operand)
-    elseif e isa BinExpr
-        analyze_expr!(ctx, e.lhs)
-        analyze_expr!(ctx, e.rhs)
+    for r in ctx.tmpl.rules.rules
+        pos = blockpos(ctx, r.block)
+
+        # `one for each` sempre vê a coleção: é ela que ele repete.
+        ctx.iterating = nothing
+        r.foreach === nothing || pos === nothing || check_foreach!(ctx, r, pos)
+
+        # O `when` de um bloco repetido é avaliado POR ITERAÇÃO, e o caminho denota o
+        # elemento corrente (§8.3): `grantor when seller is not minor` lê-se "um bloco
+        # por vendedor, exceto os menores".
+        ctx.iterating = nothing
+        if pos !== nothing && !isempty(ctx.out.block_foreach) && ctx.out.block_foreach[pos] != 0
+            ctx.iterating = ctx.tmpl.rules.rules[ctx.out.block_foreach[pos]].foreach
+        end
+        r.when === nothing || require_boolean!(ctx, r.when, check_expr!(ctx, r.when))
     end
-    return nothing
+    ctx.iterating = nothing
 end
 
 """
