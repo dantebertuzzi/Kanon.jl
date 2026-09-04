@@ -25,7 +25,7 @@ Suíte: **335 testes**, ~7 s.
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 199 testes, ~6 s
+julia --project=. -e 'using Pkg; Pkg.test()'     # 335 testes, ~7 s
 julia --project=. -e 'using Kanon; parse_file("modelo.kanon")'
 ```
 
@@ -45,12 +45,12 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/environment.jl` | `EnvironmentBuilder` → `Environment` congelado; conflitos de nome |
 | `src/core_types.jl` | `text`, `number`, `money`, `date`, `boolean`, `list` |
 
-Leituras obrigatórias antes de escrever a F2: `docs/especificacao.md` §3 (sistema de
+Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
 
 ---
 
-## F2 — Validador (a próxima)
+## F2 — Validador (em curso)
 
 **Objetivo.** Tudo que é verificável **sem dados** (erros de referência, `K2xxx`) e a
 validação dos dados contra o contrato (erros de contrato, `K3xxx`), acumulados e no
