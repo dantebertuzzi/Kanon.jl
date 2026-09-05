@@ -880,9 +880,16 @@ function analyze_data!(ctx::AnalysisCtx)
         typefor(ctx.env, f.type) === nothing || continue
         push!(ctx.poisoned, f.name)
         names = typenames(ctx.env)
+        # Quando nenhum nome conhecido se parece com o escrito, a causa provável não é
+        # digitação: é uma camada que não foi carregada. Sem isso a dica era uma lista de
+        # nomes sem nenhuma indicação do que fazer, e a §10.4 manda sugerir a correção
+        # provável quando há uma.
+        lista = "Tipos disponíveis: $(join(names, ", "))."
+        falta = "Se `$(f.type)` vem de uma camada, carregue-a e passe-a em " *
+                "`domains = [...]`. " * lista
         err!(ctx, "K2005", f.span,
              "`$(f.name)` é declarado do tipo `$(f.type)`, que este ambiente não conhece.";
-             hint = did_you_mean(f.type, names, "Tipos disponíveis: $(join(names, ", "))."),
+             hint = did_you_mean(f.type, names, falta),
              path = String(f.name))
     end
 end

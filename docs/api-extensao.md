@@ -309,3 +309,17 @@ alcançar uma mensagem de erro é ordenada, por I4:
 
 O contexto que os formatadores recebem é `FormatContext(env, today)`, e nada mais.
 `today` é injetado, nunca lido do relógio.
+
+**Formatar número, de dentro de um tipo composto** (D-041). A §3.3 da especificação manda
+o tipo obter os separadores do contexto e nunca embuti-los, e são **dois** — o decimal e o
+de milhar. Aplicá-los não é trabalho da camada:
+
+```julia
+Kanon.fixed_number(v, casas, ctx)   # com um número fixo de casas decimais
+Kanon.plain_number(v, ctx)          # na forma natural, sem casas quando é inteiro
+```
+
+São as mesmas funções que o `number` e o `money` do núcleo usam. Uma camada que refizer o
+agrupamento à mão vai divergir do núcleo no primeiro documento que escrever o mesmo número
+das duas maneiras — foi o que aconteceu com `measure`, e é por isso que estas funções
+passaram a ser públicas.

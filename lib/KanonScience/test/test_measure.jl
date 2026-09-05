@@ -76,6 +76,30 @@
         @test kanon_getfield(Measure(1.0, 0.1, "m"), Val(:unit)) == "m"
     end
 
+    @testset "os separadores são DOIS, e os dois vêm do ambiente (D-041)" begin
+        # Descoberto ao escrever o modelo real nº 5: a mesma área saía `41.250` como
+        # `number` do núcleo e `41250,0` como `measure`, duas linhas depois, no mesmo
+        # laudo. A camada trocava o separador decimal à mão e nunca agrupava os milhares.
+        #
+        # A §3.3 diz "separadores" no plural e cita `measure` pelo nome. O que faltava era
+        # uma função do núcleo que os **aplicasse** — sem ela, cada camada reimplementa o
+        # agrupamento, e a primeira a fazê-lo esqueceu metade.
+        pt = FormatContext(Environment(locale = :pt, domains = [KanonScience]))
+        @test Kanon.format(Measure(41250.0, 0.8, "m²"), Val(:default), pt) ==
+              "41.250,0 ± 0,8 m²"
+        @test Kanon.format(Measure(1200.0, 30.0, "kg"), Val(:default), pt) ==
+              "1.200 ± 30 kg"
+
+        # e o mesmo valor, como `number` do núcleo, sai igual — que é o ponto
+        @test Kanon.format(41250, Val(:default), pt) == "41.250"
+
+        @testset "sem idioma, o núcleo não agrupa nem troca vírgula" begin
+            @test Kanon.format(Measure(41250.0, 0.8, "m²"), Val(:default), ctx) ==
+                  "41250.0 ± 0.8 m²"
+            @test Kanon.format(41250, Val(:default), ctx) == "41250"
+        end
+    end
+
     @testset "o separador decimal é do idioma, e este pacote não tem idioma" begin
         # o mesmo `Measure`, num ambiente com locale, sai com vírgula — sem que este
         # pacote saiba o que é uma vírgula decimal

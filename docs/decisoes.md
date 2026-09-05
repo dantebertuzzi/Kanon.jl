@@ -1313,3 +1313,66 @@ que agora passam antes erravam.
 em português não é o singular mais um sufixo — `concluiu` ⟶ `concluíram` muda o radical —,
 e a marca só sufixa (D-013). A frase se escreve com particípios e adjetivos, que sufixam,
 ou o autor escreve `concluiu((ram))` e deixa a forma dupla, como o documento em papel faz.
+
+---
+
+## D-041 — Os separadores são dois, e aplicá-los é do núcleo
+
+*2026-09-05 · aceita · surgida ao escrever o modelo real nº 5*
+
+**O defeito, visto no documento.** Um laudo de avaliação escreve a mesma área duas vezes:
+uma como `number` do núcleo, vinda do registro do imóvel, e outra como `measure`, vinda da
+medição. Saíam assim, com duas linhas de distância:
+
+```
+... com área registrada de 41.250 metros quadrados.
+1. Área do terreno: 41250,0 ± 0,8 m².
+```
+
+`KanonScience.localized` trocava o separador **decimal** à mão e nunca agrupava os
+milhares. Num laudo, dois formatos para o mesmo número é a espécie de coisa que se
+contesta.
+
+**A causa é da API, e não da camada.** A §3.3 diz, com `measure` citado pelo nome: *"Um
+tipo composto que formate números obtém os separadores do contexto, nunca os embute."*
+**Separadores, no plural.** A API dava `decimal_separator(ctx)` e `group_separator(ctx)` —
+duas cadeias — e **nenhuma função que os aplicasse**. Cada camada que formata número
+reimplementa o agrupamento, e a primeira que o fez esqueceu metade dele.
+
+**Decisão.** `fixed_number(v, digits, ctx)` e `plain_number(v, ctx)` passam a ser parte da
+API de extensão, exportados e documentados. São os mesmos que o `number` e o `money` do
+núcleo usam, e agora o `measure` usa. `KanonScience` perdeu a dependência de `Printf` no
+caminho.
+
+**Alternativas.** (a) Corrigir só o `KanonScience`. (b) Exportar a função (escolhida).
+
+**Por quê.** Contra (a): deixa a armadilha armada para a próxima camada, e a próxima
+camada é escrita por alguém de fora — que é o público que a `api-extensao.md` existe para
+servir. Um contrato que manda fazer uma coisa e não dá a ferramenta para fazê-la está
+convidando cada implementador a errar por conta própria.
+
+**Por que nenhum teste pegou.** É o mesmo padrão dos cinco anteriores, pela quinta vez: a
+suíte do `measure` roda **sem idioma**, onde não há separador nenhum a aplicar; a suíte em
+português nunca tinha usado um `measure`. **A interseção de duas coisas testadas
+separadamente.**
+
+---
+
+## D-042 — Tipo desconhecido sugere a camada, e não só a lista
+
+*2026-09-05 · aceita · surgida ao escrever o modelo real nº 5*
+
+**A observação.** `K2005` dizia *"`area` é declarado do tipo `measure`, que este ambiente
+não conhece"* e sugeria: *"Tipos disponíveis: boolean, booleano, data, date, dinheiro,
+imovel, …"*. Uma lista de quinze nomes e nenhuma indicação do que fazer.
+
+A sugestão por distância de edição é certa para um erro de digitação. Mas quando **nenhum
+nome conhecido se parece com o escrito**, a causa provável não é digitação — é uma camada
+que não foi carregada, que neste projeto é a razão mais comum de um tipo não existir.
+
+**Decisão.** Quando não há nome próximo, a dica diz primeiro que o tipo pode vir de uma
+camada e como carregá-la, e só então lista o que existe. A §10.4 manda sugerir a correção
+provável quando há uma, e havia.
+
+**O que não muda.** Com um nome próximo, o *"Você quis dizer `X`?"* continua vindo antes
+de tudo: para um erro de digitação, a camada é ruído.

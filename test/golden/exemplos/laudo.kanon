@@ -1,0 +1,69 @@
+kanon 1 pt
+
+# Laudo de avaliação de imóvel — o documento que precisa de **dois domínios ao mesmo
+# tempo**: o instrumento é jurídico e as medidas são de engenharia.
+#
+# `KanonLegal` traz `pessoa`, `parte`, `imovel` e o marcador `§`; `KanonScience` traz
+# `measure`, o valor com incerteza. Nenhum dos dois sabe da existência do outro, e este
+# arquivo é o primeiro lugar onde os dois se encontram.
+#
+# Duas coisas que só aparecem aqui:
+#
+#   1. **Dois estilos de numeração no mesmo documento.** As cláusulas correm por `§` e os
+#      itens medidos correm por `:`, e cada estilo tem a sua própria família de contadores
+#      (§6.2). A CLÁUSULA TERCEIRA e o item 1 são vizinhos e não se atrapalham.
+#   2. **Nulabilidade que atravessa o tipo composto.** `imovel.area` e
+#      `requerente.representante` são opcionais **dentro** do tipo, e por isso exigem
+#      grupo mesmo com `imovel` e `requerente` obrigatórios (§3.1, D-023).
+
+dados
+  perito      : pessoa   !
+  requerente  : parte    !
+  imovel      : imovel   !
+  area        : measure  !
+  frente      : measure  !
+  unitario    : dinheiro !
+  valor       : dinheiro !
+  metodo      : texto    !
+  vistoria    : data     !
+  ressalva    : texto
+  data        : data     = hoje
+
+texto
+
+: preambulo <- perito
+{nome}, {estado_civil}, portador(a) do CPF {cpf}, engenheiro(a) avaliador(a), nomeado(a) para avaliar o imóvel adiante descrito, apresenta o presente laudo.
+
+: requerido <- requerente
+Requerente: {nome}, inscrito(a) sob o nº {documento}, com endereço em {endereco}[, neste ato representado(a) por {representante}].
+
+§§ objeto
+Constitui objeto deste laudo o imóvel {imovel:descricao}, matriculado sob o nº {imovel.matricula}[, com área registrada de {imovel.area} metros quadrados].
+
+§§ vistoria
+A vistoria foi realizada em {vistoria:corrente}, quando se mediram as dimensões do terreno e se verificou o estado de conservação das benfeitorias.
+
+:: medida_area
+Área do terreno: {area}.
+
+:: medida_frente
+Testada para a via pública: {frente}.
+
+§§ metodo
+A avaliação seguiu o {metodo}, e o valor unitário adotado foi de {unitario} por metro quadrado.
+
+§§ valor
+O valor de mercado do imóvel, na data da vistoria, é de {valor} ({valor:extenso}).
+
+§§ rural
+Por se tratar de imóvel rural, a avaliação observou também a aptidão agrícola das terras e a existência de benfeitorias reprodutivas.
+
+§§ ressalva
+Este laudo é apresentado com a seguinte ressalva: {ressalva}.
+
+: fecho
+É o que apresenta o signatário, na forma da {::valor}, em {data:corrente}.
+
+regras
+  rural     quando imovel é rural
+  ressalva  quando ressalva é presente

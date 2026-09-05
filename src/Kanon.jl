@@ -64,6 +64,7 @@ export kanon_attribute, kanon_attributes, kanon_decode, kanon_compare
 export kanon_getfield, kanon_format_locale
 export format
 export Money, NumberValue
+export fixed_number, plain_number, decimal_separator, group_separator
 
 # --- ambiente ---
 export Environment, EnvironmentBuilder, FormatContext, BlockStyle

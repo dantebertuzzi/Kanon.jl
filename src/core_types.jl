@@ -82,7 +82,17 @@ function assemble_number(neg::Bool, int::AbstractString, frac::AbstractString, c
     String(take!(io))
 end
 
-"Número com um número fixo de casas decimais."
+"""
+    fixed_number(v, digits, ctx) -> String
+
+Um número com um número fixo de casas decimais, escrito **na convenção do ambiente**:
+separador decimal e separador de milhar vêm do contexto, e não do tipo (§3.3).
+
+É parte da API de extensão, e não detalhe do núcleo. A §3.3 manda um tipo composto que
+formate números — `measure` é o exemplo que ela dá — obter os separadores do contexto e
+nunca embuti-los; sem uma função que os **aplique**, cada camada reimplementa o
+agrupamento, e a primeira que o fez esqueceu metade dele (D-041).
+"""
 function fixed_number(v::Real, digits::Integer, ctx)
     neg, int, frac = scaled_digits(v, digits)
     assemble_number(neg, int, frac, ctx)

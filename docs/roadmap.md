@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.030 testes** ao todo — 1.456 no núcleo (~50 s com Aqua), 222 em `Extenso`,
-119 em `KanonLegal`, 93 em `KanonScience`, 140 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.066 testes** ao todo — 1.456 no núcleo (~50 s com Aqua), 222 em `Extenso`,
+150 em `KanonLegal`, 98 em `KanonScience`, 140 em `KanonLSP`. CI em Linux, macOS e
 Windows.
 
 ---
@@ -35,15 +35,16 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existem **quatro** modelos reais no repositório, em `test/golden/exemplos/`:
-`escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído) e
-`certificado.kanon` (emitido um por linha de planilha). O portão para a 1.0 pede quinze.
+Existem **cinco** modelos reais no repositório, em `test/golden/exemplos/`:
+`escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
+`certificado.kanon` (um por linha de planilha) e `laudo.kanon` (dois domínios ao mesmo
+tempo). O portão para a 1.0 pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos onze que faltam vai cobrar alguma coisa — como os quatro primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os três últimos mediram isso:
-escritos com o motor pronto e a suíte verde, produziram **seis defeitos e uma questão
-aberta de versão**.
+dos dez que faltam vai cobrar alguma coisa — como os cinco primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os quatro últimos mediram
+isso: escritos com o motor pronto e a suíte verde, produziram **oito defeitos e uma
+questão aberta de versão**.
 
 | | O que apareceu | Modelo |
 |---|---|---|
@@ -54,6 +55,8 @@ aberta de versão**.
 | — | **e um limite do idioma, que não é defeito**: a marca só sufixa, e o plural de um verbo em português muda o radical. `concluiu(ram)` não existe; a frase se escreve com particípios | certificado |
 | **D-035** | todo diagnóstico sobre algo vindo de fragmento nomeava o **hospedeiro**, com a linha do **fragmento**: um ponteiro para uma linha que muitas vezes nem existe no arquivo apontado | relatório |
 | **D-040** | `K2007` recusava sujeito sem campos, e com isso a **flexão de número era inalcançável** para qualquer modelo sem camada de domínio — metade do que `Extenso` faz, e ele se anuncia como publicável sozinho | certificado |
+| **D-041** | o mesmo número saía `41.250` como `number` e `41250,0` como `measure`, **duas linhas depois, no mesmo laudo**: a API mandava a camada pegar os separadores do contexto e não dava função para aplicá-los | laudo |
+| **D-042** | tipo desconhecido despejava quinze nomes e não dizia que a causa provável é uma camada não carregada | laudo |
 
 **O padrão nos seis vale mais que os seis: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
@@ -62,7 +65,8 @@ nomes já são canônicos; toda a suíte de regras, contrato e `ask` estava em i
 PDG era testada com incertezas que a potência de dez divide exato. A suíte da inclusão
 verificava que o fragmento **compõe**, e nenhum teste tinha um fragmento com um erro
 dentro. `Extenso.numero` sobre um vetor era testado direto, e nenhum modelo podia
-alcançá-lo.
+alcançá-lo. A suíte do `measure` roda sem idioma, onde não há separador a aplicar, e a
+suíte em português nunca tinha usado um `measure`.
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -70,7 +74,7 @@ modelo nº 3 foi escolhido justamente por atravessar três interseções vazias 
 um modelo em arquivo, com fragmento incluído, na camada científica, emitido também em
 Markdown.
 
-O que procurar em cada um dos onze que faltam:
+O que procurar em cada um dos dez que faltam:
 
 - Uma construção que a gramática não expressa, ou expressa mal.
 - Uma mensagem de erro que não diz o que fazer.
@@ -153,7 +157,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento) e `certificado` (por linha de planilha), cada um com a saída exigida ao lado |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha) e `laudo` (dois domínios), cada um com a saída exigida ao lado |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída e o escape do valor interpolado |
@@ -661,15 +665,15 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **4 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **5 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
-contradizer a D-013 que veio depois dele. A locação, o relatório e o certificado, escritos
-com o motor já pronto e a suíte verde, cobraram mais seis (D-031 a D-035 e D-040) — **a
-taxa de descoberta não caiu quando o código ficou bom.**
+contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado e o laudo,
+escritos com o motor já pronto e a suíte verde, cobraram mais oito (D-031 a D-035 e D-040
+a D-042) — **a taxa de descoberta não caiu quando o código ficou bom.**
 
 ### O que a implementação já mudou na especificação
 
-Vinte e duas decisões saíram de escrever o código, e onze delas fecharam buracos que
+Vinte e quatro decisões saíram de escrever o código, e doze delas fecharam buracos que
 nenhuma releitura teria encontrado — o texto era internamente coerente em todos os casos:
 
 | | O que estava errado |
@@ -685,8 +689,9 @@ nenhuma releitura teria encontrado — o texto era internamente coerente em todo
 | **D-035** | a §10.2 promete arquivo, linha e coluna, e o arquivo estava errado sempre que havia mais de um |
 | **D-037** | o trecho de um nó devia conter o dos filhos, e não continha — óbvio demais para estar escrito |
 | **D-040** | a §4.2 e a §7.1 davam dois ofícios ao sujeito, e a checagem foi escrita para um só |
+| **D-041** | a §3.3 mandava a camada obter os separadores do contexto, e a API não dava função para aplicá-los |
 
-Se onze modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
+Se dez modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.
 
 **O método, fixado pelo segundo modelo e confirmado pelo terceiro.** Escreva o modelo

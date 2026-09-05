@@ -16,7 +16,6 @@ si — quem decide os algarismos é o formatador, com os dois números em mãos.
 """
 module KanonScience
 
-using Printf
 using Kanon
 
 export Measure
@@ -91,12 +90,15 @@ function decimal_lead(u::Float64)
     (digitos[k] - '0', (ponto - 1) - k + e10)
 end
 
-"O separador decimal é do idioma, nunca do tipo (§3.3): ele vem do contexto."
-function localized(x::Float64, d::Int, ctx)
-    s = @sprintf("%.*f", d, x)
-    sep = Kanon.decimal_separator(ctx)
-    sep == "." ? s : replace(s, "." => sep)
-end
+"""
+Os separadores são do idioma, nunca do tipo (§3.3), e são **dois**: o decimal e o de
+milhar. `fixed_number` aplica os dois, e é do núcleo — esta camada não os reimplementa.
+
+A primeira versão trocava só o decimal, à mão. O efeito passou despercebido até um laudo
+de avaliação escrever a mesma área duas vezes, uma como `number` do núcleo e outra como
+`measure`, e sair `41.250` numa linha e `41250,0` na seguinte (D-041).
+"""
+localized(x::Float64, d::Int, ctx) = Kanon.fixed_number(x, d, ctx)
 
 function format_measure(v::Measure, ctx)
     d = decimals_for(v.uncertainty)

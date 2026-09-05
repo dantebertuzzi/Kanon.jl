@@ -52,15 +52,20 @@ jobs:
         run: |
           julia --project=lib/KanonLegal -e '
             using Pkg
-            Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso")])
+            Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso"),
+                         PackageSpec(path="lib/KanonScience")])
             Pkg.instantiate()'
           julia --project=lib/KanonLegal lib/KanonLegal/test/runtests.jl
         shell: bash
 
+      # `Extenso` entra só para a suíte: o pacote não depende dele, e é o teste dos
+      # separadores que precisa de um ambiente com idioma para haver o que separar.
       - name: KanonScience
         run: |
           julia --project=lib/KanonScience -e '
-            using Pkg; Pkg.develop([PackageSpec(path=".")]); Pkg.instantiate()'
+            using Pkg
+            Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso")])
+            Pkg.instantiate()'
           julia --project=lib/KanonScience lib/KanonScience/test/runtests.jl
         shell: bash
 
