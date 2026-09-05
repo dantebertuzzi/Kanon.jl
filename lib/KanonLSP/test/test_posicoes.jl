@@ -52,3 +52,41 @@ using KanonLSP: to_lsp, to_kanon, utf16_units, linhas_de
     end
 end
 
+
+# --- URI de arquivo ----------------------------------------------------------
+#
+# A conversão pura é testada com um caminho do Windows **numa máquina que não é
+# Windows** — que é exatamente onde ela quebrou. A versão anterior escapava a barra
+# invertida e os dois-pontos, produzindo `file://D%3A%5Ca%5C…`, que não é URI de arquivo
+# em lugar nenhum. Nenhum teste olhava, porque todos rodavam onde o caminho é POSIX.
+
+using KanonLSP: uri_from_abspath, path_of, is_windows_path
+
+@testset "URI de arquivo: a ida e a volta, nas duas famílias de caminho" begin
+    @testset "POSIX" begin
+        @test uri_from_abspath("/tmp/x.kanon") == "file:///tmp/x.kanon"
+        @test path_of("file:///tmp/x.kanon") == "/tmp/x.kanon"
+        @test !is_windows_path("/tmp/x.kanon")
+    end
+
+    @testset "Windows: barras invertidas viram barras, e a unidade ganha a terceira" begin
+        @test uri_from_abspath("D:\\a\\Kanon.jl\\x.kanon") ==
+              "file:///D:/a/Kanon.jl/x.kanon"
+        @test path_of("file:///D:/a/Kanon.jl/x.kanon") == "D:\\a\\Kanon.jl\\x.kanon"
+        @test is_windows_path("/D:/a/x.kanon")
+
+        # e o cliente que escapa os dois-pontos — o VS Code faz isso — também volta
+        @test path_of("file:///D%3A/a/x.kanon") == "D:\\a\\x.kanon"
+    end
+
+    @testset "espaço e acento se escapam, e voltam intactos" begin
+        for p in ("/tmp/a b/x.kanon", "/tmp/seção/ç.kanon", "/tmp/x(1).kanon")
+            @test path_of(uri_from_abspath(p)) == p
+        end
+    end
+
+    @testset "o que não é `file:` não tem caminho" begin
+        @test path_of("untitled:Untitled-1") == ""
+        @test path_of("https://exemplo/x.kanon") == ""
+    end
+end

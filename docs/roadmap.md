@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.072 testes** ao todo — 1.462 no núcleo (~50 s com Aqua), 222 em `Extenso`,
-150 em `KanonLegal`, 98 em `KanonScience`, 140 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.084 testes** ao todo — 1.462 no núcleo (~50 s com Aqua), 222 em `Extenso`,
+150 em `KanonLegal`, 98 em `KanonScience`, 152 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---

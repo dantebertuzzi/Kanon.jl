@@ -72,14 +72,23 @@ Server(io_in::IO, io_out::IO, env::Kanon.Environment = Kanon.Environment()) =
 
 O caminho de um `file:` URI, com os `%XX` desfeitos. Cadeia vazia para qualquer outro
 esquema.
+
+No Windows o URI é `file:///D:/a/x.kanon`, e a barra que abre o caminho **não** faz parte
+dele: `/D:/a` é `D:\a`. Sem essa distinção o servidor procura um arquivo que não existe,
+e o editor recebe diagnóstico de arquivo nenhum.
 """
 function path_of(uri::AbstractString)
     startswith(uri, "file://") || return ""
     resto = uri[8:end]
     i = findfirst('/', resto)
     i === nothing && return ""
-    unescape_uri(resto[i:end])
+    caminho = unescape_uri(resto[i:end])
+    is_windows_path(caminho) ? replace(caminho[2:end], '/' => '\\') : caminho
 end
+
+"`/D:/a/x` — a forma que um URI dá a um caminho com letra de unidade."
+is_windows_path(p::AbstractString) =
+    length(p) >= 3 && p[1] == '/' && isletter(p[2]) && p[3] == ':'
 
 function unescape_uri(s::AbstractString)
     io = IOBuffer()
@@ -98,15 +107,44 @@ function unescape_uri(s::AbstractString)
     String(take!(io))
 end
 
-"O `file:` URI de um caminho absoluto. Só os caracteres que a RFC 3986 exige são escapados."
+"""
+    uri_of(path) -> String
+
+O `file:` URI de um caminho. Só os caracteres que a RFC 3986 exige são escapados.
+
+**Resolve o link simbólico quando o arquivo existe**, e não é detalhe: o carregador de
+fragmentos guarda `realpath` (§11.2, o link que aponta para fora da raiz), e num macOS
+`mktempdir()` devolve `/var/folders/…` enquanto o `realpath` é `/private/var/folders/…`.
+Sem a normalização, o diagnóstico de um fragmento seria publicado num URI que o editor
+não reconhece, e o problema simplesmente não apareceria.
+"""
 function uri_of(path::AbstractString)
     p = abspath(String(path))
+    p = try; realpath(p); catch; p; end
+    uri_from_abspath(p)
+end
+
+"""
+    uri_from_abspath(p) -> String
+
+A conversão pura, separada de `uri_of` para poder ser testada com um caminho do Windows
+numa máquina que não é Windows — que é onde ela quebrou, e onde nenhum teste a olhava.
+
+`D:\\a\\x.kanon` vira `file:///D:/a/x.kanon`: barras invertidas viram barras, e a letra
+de unidade ganha a terceira barra. Os dois-pontos da unidade ficam literais, que é a
+forma que todo cliente aceita.
+"""
+function uri_from_abspath(p::AbstractString)
+    unidade = length(p) >= 2 && isletter(p[1]) && p[2] == ':'
+    corpo = replace(String(p), '\\' => '/')
+    unidade && (corpo = "/" * corpo)
+
     io = IOBuffer()
     print(io, "file://")
-    for b in codeunits(p)
+    for (i, b) in enumerate(codeunits(corpo))
         c = Char(b)
         if c == '/' || 'a' <= c <= 'z' || 'A' <= c <= 'Z' || '0' <= c <= '9' ||
-           c in ('-', '.', '_', '~')
+           c in ('-', '.', '_', '~') || (unidade && c == ':' && i == 3)
             print(io, c)
         else
             print(io, '%', uppercase(string(b; base = 16, pad = 2)))
@@ -138,9 +176,20 @@ function set_text!(s::Server, d::Document, texto::AbstractString, version::Integ
     reanalyze!(s, d)
 end
 
+"""
+O caminho de um documento, normalizado como o carregador normaliza — `realpath` quando o
+arquivo existe. É o que faz o nome que os diagnósticos usam bater com o que a tabela de
+fontes guarda para os fragmentos.
+"""
+function doc_path(uri::AbstractString)
+    p = path_of(uri)
+    isempty(p) && return p
+    try; realpath(p); catch; p; end
+end
+
 function open_document!(s::Server, uri::AbstractString, texto::AbstractString,
                         version::Integer)
-    d = Document(String(uri), path_of(uri), Int(version), String(texto),
+    d = Document(String(uri), doc_path(uri), Int(version), String(texto),
                  linhas_de(String(texto)),
                  Kanon.Loaded(nothing, Kanon.DiagnosticSet()))
     d.text = String(texto)
