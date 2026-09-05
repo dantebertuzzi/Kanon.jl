@@ -37,17 +37,31 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
 
       # As três camadas, cada uma no ambiente dela, com o núcleo local.
-      - name: Layers
+      #
+      # Os caminhos vão numa chamada só: `develop` resolve o ambiente inteiro, e fazer
+      # o do núcleo antes do de `Extenso` faria o Pkg procurar `Extenso` no registro —
+      # onde ele não está, e não vai estar antes da F10.
+      - name: Extenso
         run: |
-          for pkg in Extenso KanonLegal KanonScience; do
-            julia --project=lib/$pkg -e '
-              using Pkg
-              Pkg.develop([PackageSpec(path=".")])
-              isdir("lib/Extenso") && ARGS[1] != "Extenso" &&
-                Pkg.develop([PackageSpec(path="lib/Extenso")])
-              Pkg.instantiate()' $pkg
-            julia --project=lib/$pkg lib/$pkg/test/runtests.jl
-          done
+          julia --project=lib/Extenso -e '
+            using Pkg; Pkg.develop([PackageSpec(path=".")]); Pkg.instantiate()'
+          julia --project=lib/Extenso lib/Extenso/test/runtests.jl
+        shell: bash
+
+      - name: KanonLegal
+        run: |
+          julia --project=lib/KanonLegal -e '
+            using Pkg
+            Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso")])
+            Pkg.instantiate()'
+          julia --project=lib/KanonLegal lib/KanonLegal/test/runtests.jl
+        shell: bash
+
+      - name: KanonScience
+        run: |
+          julia --project=lib/KanonScience -e '
+            using Pkg; Pkg.develop([PackageSpec(path=".")]); Pkg.instantiate()'
+          julia --project=lib/KanonScience lib/KanonScience/test/runtests.jl
         shell: bash
 
   neutrality:
