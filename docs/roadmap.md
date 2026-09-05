@@ -13,20 +13,20 @@
 | **F4** `Extenso.jl` | ✅ concluída | flexão por marca, extenso, datas, junção, separadores e as palavras-chave em pt |
 | **F5** Numeração e regras | ✅ concluída | `when` remove, `one for each` repete, e a numeração passa a ser dos dados |
 | **F6** Domínios | ✅ concluída | `KanonLegal` e `KanonScience`, `@kanon_type`, e o teste de neutralidade |
-| F7 Ingestão e reuso | ⬜ | — |
+| **F7** Ingestão e reuso | ✅ concluída | inclusão de fragmentos com contrato unificado; `Tables.jl` e JSON por extensão |
 | F8 Saída | ⬜ | — |
 | F9 Editor | ⬜ | — |
 | F10 Publicação | ⬜ | — |
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **1.498 testes** ao todo — 1.208 no núcleo (~25 s), 175 em `Extenso`, 74 em
+Suíte: **1.581 testes** ao todo — 1.291 no núcleo (~24 s), 175 em `Extenso`, 74 em
 `KanonLegal`, 41 em `KanonScience`.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.208, ~25 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.291, ~24 s
 for p in Extenso KanonLegal KanonScience; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -62,6 +62,8 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
+| `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
+| `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -378,12 +380,34 @@ O que a fase encontrou:
 
 ---
 
-## F7 a F10 (as próximas)
+## F7 — Ingestão e reuso (concluída em 5 de setembro de 2026)
 
-- **F7** — ingestão via `Tables.jl` (não escrever adaptador por formato) e
-  `StructTypes.jl` para decodificar JSON. Inclusão de blocos com carregador de raiz
-  configurada, sem travessia de caminho e com detecção de ciclo; contratos dos
-  fragmentos **unificados** com o do hospedeiro (D-005).
+`include "fragmento.kanon"` no plano do texto, com o carregador que a D-005 exige: raiz
+configurada, sem caminho absoluto, sem travessia, sem link para fora, e com detecção de
+ciclo. O contrato do fragmento é **unificado** com o do hospedeiro — mesmo nome e mesmo
+tipo fundem, tipos diferentes é erro na carga, e a obrigatoriedade é a mais forte das
+duas.
+
+Depois de composto, **nada indica que houve inclusão**: quem analisa e renderiza vê um
+`Template` só. Os identificadores de nó continuam únicos porque todos os arquivos são
+analisados com o mesmo contador — o que evitou reconstruir a árvore inteira para
+renumerá-la.
+
+`Tables.jl` e `JSON3` entraram como **extensões**, e não dependências. Quem só quer o
+motor não carrega nenhum dos dois, e o teste de neutralidade passou a verificar também
+que nenhuma `weakdep` é camada. `render_each` gera um documento por linha e falha na
+primeira que não satisfaz o contrato, com a linha nomeada — um lote ou sai inteiro, ou
+não sai.
+
+O link simbólico foi o caso que exigiu cuidado: um link **dentro** da raiz apontando para
+fora dela é a forma mais simples de escapar, e `normpath` sozinho não a vê. O carregador
+resolve `realpath` depois de confirmar que o arquivo existe, e compara por componente de
+caminho — nunca por prefixo de cadeia, que `"/raiz"` e `"/raizoutra"` enganariam.
+
+---
+
+## F8 a F10 (as próximas)
+
 - **F8** — Markdown primeiro. Preferir pandoc a escrever gerador de `.docx`. **Typst
   como candidato a backend** foi a melhor ideia do levantamento: Kanon garante o
   conteúdo, Typst compõe a página.
@@ -410,7 +434,6 @@ O que a fase encontrou:
 | Sem CI, sem Aqua, sem Documenter | — | F10 |
 | `is not` em português vira `é não`: a localização troca palavras, não ordem sintática | `parse_rules.jl` | escrever `não (x é y)` resolve; mudar a gramática seria versão maior |
 | Os quatro pacotes vivem num repo só, com `Project.toml` cada | `lib/` | extrair na F10, se o registro exigir |
-| A CLI lê dados num formato `chave = valor` próprio, não JSON | `cli.jl` | F7, com `StructTypes.jl` |
 | O orçamento não é configurável pela CLI | `cli.jl` | quando alguém precisar |
 | `K1213` está no registro e nunca é emitido: a unidade fora do conjunto fechado nunca vira cabeçalho | `diagnostics.jl` | remover ou dar uso na F3 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | quando a primeira camada de idioma existir (F4) |

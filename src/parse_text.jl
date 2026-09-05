@@ -12,6 +12,51 @@
 # resto não casa, o resultado é erro, não prosa silenciosa.
 
 """
+Reconhece a linha de inclusão: `include "caminho"` na coluna 0.
+
+O nome do que entra está escrito no ponto em que entra — é o que faz a leitura linear
+continuar sendo um limite superior do documento, e é a razão de a linguagem ter inclusão
+e não herança (D-005).
+"""
+function parse_include(ctx::ParseCtx, s::AbstractString, lineno::Integer)
+    (isempty(s) || s[1] == ' ' || s[1] == '\t') && return nothing
+    c = Cursor(s, lineno, 1)
+    w = read_ident!(c)
+    (w !== nothing && keyword(ctx.kw, w) === :include) || return nothing
+
+    sp = Span(ctx.fileidx, Int32(lineno), Int32(1), Int32(lineno), Int32(max(1, length(s))))
+    skip_blanks!(c)
+    if peek(c) !== '"'
+        err!(ctx, "K1214", sp,
+             "a inclusão pede o caminho entre aspas.";
+             hint = "Escreva `include \"fragmento.kanon\"`.")
+        return nothing
+    end
+    advance!(c)
+    io = IOBuffer()
+    fechou = false
+    while (ch = advance!(c)) !== nothing
+        ch == '"' && (fechou = true; break)
+        print(io, ch)
+    end
+    caminho = String(take!(io))
+    if !fechou || isempty(caminho)
+        err!(ctx, "K1214", sp,
+             fechou ? "a inclusão tem o caminho vazio." : "as aspas da inclusão não fecham.";
+             hint = "Escreva `include \"fragmento.kanon\"`.")
+        return nothing
+    end
+    skip_blanks!(c)
+    if peek(c) !== nothing
+        err!(ctx, "K1214", sp,
+             "sobra `$(rest(c))` depois do caminho da inclusão.";
+             hint = "A linha de inclusão tem só a palavra e o caminho.")
+        return nothing
+    end
+    return caminho
+end
+
+"""
 Reconhece um cabeçalho de bloco. Devolve `(unit, repeat, name, subject)` ou `nothing`
 se a linha for prosa. Emite diagnóstico apenas quando há intenção clara de cabeçalho.
 """
@@ -326,6 +371,7 @@ end
 
 function parse_text_plane!(ctx::ParseCtx, range)
     blocks = Block[]
+    includes = IncludePoint[]
     seen = Dict{Symbol,Int}()
 
     # (unit, repeat, name, subject, linha do cabeçalho, linhas de conteúdo)
@@ -346,6 +392,15 @@ function parse_text_plane!(ctx::ParseCtx, range)
 
     for i in range
         s = line(ctx.src, i)
+
+        caminho = parse_include(ctx, s, i)
+        if caminho !== nothing
+            close_block!()
+            push!(includes, IncludePoint(caminho, Int32(length(blocks) + 1),
+                                         linespan(ctx, i)))
+            continue
+        end
+
         hdr = block_header!(ctx, s, i)
         if hdr !== nothing
             close_block!()
@@ -376,7 +431,7 @@ function parse_text_plane!(ctx::ParseCtx, range)
     end
     close_block!()
 
-    return TextPlane(blocks)
+    return TextPlane(blocks, includes)
 end
 
 "Agrupa as linhas de um bloco em parágrafos, separados por linha em branco."

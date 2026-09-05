@@ -32,6 +32,7 @@ include("types.jl")
 include("environment.jl")
 include("core_types.jl")
 include("analysis.jl")
+include("include.jl")
 include("analyze.jl")
 include("rules.jl")
 include("check.jl")
@@ -78,7 +79,9 @@ export UndecodableValue, IncomparableValues
 # --- análise ---
 export Analysis, ResolvedPath, Model
 export analyze, load_string, load_template
+export Loader
 export Bound, check, bind, value
+export rows, render_each, read_json, parse_json
 export Plan, BlockInstance
 export contract
 export render, preview, Budget, KanonResourceError

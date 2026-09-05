@@ -17,11 +17,31 @@
     end
 
     @testset "as dependências são as da biblioteca padrão" begin
-        deps = projeto[findfirst("[deps]", projeto)[1]:end]
-        deps = deps[1:(findfirst("[compat]", deps)[1] - 1)]
-        nomes = sort([strip(split(l, "=")[1]) for l in split(deps, "\n")
-                      if occursin("=", l)])
-        @test nomes == ["Dates", "Unicode"]
+        secao(nome) = begin
+            i = findfirst(nome, projeto)
+            i === nothing && return ""
+            resto = projeto[(last(i) + 1):end]
+            j = findfirst("\n[", resto)
+            corpo = j === nothing ? resto : resto[1:first(j)]
+            sort([strip(split(l, "=")[1]) for l in split(corpo, "\n") if occursin("=", l)])
+        end
+
+        @test secao("[deps]") == ["Dates", "Unicode"]
+
+        @testset "e as extensões são `weakdeps`, que não pesam em quem só quer o motor" begin
+            # `Tables` e `JSON3` dão ingestão a quem os tem; quem não os tem não os carrega
+            @test secao("[weakdeps]") == ["JSON3", "Tables"]
+            for w in secao("[weakdeps]")
+                @test !(w in secao("[deps]"))
+            end
+        end
+
+        @testset "nenhuma extensão traz idioma nem domínio" begin
+            # uma weakdep de camada seria o mesmo vazamento, por outra porta
+            for w in secao("[weakdeps]")
+                @test !(w in ["Extenso", "KanonLegal", "KanonScience"])
+            end
+        end
     end
 
     @testset "nenhum arquivo do núcleo carrega uma camada" begin

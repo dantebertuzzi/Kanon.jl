@@ -185,12 +185,35 @@ struct Block <: Node
     span::Span
 end
 
-"A ordem dos blocos é a ordem da saída — invariante anti-XSLT (D-015)."
-struct TextPlane
-    blocks::Vector{Block}
+"""
+    IncludePoint
+
+Onde um fragmento entra no plano do texto. `before` é o índice do bloco diante do qual
+ele é inserido — `length(blocks) + 1` quando a inclusão está no fim.
+
+O caminho fica **como escrito**: `parse` não lê arquivo, e resolver o caminho é do
+carregador, que tem a raiz e as regras de segurança (D-005).
+"""
+struct IncludePoint
+    path::String
+    before::Int32
+    span::Span
 end
 
-TextPlane() = TextPlane(Block[])
+"""
+A ordem dos blocos é a ordem da saída — invariante anti-XSLT (D-015).
+
+`includes` só existe entre o parse e a composição: depois que `load_template` resolve os
+fragmentos, o plano tem apenas blocos, e quem analisa e renderiza não sabe que houve
+inclusão nenhuma.
+"""
+struct TextPlane
+    blocks::Vector{Block}
+    includes::Vector{IncludePoint}
+end
+
+TextPlane() = TextPlane(Block[], IncludePoint[])
+TextPlane(blocks::Vector{Block}) = TextPlane(blocks, IncludePoint[])
 
 # --- plano das regras --------------------------------------------------------
 

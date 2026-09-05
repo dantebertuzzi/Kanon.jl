@@ -1151,20 +1151,26 @@ malformado e `KanonReferenceError` se algum caminho, tipo ou formatador não res
 
 Um erro de sintaxe suprime a análise: não há árvore para validar (§10.3).
 """
-function load_string(env::Environment, text::AbstractString; name::AbstractString = "<string>")
-    tmpl = parse_string(text; name, keywords = env.keywords)
+function load_string(env::Environment, text::AbstractString;
+                     name::AbstractString = "<string>", root = nothing)
+    tmpl = compose(parse_string(text; name, keywords = env.keywords),
+                   Loader(root), env.keywords)
     a = analyze(env, tmpl)
     haserrors(a) && throw(KanonReferenceError(diagnostics(a)))
     Model(env, tmpl, a)
 end
 
 """
-    load_template(env, path) -> Model
+    load_template(env, path; root = dirname(path)) -> Model
 
-Como [`load_string`](@ref), lendo do disco.
+Como [`load_string`](@ref), lendo do disco. `root` é a raiz de onde os fragmentos podem
+vir; o padrão é o diretório do próprio modelo, e nada fora dela é carregável (D-005).
 """
-function load_template(env::Environment, path::AbstractString)
-    tmpl = parse_file(path; keywords = env.keywords)
+function load_template(env::Environment, path::AbstractString; root = nothing)
+    # Sem raiz explícita, a do arquivo: incluir um irmão é o caso normal, e obrigar a
+    # declarar a raiz para isso seria cerimônia sem ganho. Sair dela continua proibido.
+    raiz = root === nothing ? dirname(abspath(path)) : root
+    tmpl = compose(parse_file(path; keywords = env.keywords), Loader(raiz), env.keywords)
     a = analyze(env, tmpl)
     haserrors(a) && throw(KanonReferenceError(diagnostics(a)))
     Model(env, tmpl, a)

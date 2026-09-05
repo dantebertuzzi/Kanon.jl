@@ -197,11 +197,20 @@ function emit(out::IO, saida::Union{Nothing,String}, texto::AbstractString)
 end
 
 """
-Lê os dados. Na v1 o formato é o mesmo do plano de dados — `chave = valor` por linha —
-porque o núcleo não tem dependência de JSON; a ingestão de verdade, com `Tables.jl` e
-`StructTypes.jl`, é a F7.
+Lê os dados. Um arquivo `.json` passa pela extensão de `JSON3`; qualquer outro é lido no
+formato mínimo `chave = valor`, que existe para o núcleo não precisar de dependência
+nenhuma para funcionar.
 """
 function read_data(path::AbstractString)
+    if endswith(lowercase(path), ".json")
+        try
+            return read_json(path)
+        catch e
+            e isa MethodError || rethrow()
+            error("para ler JSON, carregue `JSON3` — ele é extensão do Kanon, e não " *
+                  "dependência: `using JSON3` antes de `using Kanon`.")
+        end
+    end
     d = Dict{String,Any}()
     for linha in eachline(path)
         s = strip(linha)

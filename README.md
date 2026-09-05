@@ -22,7 +22,7 @@ text
 
 ## Estado
 
-**Fases 1 a 6 concluídas.** O que existe: léxico, gramática dos três planos,
+**Fases 1 a 7 concluídas.** O que existe: léxico, gramática dos três planos,
 árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
 análise completa do modelo sem dados — caminhos, tipos, formatadores, grupos opcionais,
 remissões e regras — e a validação dos dados contra o contrato, tudo com erros que
@@ -174,8 +174,34 @@ Conforme o disposto na cláusula segunda, as partes se obrigam por si e por seus
 sucessores.
 ```
 
-Falta a F7 em diante: ingestão via `Tables.jl`, saída em Markdown e `.docx`, o editor, e
-o registro no General.
+## Reuso e ingestão
+
+Um modelo inclui fragmentos, e o contrato do fragmento é **unificado** com o do
+hospedeiro:
+
+```
+texto
+
+: abertura
+Contrato de {nome}.
+
+include "clausulas.kanon"
+```
+
+Inclusão, e não herança: no ponto em que o fragmento entra está escrito o nome dele, e
+ler o modelo continua sendo um limite superior do documento. O carregador tem raiz
+configurada e recusa caminho absoluto, travessia e link para fora — um modelo é dado não
+confiável.
+
+`Tables.jl` e `JSON3` são **extensões**: quem só quer o motor não carrega nenhum dos
+dois.
+
+```julia
+using Tables, Kanon
+render_each(tmpl, tabela)     # um documento por linha
+```
+
+Falta a F8 em diante: saída em Markdown e `.docx`, o editor, e o registro no General.
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).

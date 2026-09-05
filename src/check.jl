@@ -389,6 +389,40 @@ function check_extras!(ctx::CheckCtx, data)
 end
 
 """
+    rows(tabela)
+
+As linhas de uma tabela como dados. Precisa de `Tables.jl` carregado — o núcleo não
+depende dele, e a extensão só existe quando ele existe.
+"""
+function rows end
+
+"""
+    render_each(modelo, tabela; today, budget) -> Vector{String}
+
+Um documento por linha da tabela. Precisa de `Tables.jl` carregado.
+"""
+function render_each end
+
+"""
+    read_json(caminho) -> Dict{String,Any}
+
+Lê dados de um arquivo JSON. Precisa de `JSON3.jl` carregado.
+"""
+function read_json end
+
+"""
+    parse_json(texto) -> Dict{String,Any}
+
+Como [`read_json`](@ref), a partir do texto. Precisa de `JSON3.jl` carregado.
+"""
+function parse_json end
+
+"Acrescenta o número da linha ao diagnóstico, para a ingestão dizer qual falhou."
+with_row(d::Diagnostic, i::Integer) =
+    Diagnostic(d.code, d.severity, d.category, d.file, d.line, d.col, d.endline, d.endcol,
+               d.path, "linha $i da tabela: " * d.message, d.hint)
+
+"""
     bind(model, data; today = nothing) -> Bound
 
 Valida os dados contra o contrato e decodifica o que passar. Não lança: devolve o

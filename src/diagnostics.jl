@@ -79,6 +79,7 @@ const CODE_TITLES = Dict{String,String}(
     "K1211" => "remissão malformada",
     "K1212" => "nível de bloco acima do teto da versão 1",
     "K1213" => "marcador de bloco desconhecido",
+    "K1214" => "linha de inclusão malformada",
     # --- plano das regras ---
     "K1301" => "regra malformada",
     "K1302" => "expressão malformada",
@@ -117,6 +118,13 @@ const CODE_TITLES = Dict{String,String}(
     "K2045" => "one for each sobre um valor único",
     "K2046" => "o cabeçalho do bloco não declara o sujeito repetido",
     "K2047" => "condição sempre verdadeira ou sempre falsa",
+    # --- referência: inclusão ---
+    "K2050" => "arquivo de inclusão fora da raiz",
+    "K2051" => "inclusão cíclica",
+    "K2052" => "arquivo de inclusão não encontrado",
+    "K2053" => "contratos incompatíveis entre modelo e fragmento",
+    "K2054" => "o fragmento redeclara um bloco do hospedeiro",
+    "K2055" => "inclusão sem raiz configurada",
     # --- referência: formatadores ---
     "K2020" => "formatador desconhecido",
     # --- contrato ---

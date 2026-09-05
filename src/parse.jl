@@ -214,7 +214,23 @@ function parse_file(path::AbstractString; keywords::KeywordTable = canonical_key
 end
 
 function parse_source(src::SourceFile, kw::KeywordTable)
-    ctx = ParseCtx(src, kw)
+    parse_with!(ParseCtx(src, kw), src)
+end
+
+"""
+Analisa um fragmento com o **mesmo** contexto do hospedeiro, para que os identificadores
+de nó continuem únicos no modelo composto. Acrescenta o arquivo à lista de fontes e usa
+o índice dele nos `Span` — cada posição continua sabendo de que arquivo veio.
+"""
+function parse_into!(ctx::ParseCtx, src::SourceFile, sources::Vector{String})
+    push!(sources, src.name)
+    ctx.src = src
+    ctx.fileidx = Int32(length(sources))
+    parse_with!(ctx, src)
+end
+
+function parse_with!(ctx::ParseCtx, src::SourceFile)
+    ctx.src = src
     version, lang, next_line = parse_pragma!(ctx)
 
     # Problema no pragma é fatal. Continuar a analisar um arquivo cuja versão, idioma ou

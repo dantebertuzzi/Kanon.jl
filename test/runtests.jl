@@ -24,4 +24,6 @@ include("helpers.jl")
     include("test_cli.jl")
     include("test_rules_runtime.jl")
     include("test_neutralidade.jl")
+    include("test_include.jl")
+    include("test_ingestao.jl")
 end

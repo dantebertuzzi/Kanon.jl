@@ -49,7 +49,7 @@ end
 
 const CANONICAL_KEYWORDS = ("data", "text", "rules", "when", "one", "for", "each",
                             "and", "or", "not", "is", "present", "absent",
-                            "true", "false", "null", "today")
+                            "true", "false", "null", "today", "include")
 
 # `:true` e `:false`, escritos assim em Julia, são os *booleanos* `true` e `false`, não
 # símbolos. Comparar o resultado de `keyword` com `:true` seria sempre falso — e o bug
