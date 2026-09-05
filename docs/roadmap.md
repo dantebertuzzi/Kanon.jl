@@ -16,17 +16,17 @@
 | **F7** Ingestão e reuso | ✅ concluída | inclusão de fragmentos com contrato unificado; `Tables.jl` e JSON por extensão |
 | **F8** Saída | ✅ concluída | `text`, `markdown` e `typst`; o valor é escapado, a prosa não |
 | **F9** Editor | ✅ parcial | `outline`, `kanon outline` e `kanon ask`; a interface gráfica é aplicação (D-029) |
-| F10 Publicação | ⬜ | — |
+| **F10** Publicação | 🔨 quase | CI, Aqua e Documenter feitos; falta o registro no General, que é ação sua |
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **1.669 testes** ao todo — 1.379 no núcleo (~27 s), 175 em `Extenso`, 74 em
-`KanonLegal`, 41 em `KanonScience`. CI em Linux, macOS e Windows.
+Suíte: **1.701 testes** ao todo — 1.411 no núcleo (~44 s com Aqua), 175 em `Extenso`,
+74 em `KanonLegal`, 41 em `KanonScience`. CI em Linux, macOS e Windows.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.379, ~27 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.411, ~44 s
 for p in Extenso KanonLegal KanonScience; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -451,7 +451,36 @@ mais provável, e `outline` já é o que ele consumiria.
 
 ---
 
-## F10 (a próxima)
+## F10 — Publicação (quase, 5 de setembro de 2026)
+
+**Feito:** CI (entrou junto com o README em inglês), Aqua na suíte, e Documenter gerando a
+referência da API a partir das docstrings — publicada pelo próprio CI.
+
+O Documenter mora em `docs/src/`, e os documentos **normativos** continuam em `docs/*.md`
+sem passar por ele: eles são o registro do projeto, escritos para serem lidos no
+repositório, e uma versão gerada seria uma segunda cópia a manter em dia.
+
+**D-030**, observada ao rodar o Aqua: a extensão por `Val{nome}` **não é pirataria de
+tipo**, e a ferramenta padrão do ecossistema concorda. O `Val{:extenso}` é um tipo da
+camada porque o símbolo é dela. A escolha foi feita na F0 por outra razão — enumerar
+formatadores por introspecção —, e essa propriedade veio junto.
+
+**Falta, e é ação sua:** o registro no General. O pacote está em `0.1.0-DEV`, que não é
+versão registrável; registrar exige decidir a `0.1.0`, e essa decisão depende do portão
+abaixo, não de mim.
+
+### O que o registro vai cobrar
+
+- **`Kanon` e `Extenso` reprovam na checagem automática de similaridade de nome.** Medido
+  contra a `Registry.toml`: `Kanon` tem distância de Damerau 2 de `Kaimon` e de `Kanones`;
+  `Extenso`, 2 de `Extents`. O mínimo do AutoMerge é 3. Os dois vão exigir o rótulo
+  `Override AutoMerge: name similarity is okay` e revisão humana. `KanonLegal` e
+  `KanonScience` passam.
+- **Os quatro pacotes vivem num repositório só.** O General aceita subdiretórios
+  (`subdir=`), então não é impedimento — mas cada um precisa da sua própria tag.
+- **Ordem obrigatória:** `Kanon` primeiro; `Extenso` depois dele; `KanonLegal` depois dos
+  dois. Enquanto `Kanon` não estiver registrado, `Pkg.develop` local é a única forma de
+  as camadas resolverem — que é como o CI faz hoje.
 
 O CI entrou fora de fase, junto com o README em inglês: um badge de build sem CI afirma
 o que não se verifica, e é a categoria de coisa que este projeto existe para não fazer.

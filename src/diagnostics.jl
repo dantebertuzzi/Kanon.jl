@@ -182,6 +182,12 @@ haserrors(s::DiagnosticSet) = any(d -> d.severity === :error, s.diagnostics)
 
 # --- exceções ---------------------------------------------------------------
 
+"""
+    KanonError
+
+A raiz das exceções do motor. Cada categoria de erro do §10.1 tem a sua, e todas trazem
+um [`DiagnosticSet`](@ref) — nunca uma mensagem solta.
+"""
 abstract type KanonError <: Exception end
 
 "Modelo malformado. Reportado na leitura, sem dados e sem ambiente."

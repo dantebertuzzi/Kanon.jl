@@ -3,7 +3,9 @@
 [![CI](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Julia](https://img.shields.io/badge/Julia-1.10%2B-9558B2.svg)](https://julialang.org)
-[![Tests](https://img.shields.io/badge/tests-1669-brightgreen.svg)](test/)
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://dantebertuzzi.github.io/Kanon.jl/dev/)
+[![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+[![Tests](https://img.shields.io/badge/tests-1701-brightgreen.svg)](test/)
 
 **A document template language whose templates declare their own data contract.**
 What does not satisfy the contract does not render.
@@ -221,7 +223,7 @@ and a CLI.
 | F0 Specification · F1 Parser · F2 Validator | done |
 | F3 Renderer · F4 `Extenso` · F5 Rules · F6 Domains · F7 Ingestion · F8 Output | done |
 | F9 Editor | partial — `outline` and `ask` shipped; the GUI is an application |
-| F10 Registry | to do |
+| F10 Publishing | CI, Aqua and Documenter done; General registration pending |
 
 **Syntax is not frozen.** The gate to 1.0 is fifteen real templates rewritten in the
 language — after that there is a corpus, every design mistake becomes permanent, and the

@@ -927,3 +927,31 @@ o que a atendia mal era a solução proposta.
 Um `money` precisa de quantia e moeda, e um composto precisa dos campos dele; perguntar
 por eles numa linha só levaria a inventar uma mini-sintaxe de entrada, que é como um
 projeto ganha o segundo formato de dados que ninguém queria.
+
+---
+
+## D-030 — O `Val{nome}` faz da extensão por despacho algo que não é pirataria
+
+*2026-09-05 · registrada · observada ao rodar o Aqua na F10*
+
+**A observação.** `Extenso` define `Kanon.format(v::Money, ::Val{:extenso}, ctx)` —
+função do núcleo, tipo do núcleo, método escrito por um terceiro. Pela definição corrente,
+isso deveria ser **pirataria de tipo**, e o Aqua deveria acusar.
+
+Ele não acusa. E o motivo é que a acusação estaria errada: o `Val{:extenso}` **é** um tipo
+da camada, porque o símbolo `:extenso` é dela. A assinatura completa é
+`(Money, Val{:extenso}, Any)`, e nenhum outro pacote pode escrever essa mesma assinatura
+sem inventar o mesmo nome — que é exatamente o conflito que o ambiente detecta na
+construção.
+
+**Por que isso vale registro.** O `Val{nome}` foi escolhido na F0 por outra razão: enumerar
+formatadores sem dados, por introspecção da tabela de métodos (§2.1). A propriedade de não
+ser pirataria veio junto, de graça, e é ela que torna a arquitetura de camadas defensável
+para quem chega de fora — a pergunta "mas isso não é *type piracy*?" tem resposta
+mecânica, e a resposta é uma ferramenta padrão do ecossistema dizendo que não.
+
+**O que continua sendo verdade.** Uma camada que definisse `format(v::Money, ::Val{N},
+ctx) where {N}` — genérico no nome — seria pirataria de verdade, e mereceria a acusação:
+ela reivindicaria *todos* os formatadores de um tipo que não é dela. A §2.1 já previa esse
+método como o caso que a introspecção não enumera; agora se sabe que ele é também o caso
+que a higiene do ecossistema recusa.

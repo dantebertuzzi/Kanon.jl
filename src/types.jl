@@ -30,6 +30,15 @@ FieldSpec(name::Symbol, type::Symbol; optional::Bool = false,
 # não têm linha nem coluna. `check` (F2.6) e `analyze` (F2.2) as capturam e as
 # convertem em diagnóstico quando há uma posição a que atribuí-las.
 
+"""
+    KanonProtocolError
+
+Falha do **protocolo de tipo**: o tipo não sabe fazer o que lhe foi pedido.
+
+São exceções e não diagnósticos porque acontecem fora de um arquivo de modelo, e portanto
+não têm linha nem coluna. `analyze` e `check` as capturam e as convertem em diagnóstico
+quando há uma posição a que atribuí-las.
+"""
 abstract type KanonProtocolError <: Exception end
 
 "O tipo Julia não implementa `kanon_typename` — não é um tipo Kanon."
@@ -37,11 +46,13 @@ struct UnregisteredType <: KanonProtocolError
     type::Type
 end
 
+"O tipo não tem o formatador pedido. A mensagem lista os que ele tem."
 struct UnknownFormatter <: KanonProtocolError
     type::Type
     name::Symbol
 end
 
+"O tipo não tem o atributo pedido. A mensagem lista os que ele tem."
 struct UnknownAttribute <: KanonProtocolError
     type::Type
     name::Symbol
@@ -54,6 +65,7 @@ struct UndecodableValue <: KanonProtocolError
     reason::String
 end
 
+"O tipo não declara como se comparar com aquele valor (§8.1)."
 struct IncomparableValues <: KanonProtocolError
     type::Type
     other::Any
