@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **1.701 testes** ao todo — 1.411 no núcleo (~44 s com Aqua), 175 em `Extenso`,
-74 em `KanonLegal`, 41 em `KanonScience`. CI em Linux, macOS e Windows.
+Suíte: **1.779 testes** ao todo — 1.424 no núcleo (~50 s com Aqua), 195 em `Extenso`,
+119 em `KanonLegal`, 41 em `KanonScience`. CI em Linux, macOS e Windows.
 
 ---
 
@@ -34,16 +34,32 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existe **um** modelo real no repositório: `test/golden/exemplos/escritura.kanon`. O
-relatório científico vive inline na suíte de `KanonScience`. O portão para a 1.0 pede
-quinze.
+Existem **dois** modelos reais no repositório: `escritura.kanon` e `locacao.kanon`, em
+`test/golden/exemplos/`. O relatório científico vive inline na suíte de `KanonScience`. O
+portão para a 1.0 pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos treze que faltam vai cobrar alguma coisa — como os dois primeiros cobraram: o exemplo
-jurídico revelou três lacunas na F0, e depois contradisse a D-013 na F6. **Nenhuma outra
-atividade tem a mesma taxa de descoberta por hora.**
+dos treze que faltam vai cobrar alguma coisa — como os dois primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e o segundo modelo mediu isso:
+um contrato de locação de setenta linhas, escrito numa tarde, produziu **três defeitos e
+uma questão aberta de versão**, todos invisíveis para 1.701 testes.
 
-O que procurar em cada modelo escrito:
+O que a locação cobrou, em ordem de gravidade:
+
+| | O que apareceu |
+|---|---|
+| **D-031** | `quando flag` era recusado em português e aceito em inglês. Mesma causa em quatro lugares — e num deles o checklist de um modelo `pt` saía **sem `type` nenhum**, validando qualquer coisa |
+| **D-032** | uma regra que remove a cláusula deixava o parágrafo dela órfão, rotulado `0.1` — um número que não existe. Virou o aviso `K2039` |
+| **D-033** | o tipo `list` do núcleo **não é declarável** no plano de dados, e a mensagem de erro mandava o autor para `list[]`, que é uma lista de listas |
+
+O padrão nos três é o mesmo, e vale mais que os três: **o buraco estava sempre na
+interseção de duas coisas testadas separadamente.** Toda a suíte em português usava tipos
+de domínio, cujos nomes são canônicos; toda a suíte de regras, contrato e `ask` estava em
+inglês. O tipo `list` era testado chamando `format` sobre um vetor, e nunca declarando um
+campo. Escrever um documento atravessa essas interseções porque um documento não escolhe
+qual parte da linguagem usar.
+
+O que procurar em cada um dos treze que faltam:
 
 - Uma construção que a gramática não expressa, ou expressa mal.
 - Uma mensagem de erro que não diz o que fazer.
@@ -81,7 +97,7 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.411, ~44 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.424, ~50 s
 for p in Extenso KanonLegal KanonScience; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -117,6 +133,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura.kanon` e `locacao.kanon`, com a saída exigida ao lado |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída e o escape do valor interpolado |
@@ -564,6 +581,8 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 
 | Dívida | Onde | Gatilho |
 |---|---|---|
+| **O tipo `list` não é declarável no plano de dados** (D-033) | `core_types.jl`, `check.jl` | o fim do portão. A mensagem já não mente; falta decidir entre remover o tipo (versão maior) e torná-lo alcançável |
+| Os nomes de atributo não têm apelido de idioma: num modelo `pt` escreve-se `quando x é empty` | `environment.jl` | a §9 promete que o idioma renomeia palavras-chave, e atributo não é palavra-chave — mas o autor não sabe disso. Um `register_attribute_alias!` é aditivo |
 | As mensagens listam os atributos em inglês mesmo num modelo `pt`: `Atributos de \`texto\`: absent, present` | `analyze.jl` | um redator reclamar. Traduzir diagnóstico é projeto próprio, e a D-027 diz por que ele não é urgente |
 | `is not` em português vira `é não`, que é agramatical | `parse_rules.jl` | escrever `não (x é y)` resolve hoje; mudar a **ordem** da gramática por idioma seria versão maior |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | um `pessoa` com `nome = " "` passa pelo D-008. Fecha o mesmo buraco um nível abaixo |
@@ -599,9 +618,11 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **1 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **2 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
-contradizer a D-013 que veio depois dele.
+contradizer a D-013 que veio depois dele. A locação, escrita com o motor já pronto e a
+suíte verde, cobrou mais três (D-031 a D-033) — **a taxa de descoberta não caiu quando o
+código ficou bom.**
 
 ### O que a implementação já mudou na especificação
 
@@ -614,6 +635,16 @@ releitura teria encontrado — o texto era internamente coerente em todos os cas
 | **D-021** | a §4.4 enunciou o caso extremo de uma regra mais geral e parou nele |
 | **D-023** | a API listava oito funções do protocolo e **nenhuma lia um campo** — o teorema tinha um furo do tamanho de um tipo composto |
 | **D-026** | um formatador de camada valia em ambiente neutro, e o teste de neutralidade não o veria |
+| **D-031** | a §9 prometia que o idioma só renomeia palavras-chave, e o mesmo modelo valia numa língua e não na outra |
+| **D-032** | a §6.2 verificava a sequência de níveis só no texto; as regras produziam em execução o estado que ela proíbe |
+| **D-033** | a §3.3 descreve um tipo do núcleo que a §2.1 torna indeclarável, e nenhuma das duas está errada sozinha |
 
 Se treze modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.
+
+**O que o segundo modelo ensinou sobre como escrever os outros treze.** Escreva o modelo
+como um redator escreveria, sem consultar a implementação; escreva a saída esperada **à
+mão**, antes de renderizar; e só então compare. Na locação as duas coincidiram byte a
+byte, o que não é sinal de que o exercício foi inútil: é o que separa as três descobertas
+reais das divergências de gosto que um `diff` produziria se a saída tivesse sido copiada
+do próprio motor.

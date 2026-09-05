@@ -10,3 +10,4 @@ const RAIZ = normpath(joinpath(@__DIR__, "..", "..", ".."))
 
 include("test_tipos.jl")
 include("test_escritura.jl")
+include("test_locacao.jl")

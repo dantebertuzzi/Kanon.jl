@@ -435,6 +435,39 @@ function typefor(env::Environment, name::Symbol)
     k === nothing ? nothing : env.types[k].juliatype
 end
 
+"""
+    canonical_typename(env, name) -> Symbol
+
+O nome canônico de um tipo, resolvendo apelido de idioma: `booleano` ⟶ `boolean`. Um
+nome que o ambiente não conhece volta como veio.
+
+Existe porque **o nome que o modelo escreve não é o nome que o núcleo compara**. Um
+`FieldDecl` e um `ResolvedPath` guardam o nome tal como o autor o digitou — é o que a
+mensagem de erro tem de dizer de volta a ele —, e comparar esse nome com `:boolean`
+faz o mesmo modelo valer em inglês e não valer em português. Onde a lógica decide algo
+pelo tipo, ela decide pelo canônico; onde ela fala com o autor, fala pelo escrito.
+"""
+function canonical_typename(env::Environment, name::Symbol)
+    findfirst(e -> e.name === name, env.types) === nothing || return name
+    j = findfirst(a -> a.alias === name, env.typealiases)
+    j === nothing ? name : env.typealiases[j].canonical
+end
+
+"""
+    written_typename(env, canonical) -> Symbol
+
+O inverso de [`canonical_typename`](@ref): o nome que **este** ambiente escreve para um
+tipo canônico. `:text` num ambiente `pt` é `:texto`.
+
+Serve às mensagens que precisam sugerir um tipo que o autor não escreveu. Sugerir
+`text[]` a quem escreve em português seria a D-027 ao contrário — o motor falando a
+língua dele com quem escolheu outra.
+"""
+function written_typename(env::Environment, canonical::Symbol)
+    i = findfirst(a -> a.canonical === canonical, env.typealiases)
+    i === nothing ? canonical : env.typealiases[i].alias
+end
+
 "Todo nome de tipo escrevível neste ambiente, ordenado — para a mensagem de erro."
 typenames(env::Environment) =
     sort!(vcat([e.name for e in env.types], [a.alias for a in env.typealiases]))

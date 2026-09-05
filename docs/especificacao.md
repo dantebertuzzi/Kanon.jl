@@ -263,6 +263,12 @@ O formatador padrão de `list` junta os elementos formatados por `", "`. É a ú
 convenção tipográfica no núcleo, está declarada aqui como tal, e é substituível pela
 camada de idioma.
 
+> **Questão aberta (D-033, F10).** O tipo `list` **não é declarável no plano de dados**:
+> um campo `x : list` com uma lista de verdade viola a cardinalidade da §2.1. A forma que
+> funciona é a cardinalidade sobre o tipo do elemento — `x : text[]` —, que faz tudo o que
+> `list` promete e ainda diz de que são os elementos. A decisão entre remover o tipo
+> (versão maior) e torná-lo alcançável está aberta até o fim do portão da 1.0.
+
 ### 3.4 Coerção
 
 Não há coerção implícita entre tipos, em lugar nenhum. A conversão da entrada externa
@@ -533,6 +539,14 @@ numerada (§6.1).
 A checagem de sequência de níveis da §6.2 é **estática** — nível 2 sem nível 1 antes é
 erro sem dados (`K2031`) — e por isso acontece na validação do modelo, e não com os
 contadores.
+
+**[acrescentado na F10 — D-032]** O plano das regras pode produzir em execução o estado
+que essa checagem proíbe no texto: um bloco de nível 1 condicional, seguido de um bloco
+de nível 2 que não está preso à mesma condição. Removido o primeiro, o segundo fica sem o
+nível anterior, e o contador do nível 1 nunca incrementado o rotula `0.1` — um número que
+não existe. É **aviso** (`K2039`), pela mesma razão do `K2035`: as duas condições podem
+coincidir de propósito. O reconhecimento é conservador — só a igualdade estrutural das
+duas condições dispensa o aviso.
 
 Formato do número e da remissão vêm das camadas (`register_block_style!`). O núcleo,
 sozinho, numera `1`, `2`, `3.1` e remete como `3.1`.

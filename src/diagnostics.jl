@@ -110,6 +110,7 @@ const CODE_TITLES = Dict{String,String}(
     "K2036" => "regra nomeia bloco inexistente",
     "K2037" => "duas regras da mesma espécie para o mesmo bloco",
     "K2038" => "remissão a bloco não numerado",
+    "K2039" => "regra pode deixar um nível sem o anterior",
     # --- referência: semântica das regras ---
     "K2040" => "condição que não é verdadeira nem falsa",
     "K2041" => "atributo desconhecido no tipo",

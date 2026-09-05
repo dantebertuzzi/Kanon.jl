@@ -955,3 +955,113 @@ ctx) where {N}` — genérico no nome — seria pirataria de verdade, e mereceri
 ela reivindicaria *todos* os formatadores de um tipo que não é dela. A §2.1 já previa esse
 método como o caso que a introspecção não enumera; agora se sabe que ele é também o caso
 que a higiene do ecossistema recusa.
+
+---
+
+## D-031 — O apelido de idioma é nome; quem decide pelo tipo decide pelo canônico
+
+*2026-09-05 · aceita · surgida ao escrever o modelo real nº 2*
+
+**O defeito.** `quando flag` sobre um campo `flag : booleano !` era recusado com `K2040`
+— "esta condição é do tipo `booleano`, e uma condição precisa ser verdadeira ou falsa".
+A mensagem afirmava que o tipo era booleano e o recusava por não ser booleano. O mesmo
+modelo em inglês, com `flag : boolean` e `when flag`, passava.
+
+A causa é uma só, e produziu quatro sintomas:
+
+| Onde | O que acontecia num modelo em português |
+|---|---|
+| `require_boolean!` | `quando flag` recusado, com a mensagem que se contradiz |
+| `type_schema` | o `$defs` do checklist saía sem `type` — **o JSON Schema validava qualquer coisa** |
+| `coerce_answer` | `kanon ask` lia a resposta `123` de um campo `texto` como o número 123 |
+| `do_ask` | nenhum campo do núcleo era "digitável", e `ask` mandava todos para o arquivo |
+
+**Decisão.** `FieldDecl.type` e `ResolvedPath.typename` continuam guardando o nome
+**escrito** — é o que a mensagem tem de dizer de volta ao autor, e a D-027 exige isso.
+Onde a lógica *decide* algo pelo tipo, ela resolve antes o apelido com
+`canonical_typename(env, name)`. Onde ela *fala* com o autor, fala pelo escrito.
+
+**Alternativas.** (a) Canonicalizar na resolução, fazendo `typename` guardar o canônico.
+(b) Resolver no ponto da decisão (escolhida).
+
+**Por quê.** Contra (a): a mensagem passaria a dizer "`boolean`" a quem escreveu
+`booleano`, o que é a D-027 ao contrário — o motor falando a língua dele com quem
+escolheu outra. O erro estava em confundir os dois papéis do nome, e a correção que os
+mantém separados é a que não troca um defeito por outro.
+
+**O que isto revela sobre a §9.** A promessa é que o idioma renomeia palavras-chave, e
+nada além disso. Ela não era verificada em lugar nenhum: toda a suíte em português usava
+tipos de `KanonLegal`, cujos nomes são canônicos, e toda a suíte de contrato, de regras e
+de `ask` estava em inglês. **O buraco era exatamente a interseção dos dois.** Os testes
+agora afirmam a equivalência das duas línguas sobre o mesmo modelo.
+
+---
+
+## D-032 — Regra que pode deixar um nível sem o anterior é aviso, não erro
+
+*2026-09-05 · aceita · surgida ao escrever o modelo real nº 2*
+
+**O buraco.** A §6.2 faz de "nível *n* sem nível *n*−1 antes" um erro **estático**
+(`K2031`), verificado sobre o texto como está escrito. O plano das regras produz em
+execução exatamente o estado que aquela checagem proíbe: basta a cláusula ser condicional
+e o parágrafo dela não ser.
+
+O documento que sai não é apenas feio. O contador do nível 1 nunca é incrementado, e o
+rótulo do parágrafo é `0.1` — um número que não existe. Num contrato, `PARÁGRAFO PRIMEIRO`
+encabeça a página, subordinado a uma cláusula que não está lá.
+
+**Decisão.** `K2039`, aviso na análise: o bloco que abre o nível anterior pode ser
+removido por uma regra, e este não está preso à mesma condição.
+
+**Alternativas.** (a) Erro. (b) Remover os filhos junto com o pai. (c) Aviso (escolhida).
+(d) Nada.
+
+**Por quê.** Contra (b): quebra duas frases da especificação de uma vez — a §8.4 ("regras
+só removem ou repetem", e o filho não tem regra) e a §8.2 ("bloco sem regra é sempre
+incluído"). Contra (a): as duas condições podem coincidir de propósito, e o motor não tem
+como saber; é a mesma situação do `K2035`, e a mesma resposta. Contra (d): é a categoria
+de defeito que o projeto existe para impedir — saída errada, em silêncio, num documento
+que ninguém revisa duas vezes.
+
+**O reconhecimento é conservador.** Só a igualdade **estrutural** das duas condições
+dispensa o aviso. Comparar índice de regra não serviria: a §8.2 dá a cada bloco a sua
+própria linha de `when`, e por construção dois blocos nunca compartilham uma. O custo de
+não reconhecer um caso é repetir a condição do pai no `when` do filho.
+
+---
+
+## D-033 — O tipo `list` do núcleo é inalcançável pelo plano de dados
+
+*2026-09-05 · **proposta**, aguarda decisão de versão · surgida ao escrever o modelo real nº 2*
+
+**A observação.** `moveis : lista` com uma lista de três itens é recusado por `K3002`:
+"`moveis` é um valor único, e veio uma lista de 3. Declare `moveis : lista[]` no modelo".
+Mas `lista[]` significa *lista de listas*, e com uma lista simples produz três `K3010`.
+
+Não há como escrever, no plano de dados, um campo do tipo `list` da §3.3. **O tipo existe,
+tem formatador (`count`), tem atributo (`empty`), tem decodificador, e nenhum modelo pode
+declará-lo.**
+
+**O que o autor quer, e já tem.** `moveis : texto[]` faz tudo: junta com a conjunção do
+idioma, responde a `{moveis:count}`, responde a `é empty`. A cardinalidade do §2.1 já é a
+forma de dizer "vários", e ela diz também *vários de quê* — que é mais do que `list` diz.
+
+**As saídas, e o que cada uma custa.**
+
+| | O que fazer | Custo |
+|---|---|---|
+| (a) | Remover `list` do núcleo | Versão maior da linguagem: remove um tipo (§13) |
+| (b) | Fazer `: lista` aceitar uma lista | Duas grafias para a mesma coisa, e a pior das duas — sem o tipo do elemento |
+| (c) | Deixar como está, e corrigir a mensagem | O tipo continua morto; a sugestão para de mentir |
+
+**Recomendação: (c) agora, (a) na 1.0.** A mensagem de `K3002` sugerir `lista[]` é um
+defeito independente da decisão maior — ela manda o autor para um lugar onde ele levará
+mais três erros. Corrigi-la é aditivo. Remover o tipo é decisão de congelamento, e o
+portão ainda tem treze modelos pela frente: se nenhum deles precisar de `list`, a remoção
+está justificada por evidência em vez de por argumento.
+
+**Por que isto não foi visto antes.** `list` é o único tipo do núcleo que nenhum dos dois
+exemplos da F0 usava, e o formatador padrão dele — a única convenção tipográfica do
+núcleo, declarada como tal na §3.3 — é testado por dentro, chamando `format` sobre um
+vetor. Nenhum teste tentou **declarar um campo** desse tipo. É a diferença entre testar a
+peça e escrever um documento com ela, que é o que o portão da 1.0 existe para forçar.

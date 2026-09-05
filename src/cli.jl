@@ -249,7 +249,7 @@ function do_ask(modelo, dados, saida, hoje, out::IO, err::IO, entrada::IO)
         f.presence === OPTIONAL && continue      # opcional não se pergunta: ele pode faltar
         f.presence === DEFAULTED && continue     # o padrão preenche
 
-        if !(f.type in DIGITAVEIS) || islist(f.card)
+        if !(canonical_typename(modelo.env, f.type) in DIGITAVEIS) || islist(f.card)
             println(err, "  ", f.name, " — ", f.type,
                     islist(f.card) ? " (uma lista)" : "",
                     ": preencha no arquivo de dados; não cabe numa linha.")
@@ -261,7 +261,7 @@ function do_ask(modelo, dados, saida, hoje, out::IO, err::IO, entrada::IO)
         flush(err)
         linha = readline(entrada)
         isempty(strip(linha)) && continue
-        valores[String(f.name)] = coerce_answer(f, strip(linha))
+        valores[String(f.name)] = coerce_answer(modelo.env, f, strip(linha))
     end
 
     conjunto = check(modelo, valores; today = hoje)
@@ -283,9 +283,14 @@ fica para o arquivo.
 """
 const DIGITAVEIS = (:text, :number, :boolean, :date)
 
-"A resposta, convertida pelo tipo **declarado** — e não adivinhada pela forma."
-function coerce_answer(f::FieldDecl, texto::AbstractString)
-    f.type === :text && return String(texto)
+"""
+A resposta, convertida pelo tipo **declarado** — e não adivinhada pela forma.
+
+Pelo tipo canônico: sem isso, `nome : texto` num modelo em português cairia no ramo
+geral, e a resposta `123` viraria o número 123 em vez do nome que o autor digitou.
+"""
+function coerce_answer(env::Environment, f::FieldDecl, texto::AbstractString)
+    canonical_typename(env, f.type) === :text && return String(texto)
     parse_data_value(texto)
 end
 

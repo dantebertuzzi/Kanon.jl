@@ -233,3 +233,79 @@ end
                      corpo = "\n: cada <- witnesses\n{name}\n") == []
     end
 end
+
+# --- K2039: a §6.2 vista com as regras na mão --------------------------------
+#
+# `index_blocks!` verifica a sequência de níveis sobre o texto como está escrito. As
+# regras podem produzir em execução o estado que aquela checagem proíbe no texto: basta
+# que o nível 1 seja condicional e o nível 2 não seja. O documento sai com um `1.1`
+# encabeçando a página, subordinado a um `1` que não está lá.
+#
+# Descoberto ao escrever o contrato de locação (modelo real nº 2), onde a cláusula do
+# objeto tem um parágrafo sobre a mobília.
+
+"Um modelo de dois níveis no estilo do núcleo, com o plano de regras dado."
+function niveis(regras)
+    """
+    kanon 1
+
+    data
+      flag : boolean !
+
+    text
+
+    :: pai
+    Do pai.
+
+    ::: filho
+    Do filho.
+
+    :: outro
+    De outro.
+
+    rules
+    $regras
+    """
+end
+
+ncodes(regras) = [d.code for d in anl(niveis(regras)).diagnostics]
+
+@testset "regra que pode deixar um nível sem o anterior (K2039)" begin
+    @testset "o nível 1 condicional e o nível 2 não, é aviso" begin
+        d = anl(niveis("  pai when flag")).diagnostics
+        @test [x.code for x in d] == ["K2039"]
+        @test d[1].severity === :warning
+        @test occursin("pai", d[1].message)      # nomeia o bloco que abre o nível
+        @test d[1].line == 11                    # e aponta o filho, que é o que se corrige
+    end
+
+    @testset "a mesma condição nos dois dispensa o aviso" begin
+        @test ncodes("  pai when flag\n  filho when flag") == []
+    end
+
+    @testset "condição só no nível 2 não é problema" begin
+        # o pai fica; o filho sai. A sequência nunca quebra.
+        @test ncodes("  filho when flag") == []
+    end
+
+    @testset "sem regra nenhuma, nada a avisar" begin
+        @test ncodes("  outro when flag") == []
+    end
+
+    @testset "duas condições diferentes avisam, ainda que próximas na intenção" begin
+        # o reconhecimento é estrutural e conservador de propósito: dizer que garante
+        # quando não garante reabriria o buraco.
+        @test ncodes("  pai when flag\n  filho when not not flag") == ["K2039"]
+    end
+
+    @testset "o aviso é aviso: o modelo carrega, e o documento é o anunciado" begin
+        m = load_string(ENVP, niveis("  pai when flag"); name = "n.kanon")
+        @test render(m, Dict("flag" => true)) ==
+              "1. Do pai.\n\n1.1. Do filho.\n\n2. De outro."
+
+        # Sem o pai, o filho não vira `1.1`: vira `0.1`. O contador do nível 1 nunca foi
+        # incrementado, e o rótulo diz isso. É a saída que o aviso existe para anunciar,
+        # e é pior do que um número fora de lugar — é um número que não existe.
+        @test render(m, Dict("flag" => false)) == "0.1. Do filho.\n\n1. De outro."
+    end
+end

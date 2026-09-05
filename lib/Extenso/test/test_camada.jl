@@ -279,3 +279,85 @@ end
         @test "K1006" in [d.code for d in e.diagnostics]    # idioma desconhecido
     end
 end
+
+# --- o apelido de tipo é nome, e o núcleo decide pelo canônico ----------------
+#
+# Descoberto ao escrever o contrato de locação (modelo real nº 2): `quando flag` era
+# recusado num modelo em português e aceito no mesmo modelo em inglês. O apelido de
+# idioma é resolvido por `typefor`, mas `FieldDecl.type` e `ResolvedPath.typename`
+# guardam o nome **escrito** — que é o certo, porque é o que a mensagem de erro tem de
+# dizer de volta ao autor. Onde a lógica comparava esse nome com o canônico, o mesmo
+# modelo valia numa língua e não valia na outra.
+#
+# A §9 promete que o idioma renomeia palavras-chave, e nada além disso. Cada teste aqui
+# é um lugar onde essa promessa tinha sido quebrada.
+
+"O mesmo modelo, nas duas línguas, sob os ambientes que cada uma exige."
+function nas_duas_linguas(corpo_pt, corpo_en)
+    (load_string(ENV_PT, corpo_pt; name = "pt.kanon"),
+     load_string(Environment(), corpo_en; name = "en.kanon"))
+end
+
+@testset "o apelido de tipo é nome; o comportamento é do tipo canônico (§9)" begin
+    @testset "um campo `booleano` é condição, como `boolean` é" begin
+        pt, en = nas_duas_linguas(
+            "kanon 1 pt\n\ndados\n  flag : booleano !\n\ntexto\n\n: a\nSai.\n\n: b\nSempre.\n\nregras\n  a  quando flag\n",
+            "kanon 1\n\ndata\n  flag : boolean !\n\ntext\n\n: a\nSai.\n\n: b\nSempre.\n\nrules\n  a  when flag\n")
+        @test isempty(pt.analysis.diagnostics)
+        @test render(pt, Dict("flag" => true)) == render(en, Dict("flag" => true))
+        @test render(pt, Dict("flag" => false)) == "Sempre."
+    end
+
+    @testset "o checklist de um modelo em português descreve os tipos" begin
+        # Sem isto o `$defs` saía só com `x-kanon`, e o JSON Schema de um modelo em
+        # português validava qualquer coisa — o oposto do que a §2.4 promete.
+        m = load_string(ENV_PT,
+            "kanon 1 pt\n\ndados\n  nome : texto !\n  n : numero !\n  q : data !\n  b : booleano !\n\ntexto\n\n: a\n{nome}{n}{q}{b}\n";
+            name = "pt.kanon")
+        js = contract(m)
+        @test occursin("\"type\": \"string\"", js)
+        @test occursin("\"type\": \"number\"", js)
+        @test occursin("\"type\": \"boolean\"", js)
+        @test occursin("\"format\": \"date\"", js)
+
+        # e o nome do `$defs` continua sendo o que o autor escreveu
+        @test occursin("#/\$defs/texto", js)
+    end
+
+    @testset "`ask` converte pelo tipo declarado, e `texto` é texto" begin
+        m = load_string(ENV_PT, "kanon 1 pt\n\ndados\n  nome : texto !\n\ntexto\n\n: a\n{nome}\n";
+                        name = "pt.kanon")
+        f = only(m.template.data.fields)
+        @test Kanon.coerce_answer(m.env, f, "123") === "123"
+        @test Kanon.canonical_typename(ENV_PT, :texto) === :text
+        @test Kanon.canonical_typename(ENV_PT, :text) === :text      # o canônico é ele mesmo
+        @test Kanon.canonical_typename(ENV_PT, :inexistente) === :inexistente
+    end
+
+    @testset "a sugestão de um tipo também sai na língua do arquivo" begin
+        # O inverso do mesmo cuidado: `written_typename`. Sugerir `text[]` a quem escreve
+        # em português seria a D-027 ao contrário.
+        m = load_string(ENV_PT, "kanon 1 pt\n\ndados\n  itens : lista\n\ntexto\n\n: a\nCom [{itens}].\n";
+                        name = "pt.kanon")
+        x = only([d for d in check(m, Dict("itens" => ["a", "b"]))])
+        @test x.code == "K3002"
+        @test occursin("itens : texto[]", x.hint)
+        @test Kanon.written_typename(ENV_PT, :text) === :texto
+        @test Kanon.written_typename(Environment(), :text) === :text
+    end
+
+    @testset "a mensagem de erro fala o nome escrito, não o canônico" begin
+        # A canonicalização é da lógica; a redação continua sendo do autor.
+        e = try
+            load_string(ENV_PT, "kanon 1 pt\n\ndados\n  n : numero !\n\ntexto\n\n: a\nSai.\n\nregras\n  a  quando n\n";
+                        name = "pt.kanon")
+        catch err
+            err
+        end
+        @test e isa KanonReferenceError
+        d = collect(e.diagnostics)[1]
+        @test d.code == "K2040"
+        @test occursin("numero", d.message)
+        @test !occursin("number", d.message)
+    end
+end

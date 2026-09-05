@@ -1,0 +1,65 @@
+kanon 1 pt
+
+dados
+  locador    : pessoa[1..] !
+  locatario  : pessoa[1..] !
+  fiador     : pessoa[]
+  imovel     : imovel      !
+  aluguel    : dinheiro    !
+  caucao     : dinheiro
+  vencimento : numero      !
+  prazo      : numero      !
+  inicio     : data        !
+  termino    : data        !
+  moveis     : texto[]
+  finalidade : texto       = "residencial"
+  data       : data        = hoje
+
+texto
+
+: preambulo
+Pelo presente instrumento particular, celebrado em {data:corrente}, as partes abaixo qualificadas têm entre si justo e contratado o que segue:
+
+: quem_loca <- locador
+{nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}, doravante denominado(a) LOCADOR(A);
+
+: quem_aluga <- locatario
+{nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}, doravante denominado(a) LOCATÁRIO(A);
+
+: quem_afianca <- fiador
+{nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}, doravante denominado(a) FIADOR(A).
+
+§§ objeto
+O LOCADOR dá em locação ao LOCATÁRIO o imóvel {imovel:descricao}, matriculado sob o nº {imovel.matricula} no Cartório de Registro de Imóveis desta comarca, destinado exclusivamente a fim {finalidade}.
+
+§§§ mobilia
+O imóvel é entregue mobiliado, com {moveis}, cujo estado de conservação o LOCATÁRIO declara ter verificado neste ato.
+
+§§ prazo
+A locação é ajustada pelo prazo de {prazo:extenso} meses, com início em {inicio:corrente} e término em {termino:corrente}, data em que o LOCATÁRIO se obriga a restituir o imóvel, independentemente de aviso, notificação ou interpelação.
+
+§§ aluguel
+O aluguel mensal é de {aluguel} ({aluguel:extenso}), a ser pago até o {vencimento:ordinal} dia de cada mês.
+
+§§§ mora
+O atraso no pagamento sujeita o LOCATÁRIO a multa de dois por cento sobre o valor devido e a juros de um por cento ao mês, calculados pro rata die.
+
+§§ garantia
+A locação é garantida por caução em dinheiro no valor de {caucao} ({caucao:extenso}), que será restituída ao término da locação, se o imóvel for devolvido nas condições em que foi recebido.
+
+§§ fianca <- fiador
+O(s) FIADOR(ES) responde(m) solidariamente por todas as obrigações do LOCATÁRIO, com renúncia expressa ao benefício de ordem, até a efetiva devolução das chaves.
+
+§§ foro
+Fica eleito o foro da comarca de Petrolina, Estado de Pernambuco, para dirimir as questões oriundas deste contrato.
+
+: fecho
+E, por estarem assim justas e contratadas, as partes assinam o presente instrumento em duas vias de igual teor, obrigando-se ao pagamento previsto na {::aluguel}.
+
+regras
+  quem_loca     um para cada locador
+  quem_aluga    um para cada locatario
+  quem_afianca  um para cada fiador
+  mobilia       quando moveis é presente
+  garantia      quando caucao é presente
+  fianca        quando fiador é presente

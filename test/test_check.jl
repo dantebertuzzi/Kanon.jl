@@ -176,6 +176,27 @@ end
         @test kcodes(d) == ["K3002"]
     end
 
+    @testset "a dica de um campo `list` não manda o autor para `list[]` (D-033)" begin
+        # `list[]` é uma lista **de listas**: seguir a sugestão renderia um `K3010` por
+        # elemento. O tipo `list` do núcleo não é alcançável pelo plano de dados, e o que
+        # o autor quer é a cardinalidade sobre o tipo do elemento.
+        m = load_string(ENVP, """
+        kanon 1
+
+        data
+          items : list
+
+        text
+
+        : b
+        Com [{items}].
+        """; name = "l.kanon")
+        x = only([d for d in check(m, Dict("items" => ["a", "b"]))])
+        @test x.code == "K3002"
+        @test occursin("items : text[]", x.hint)
+        @test !occursin("items : list[]", x.hint)
+    end
+
     @testset "a contagem exata" begin
         d = completos(); d["witnesses"] = [pessoa("Bia")]
         x = [y for y in check(MODELO, d; today = Date(2026, 9, 4)) if y.code == "K3002"][1]

@@ -124,7 +124,9 @@ pior do que não afirmar nenhuma. Uma ferramenta que conheça Kanon lê o nome e
 é candidato a uma versão menor, e é aditivo (dívida registrada no roadmap).
 """
 function type_schema(env::Environment, name::Symbol)
-    base = core_json_type(name)
+    # Pelo canônico: `data` é `date`, e sem isto o checklist de um modelo em português
+    # sairia sem `type` nenhum — validando qualquer coisa (§2.4).
+    base = core_json_type(canonical_typename(env, name))
     base === nothing || return base
 
     T = typefor(env, name)

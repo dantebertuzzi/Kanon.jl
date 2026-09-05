@@ -636,6 +636,83 @@ function index_blocks!(ctx::AnalysisCtx)
 end
 
 """
+Duas condições são a **mesma** condição? Comparação estrutural, que ignora posição no
+arquivo e identidade de nó.
+
+Comparar índice de regra não serviria: a §8.2 dá a cada bloco a sua própria linha de
+`when`, e por construção dois blocos nunca compartilham uma. Duas regras escritas iguais
+são duas regras, e é a igualdade do que elas dizem que interessa.
+"""
+same_expr(a::PathExpr,  b::PathExpr)  = a.path.segments == b.path.segments
+same_expr(a::LitExpr,   b::LitExpr)   = a.lit.kind === b.lit.kind && a.lit.value == b.lit.value
+same_expr(a::NotExpr,   b::NotExpr)   = same_expr(a.operand, b.operand)
+same_expr(a::BinExpr,   b::BinExpr)   = a.op === b.op &&
+                                        same_expr(a.lhs, b.lhs) && same_expr(a.rhs, b.rhs)
+same_expr(a::AttrExpr,  b::AttrExpr)  = a.attr === b.attr && a.negated == b.negated &&
+                                        a.subject.segments == b.subject.segments
+same_expr(::RuleExpr,   ::RuleExpr)   = false
+
+"As regras `i` e `j` (índices em `block_rule`, `0` = nenhuma) dizem a mesma coisa?"
+function same_condition(ctx::AnalysisCtx, i::Integer, j::Integer)
+    (i == 0 || j == 0) && return false
+    a, b = ctx.tmpl.rules.rules[i].when, ctx.tmpl.rules.rules[j].when
+    (a === nothing || b === nothing) && return false
+    same_expr(a, b)
+end
+
+"""
+A sequência de níveis, agora com as regras na mão.
+
+`index_blocks!` verifica a §6.2 sobre o texto **como está escrito**: nível 2 sem nível 1
+antes é `K2031`. Mas o plano das regras pode produzir em execução exatamente o estado que
+aquela checagem proíbe no texto — basta que a cláusula seja condicional e o parágrafo
+dela não seja. O documento sai com `PARÁGRAFO PRIMEIRO` encabeçando a página, subordinado
+a uma cláusula que não está lá.
+
+Aviso, e não erro, pela mesma razão do `K2035`: as duas condições podem coincidir de
+propósito, e o motor não tem como saber. O reconhecimento é conservador — só a igualdade
+estrutural das duas condições dispensa o aviso —, e o custo de não reconhecer um caso é
+repetir a condição do pai no `when` do filho.
+
+Roda depois de `bind_rules!`: antes dele `block_rule` está vazia.
+"""
+function check_level_rules!(ctx::AnalysisCtx)
+    isempty(ctx.out.block_rule) && return nothing
+    aberto = Pair{Char,Vector{Int}}[]   # por estilo: a posição que abriu cada nível
+
+    for (pos, b) in enumerate(ctx.tmpl.text.blocks)
+        stylefor(ctx.env, b.unit) === nothing && continue
+        n = level(b)
+        n == 0 && continue
+
+        i = findfirst(p -> first(p) == b.unit, aberto)
+        i === nothing && (push!(aberto, b.unit => Int[]); i = lastindex(aberto))
+        abertos = last(aberto[i])
+
+        if n > 1 && length(abertos) >= n - 1
+            pai = abertos[n - 1]
+            regra_pai = ctx.out.block_rule[pai]
+            regra_filho = ctx.out.block_rule[pos]
+            if regra_pai != 0 && !same_condition(ctx, regra_pai, regra_filho)
+                rp = ctx.tmpl.rules.rules[regra_pai]
+                err!(ctx, "K2039", b.span,
+                     "o bloco `$(ctx.tmpl.text.blocks[pai].name)`, que abre o nível " *
+                     "$(n - 1) deste, pode ser removido por uma regra " *
+                     "(linha $(rp.span.line)), e então este bloco de nível $n ficaria " *
+                     "sem o nível anterior no documento.";
+                     hint = "Se as duas condições coincidem de propósito, não há o que " *
+                            "corrigir. Senão, prenda este bloco à mesma condição.",
+                     severity = :warning)
+            end
+        end
+
+        resize!(abertos, n)
+        abertos[n] = pos
+    end
+    return nothing
+end
+
+"""
 Avança o contador do estilo: um bloco de nível *n* incrementa o contador de nível *n* e
 zera os de nível maior (§6.2). Cada estilo tem sua própria família de contadores.
 
@@ -979,7 +1056,9 @@ veracidade implícita — a conveniência que faria `when notes` significar "qua
 notas" em um leitor e "quando notas for verdadeiro" em outro.
 """
 function require_boolean!(ctx::AnalysisCtx, e::RuleExpr, tn::Symbol)
-    (tn === :boolean || tn === :?) && return nothing
+    # Pelo canônico, nunca pelo escrito: `booleano` é `boolean` (§9).
+    canon = canonical_typename(ctx.env, tn)
+    (canon === :boolean || canon === :?) && return nothing
     hint = tn === :null ?
         "Para testar ausência, escreva `is absent`." :
         "Escreva `is present`, `is absent`, uma comparação, ou um atributo do tipo — " *
@@ -1135,6 +1214,7 @@ function analyze(env::Environment, tmpl::Template)
     analyze_data!(ctx)
     index_blocks!(ctx)
     bind_rules!(ctx)          # antes do texto: as remissões consultam as tabelas
+    check_level_rules!(ctx)   # e depois dele: a §6.2 vista com as regras na mão
     analyze_text!(ctx)
     analyze_rule_paths!(ctx)
     sort!(ctx.out.diagnostics; by = sortkey)

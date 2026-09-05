@@ -258,10 +258,18 @@ function check_field!(ctx::CheckCtx, f::FieldDecl, raw)
     end
 
     if raw isa AbstractVector
+        # A sugestão não pode ser `$(f.type)[]` quando o tipo declarado já é o `list` do
+        # núcleo: `lista[]` é uma lista **de listas**, e o autor levaria mais um erro por
+        # elemento. Enquanto o tipo `list` não for alcançável pelo plano de dados (D-033),
+        # o que ele quer escrever é a cardinalidade sobre o tipo do elemento.
+        dica = canonical_typename(env(ctx), f.type) === :list ?
+            "Declare a cardinalidade sobre o tipo do elemento — " *
+            "`$(f.name) : $(written_typename(env(ctx), :text))[]` para uma lista de " *
+            "textos —, que é a forma de dizer `vários` no plano de dados." :
+            "Declare `$(f.name) : $(f.type)[]` no modelo, ou informe um valor só."
         cerr!(ctx, "K3002", f.span,
               "`$(f.name)` é um valor único, e veio uma lista de $(length(raw)).";
-              hint = "Declare `$(f.name) : $(f.type)[]` no modelo, ou informe um valor só.",
-              path)
+              hint = dica, path)
         return nothing
     end
 
