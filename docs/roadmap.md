@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 4 de setembro de 2026. Escrito para retomar sem depender de memória.
+> Estado em 5 de setembro de 2026. Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -18,10 +18,65 @@
 | **F9** Editor | ✅ parcial | `outline`, `kanon outline` e `kanon ask`; a interface gráfica é aplicação (D-029) |
 | **F10** Publicação | 🔨 quase | CI, Aqua e Documenter feitos; falta o registro no General, que é ação sua |
 
-**F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
+**O produto existe.** `load_template` → `check` → `render`, mais a CLI, os três formatos
+de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
+dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
 Suíte: **1.701 testes** ao todo — 1.411 no núcleo (~44 s com Aqua), 175 em `Extenso`,
 74 em `KanonLegal`, 41 em `KanonScience`. CI em Linux, macOS e Windows.
+
+---
+
+## O que resta
+
+As dez fases estão feitas ou entregues em parte. **O que resta não é código de motor** —
+é uso, decisão e interface, nesta ordem de importância.
+
+### 1. Quinze modelos reais — o portão, e o único item que importa
+
+Existe **um** modelo real no repositório: `test/golden/exemplos/escritura.kanon`. O
+relatório científico vive inline na suíte de `KanonScience`. O portão para a 1.0 pede
+quinze.
+
+Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
+dos treze que faltam vai cobrar alguma coisa — como os dois primeiros cobraram: o exemplo
+jurídico revelou três lacunas na F0, e depois contradisse a D-013 na F6. **Nenhuma outra
+atividade tem a mesma taxa de descoberta por hora.**
+
+O que procurar em cada modelo escrito:
+
+- Uma construção que a gramática não expressa, ou expressa mal.
+- Uma mensagem de erro que não diz o que fazer.
+- Um lugar onde os colchetes ficaram no lugar errado, ou onde faltou uma marca de flexão.
+- Um formatador que a camada devia ter e não tem.
+
+**Enquanto isso não acontecer, congelar a sintaxe é apostar.** Depois de congelada, cada
+erro de design vira permanente.
+
+### 2. O registro no General — decisão sua, não minha
+
+O pacote está em `0.1.0-DEV`, que não é versão registrável. Registrar exige decidir a
+`0.1.0`, e essa decisão depende do item 1: uma `0.1.0` publicada cria expectativa de
+estabilidade que quinze modelos ainda podem desfazer.
+
+Se a decisão for registrar assim mesmo — o que é defensável, `0.1.x` não promete nada —, o
+que o registro vai cobrar está na seção da F10.
+
+### 3. A terceira coluna do editor
+
+`outline` já entrega o que uma interface consome. Falta a interface: a pré-visualização
+sempre visível e a edição. Um servidor de linguagem (LSP) é o formato mais provável, e é
+onde o esforço rende mais — um editor gráfico serve a um editor; um LSP serve a todos.
+
+O roadmap original dizia que sem isso *"a linguagem fica pior na prática que um motor
+convencional"*. Continua verdade, e é o segundo item mais valioso da lista.
+
+### 4. As dívidas
+
+Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a maioria é
+"quando alguém precisar", e algumas dependem de um dos três itens acima.
+
+---
 
 ## Como retomar
 
@@ -505,20 +560,20 @@ provaria nada, e agora é a máquina quem garante essa condição.
 
 ## Dívidas conhecidas
 
-| Dívida | Onde | Quando resolver |
+Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
+
+| Dívida | Onde | Gatilho |
 |---|---|---|
+| As mensagens listam os atributos em inglês mesmo num modelo `pt`: `Atributos de \`texto\`: absent, present` | `analyze.jl` | um redator reclamar. Traduzir diagnóstico é projeto próprio, e a D-027 diz por que ele não é urgente |
+| `is not` em português vira `é não`, que é agramatical | `parse_rules.jl` | escrever `não (x é y)` resolve hoje; mudar a **ordem** da gramática por idioma seria versão maior |
+| Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | um `pessoa` com `nome = " "` passa pelo D-008. Fecha o mesmo buraco um nível abaixo |
+| Escalar de camada vira `{}` no checklist | `contract.jl` | um gerador de formulário precisar da forma de `measure`. Um `kanon_json_type` é aditivo e cabe numa versão menor |
+| `money` emite duas casas para toda moeda; JPY não tem centavos | `core_types.jl` | alguém escrever em iene. Exige casas por moeda no ambiente |
+| O orçamento não é configurável pela CLI | `cli.jl` | um documento legítimo estourar o padrão |
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
-| O exemplo jurídico de `docs/exemplos.md` renderiza com tipos de mentira; falta `KanonLegal` | tipos `pessoa`/`imovel`, estilo `§`, `CLÁUSULA PRIMEIRA` | F6 |
-| As mensagens de erro listam os atributos em inglês mesmo num modelo `pt` | `analyze.jl` | quando a tradução de diagnóstico entrar (não planejada) |
-| Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
-| Escalar de camada vira `{}` no checklist; falta um `kanon_json_type` para a camada descrevê-lo | `contract.jl` | aditivo, cabe numa versão menor |
-| Sem Aqua, sem Documenter | — | F10 |
-| `is not` em português vira `é não`: a localização troca palavras, não ordem sintática | `parse_rules.jl` | escrever `não (x é y)` resolve; mudar a gramática seria versão maior |
-| Os quatro pacotes vivem num repo só, com `Project.toml` cada | `lib/` | extrair na F10, se o registro exigir |
-| O orçamento não é configurável pela CLI | `cli.jl` | quando alguém precisar |
-| `K1213` está no registro e nunca é emitido: a unidade fora do conjunto fechado nunca vira cabeçalho | `diagnostics.jl` | remover ou dar uso na F3 |
-| A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | quando a primeira camada de idioma existir (F4) |
-| `money` emite duas casas para toda moeda; JPY não tem centavos | `core_types.jl` | quando alguém precisar — exige casas por moeda no ambiente |
+| A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
+| `K1213` está no registro e nunca é emitido | `diagnostics.jl` | remover, ou dar uso. Um código que não erra nunca é um código a menos |
+| Os quatro pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
 
 ## Invariantes que nenhuma fase pode quebrar
 
@@ -543,3 +598,22 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 **A sintaxe só congela depois de quinze modelos reais reescritos na linguagem.** Depois
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
+
+Contagem: **1 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
+contradizer a D-013 que veio depois dele.
+
+### O que a implementação já mudou na especificação
+
+Doze decisões saíram de escrever o código, e quatro delas fecharam buracos que nenhuma
+releitura teria encontrado — o texto era internamente coerente em todos os casos:
+
+| | O que estava errado |
+|---|---|
+| **D-019** | a fachada com closures era incompatível com a proibição de `eval` **e** com a obrigação 5-A ao mesmo tempo |
+| **D-021** | a §4.4 enunciou o caso extremo de uma regra mais geral e parou nele |
+| **D-023** | a API listava oito funções do protocolo e **nenhuma lia um campo** — o teorema tinha um furo do tamanho de um tipo composto |
+| **D-026** | um formatador de camada valia em ambiente neutro, e o teste de neutralidade não o veria |
+
+Se treze modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
+a F0 desenhou — e melhor.
