@@ -22,4 +22,5 @@ include("helpers.jl")
     include("test_render.jl")
     include("test_security.jl")
     include("test_cli.jl")
+    include("test_rules_runtime.jl")
 end

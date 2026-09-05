@@ -29,6 +29,8 @@ mutable struct AnalysisCtx
     subject_path::Union{Nothing,Path}
     # o caminho que o bloco corrente itera, quando uma regra `one for each` o repete
     iterating::Union{Nothing,Path}
+    # os caminhos que o `when` do bloco corrente afirma presentes (D-020, 2ª revisão)
+    guaranteed::Vector{Vector{Symbol}}
     # campos cujo tipo declarado não existe: caminhos que passem por eles não geram
     # erro em cascata, porque o erro já foi dito na declaração
     poisoned::Vector{Symbol}
@@ -37,7 +39,7 @@ end
 function AnalysisCtx(env::Environment, tmpl::Template)
     AnalysisCtx(env, tmpl, Analysis(tmpl.nnodes),
                 isempty(tmpl.sources) ? "<string>" : tmpl.sources[1],
-                nothing, nothing, nothing, Symbol[])
+                nothing, nothing, nothing, Vector{Symbol}[], Symbol[])
 end
 
 function err!(ctx::AnalysisCtx, code::AbstractString, sp::Span, msg::AbstractString;
@@ -170,7 +172,9 @@ function descend(ctx::AnalysisCtx, segs::Vector{Symbol}, from::Int,
         spec = schema[j]
         typename = spec.type
         card = spec.card
-        nullable |= spec.optional
+        # a opcionalidade deste segmento não conta se a regra do bloco afirma que o
+        # caminho até aqui está presente
+        nullable |= spec.optional && !guaranteed_prefix(ctx, segs, i)
     end
     ResolvedPath(kind, typename, nullable, card, decl), nothing
 end
@@ -208,10 +212,12 @@ function resolve_in_contract(ctx::AnalysisCtx, p::Path)
 
     head in ctx.poisoned && return nothing, SILENT
 
-    # a iteração entrega um elemento, e um elemento nunca é a lista nem é nulo
+    # a iteração entrega um elemento, e um elemento nunca é a lista nem é nulo; e um
+    # caminho que a regra do bloco afirma presente também não é (D-020)
     iterado = iterated_head(ctx, head)
     card = iterado ? Cardinality() : decl.card
     nulo = iterado ? false : decl.presence === OPTIONAL
+    nulo &= !guaranteed_prefix(ctx, segs, 1)
 
     length(segs) == 1 &&
         return ResolvedPath(:field, decl.type, nulo, card, decl.id), nothing
@@ -304,6 +310,10 @@ function resolve!(ctx::AnalysisCtx, p::Path, sp::Span)
         err!(ctx, f.code, sp, f.message; hint = f.hint, path = string(p))
     return nothing
 end
+
+"O prefixo `segs[1:i]` é um dos caminhos que a regra do bloco afirma presentes?"
+guaranteed_prefix(ctx::AnalysisCtx, segs::Vector{Symbol}, i::Int) =
+    any(g -> g == segs[1:i], ctx.guaranteed)
 
 "O caminho não existe em nenhum dos dois escopos do §4.2."
 function report_neither!(ctx::AnalysisCtx, p::Path, sp::Span)
@@ -770,27 +780,40 @@ a presença por caminho indireto também não — dizer que garante quando não 
 reabriria a lacuna que a F2.3 fechou, e o custo de não reconhecer é apenas um par de
 colchetes a mais.
 """
-function guaranteed_present(ctx::AnalysisCtx, pos::Int, p::Path)
-    isempty(ctx.out.block_rule) && return false
-    k = ctx.out.block_rule[pos]
-    k == 0 && return false
-    asserts_present(ctx.tmpl.rules.rules[k].when, p)
+function guaranteed_present(ctx::AnalysisCtx, p::Path)
+    any(g -> g == p.segments, ctx.guaranteed)
 end
 
-function asserts_present(e::Union{Nothing,RuleExpr}, p::Path)
-    e === nothing && return false
+"""
+Os caminhos que a regra `when` do bloco afirma presentes.
+
+Deliberadamente conservadora: só uma conjunção de termos que afirmem presença. Um `or`
+não garante nada, e uma condição que implique a presença por caminho indireto também
+não — dizer que garante quando não garante reabriria a lacuna que a F2.3 fechou, e o
+custo de não reconhecer é um par de colchetes que o redator sempre pode escrever.
+"""
+function present_paths(ctx::AnalysisCtx, pos::Int)
+    out = Vector{Symbol}[]
+    isempty(ctx.out.block_rule) && return out
+    k = ctx.out.block_rule[pos]
+    k == 0 && return out
+    collect_present!(out, ctx.tmpl.rules.rules[k].when)
+    out
+end
+
+function collect_present!(out::Vector{Vector{Symbol}}, e::Union{Nothing,RuleExpr})
+    e === nothing && return out
     if e isa AttrExpr
-        e.subject.segments == p.segments || return false
-        e.attr === :present && return !e.negated
-        e.attr === :absent && return e.negated
-        return false
+        afirma = (e.attr === :present && !e.negated) || (e.attr === :absent && e.negated)
+        afirma && push!(out, e.subject.segments)
+    elseif e isa NotExpr && e.operand isa AttrExpr
+        o = e.operand
+        o.attr === :absent && !o.negated && push!(out, o.subject.segments)
+    elseif e isa BinExpr && e.op === :and
+        collect_present!(out, e.lhs)
+        collect_present!(out, e.rhs)
     end
-    e isa NotExpr && return e.operand isa AttrExpr &&
-        e.operand.subject.segments == p.segments &&
-        e.operand.attr === :absent && !e.operand.negated
-    e isa BinExpr && e.op === :and &&
-        return asserts_present(e.lhs, p) || asserts_present(e.rhs, p)
-    return false
+    out
 end
 
 "Resolve o sujeito do cabeçalho e o guarda em `paths[bloco]` — nó nenhum o carrega (I2)."
@@ -799,16 +822,17 @@ function analyze_subject!(ctx::AnalysisCtx, b::Block, pos::Int)
     ctx.subject_path = nothing
     ctx.iterating = nothing
 
+    ctx.guaranteed = present_paths(ctx, pos)
+
     k = isempty(ctx.out.block_foreach) ? Int32(0) : ctx.out.block_foreach[pos]
     k == 0 || (ctx.iterating = ctx.tmpl.rules.rules[k].foreach)
 
     b.subject === nothing && return nothing
 
     rp, f = resolve_in_contract(ctx, b.subject)
-    # D-020, refinado agora que `block_rule` existe: um bloco que só existe quando o
-    # sujeito está presente tem o sujeito presente por construção, e não precisa
-    # espalhar nulabilidade pelo texto inteiro.
-    if rp !== nothing && rp.nullable && guaranteed_present(ctx, pos, b.subject)
+    # D-020, refinada: um bloco que só existe quando o sujeito está presente tem o
+    # sujeito presente por construção, e não precisa espalhar nulabilidade pelo texto.
+    if rp !== nothing && rp.nullable && guaranteed_present(ctx, b.subject)
         rp = ResolvedPath(rp.kind, rp.typename, false, rp.card, rp.decl)
     end
     if rp === nothing
@@ -1066,6 +1090,7 @@ each` sobre lista — é a F2.5. Aqui só se resolve o que os caminhos apontam.
 function analyze_rule_paths!(ctx::AnalysisCtx)
     ctx.subject = nothing
     ctx.subject_path = nothing
+    ctx.guaranteed = Vector{Symbol}[]
 
     for r in ctx.tmpl.rules.rules
         pos = blockpos(ctx, r.block)

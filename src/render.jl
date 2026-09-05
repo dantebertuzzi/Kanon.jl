@@ -18,29 +18,6 @@
 #
 # A parte difícil deste arquivo é a elisão, e ela está isolada em `elide.jl`.
 
-"Excedeu o orçamento de recursos. A única falha que o render pode ter (§11, D-010)."
-struct KanonResourceError <: KanonError
-    diagnostics::DiagnosticSet
-end
-
-"""
-    Budget
-
-Limites **contados**, nunca de tempo de parede (D-010): um limite de tempo tornaria não
-determinístico *se* o render erra — a mesma entrada erraria numa máquina carregada e
-passaria numa ociosa, e a suíte golden ficaria instável justamente em CI, que é onde a
-máquina lenta aparece.
-"""
-struct Budget
-    nodes::Int
-    bytes::Int
-    depth::Int
-    iterations::Int
-end
-
-Budget(; nodes = 1_000_000, bytes = 64 * 1024 * 1024, depth = 64, iterations = 100_000) =
-    Budget(nodes, bytes, depth, iterations)
-
 """
     PreviewMarker
 
@@ -205,7 +182,9 @@ function blockref_text(ctx::RenderCtx, n::BlockRef)
     b = template(ctx).text.blocks[pos]
     estilo = stylefor(model(ctx).env, b.unit)
     estilo === nothing && return ""
-    String(estilo.ref(analysis(ctx).numbering[pos], ctx.fctx))
+    # o número é o do plano: se uma regra removeu blocos antes deste, ele renumerou —
+    # e `check` já recusou a remissão a bloco que as regras tiraram (K3040)
+    String(estilo.ref(ctx.bound.plan.numbers[pos], ctx.fctx))
 end
 
 # --- blocos e parágrafos -----------------------------------------------------
@@ -217,9 +196,8 @@ quando o bloco é numerado.
 `layout = :prefix` prefixa o primeiro parágrafo com o rótulo e o separador;
 `:heading` põe o rótulo num parágrafo próprio (§6.4).
 """
-function render_block(ctx::RenderCtx, b::Block, pos::Int)
-    refuse_unimplemented_rule(ctx, b, pos)
-    ctx.subject = block_subject(ctx, b)
+function render_block(ctx::RenderCtx, b::Block, inst::BlockInstance)
+    ctx.subject = inst.subject
     paras = String[]
     for p in b.children
         spend!(ctx)
@@ -228,7 +206,7 @@ function render_block(ctx::RenderCtx, b::Block, pos::Int)
     end
     ctx.subject = nothing
 
-    rotulo = block_label(ctx, b, pos)
+    rotulo = block_label(ctx, b, inst)
     rotulo === nothing && return paras
     estilo = stylefor(model(ctx).env, b.unit)
     if estilo.layout === :heading
@@ -242,39 +220,14 @@ function render_block(ctx::RenderCtx, b::Block, pos::Int)
 end
 
 """
-Regras em execução são da F5. Até lá o motor **recusa** o bloco que tem uma, em vez de
-renderizá-lo como se a regra não existisse.
-
-Um bloco com `one for each` renderizado uma vez, com a coleção inteira no lugar do
-elemento, é exatamente a saída errada em silêncio que a linguagem existe para impedir —
-e ela seria produzida pelo motor que promete não produzi-la. Recusar é a única opção
-honesta enquanto a F5 não chega.
+O rótulo desta instância. O número vem do **plano**, e não da `Analysis`: bloco removido
+por regra não consome número e bloco repetido consome um por iteração, então a numeração
+final depende dos dados (§6.2).
 """
-function refuse_unimplemented_rule(ctx::RenderCtx, b::Block, pos::Int)
-    a = analysis(ctx)
-    tem = (!isempty(a.block_foreach) && a.block_foreach[pos] != 0) ||
-          (!isempty(a.block_rule) && a.block_rule[pos] != 0)
-    tem || return nothing
-    error("o bloco `", b.name, "` tem uma regra, e as regras em execução — `when` e " *
-          "`one for each` — são da fase 5. O modelo é válido; o motor é que ainda não " *
-          "as aplica, e renderizar ignorando a regra daria um documento errado em silêncio.")
-end
-
-"O rótulo do bloco, ou `nothing` se ele não é numerado."
-function block_label(ctx::RenderCtx, b::Block, pos::Int)
-    path = analysis(ctx).numbering[pos]
-    isempty(path) && return nothing
+function block_label(ctx::RenderCtx, b::Block, inst::BlockInstance)
+    isempty(inst.number) && return nothing
     estilo = stylefor(model(ctx).env, b.unit)
-    estilo === nothing ? nothing : String(estilo.number(path, ctx.fctx))
-end
-
-"O valor do sujeito declarado no cabeçalho, quando há um."
-function block_subject(ctx::RenderCtx, b::Block)
-    b.subject === nothing && return nothing
-    segs = b.subject.segments
-    v = value(ctx.bound, segs[1])
-    v === nothing && return nothing
-    descend_value(v, segs, 2)
+    estilo === nothing ? nothing : String(estilo.number(inst.number, ctx.fctx))
 end
 
 """
@@ -319,8 +272,8 @@ function render(b::Bound; budget::Budget = Budget(), preview::Bool = false)
     ctx = RenderCtx(b, budget, preview)
 
     paras = String[]
-    for (pos, blk) in enumerate(template(ctx).text.blocks)
-        append!(paras, render_block(ctx, blk, pos))
+    for inst in b.plan.instances
+        append!(paras, render_block(ctx, template(ctx).text.blocks[inst.pos], inst))
     end
 
     s = join(paras, "\n\n")
@@ -336,7 +289,7 @@ Valida e renderiza. Lança `KanonContractError` se os dados não satisfazem o co
 """
 function render(m::Model, data; today::Union{Nothing,Date} = nothing,
                 budget::Budget = Budget())
-    render(bind(m, data; today); budget)
+    render(bind(m, data; today, budget); budget)
 end
 
 """
@@ -352,5 +305,5 @@ nenhum.
 """
 function preview(m::Model, data; today::Union{Nothing,Date} = nothing,
                  budget::Budget = Budget())
-    render(bind(m, data; today); budget, preview = true)
+    render(bind(m, data; today, budget); budget, preview = true)
 end

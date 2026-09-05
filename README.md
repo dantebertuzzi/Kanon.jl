@@ -122,7 +122,22 @@ O modelo que produziu isso escreve `brasileiro(a)`, `domiciliado(a)`, `denominad
 como está mesmo com sujeito plural. Escrever a marca é o consentimento do autor, palavra
 a palavra.
 
-Ainda não existem as regras em execução (F5) nem os domínios (F6).
+## Regras
+
+Regras só **removem** ou **repetem** blocos — nunca inserem, substituem ou reordenam.
+Ler o plano do texto é um limite superior confiável do documento gerado.
+
+```
+regras
+  outorgante um para cada vendedor
+  itbi       quando preco > 0
+```
+
+Um bloco por vendedor; a cláusula do imposto só quando há preço. Blocos removidos não
+consomem número, e as remissões renumeram junto.
+
+Ainda não existem os domínios (F6): `KanonLegal` com os tipos `pessoa` e `imovel`, o
+marcador `§` e o rótulo `CLÁUSULA PRIMEIRA`.
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).

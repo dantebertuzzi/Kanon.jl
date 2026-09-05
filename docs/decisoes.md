@@ -547,6 +547,13 @@ construção, e não por coincidência de implementação: não existe outro cam
 
 *2026-09-04 · aceita, **revista na F2.5** no mesmo dia · surgida ao implementar a F2.2*
 
+**2ª revisão (F5).** A garantia deixou de valer só para o sujeito e passou a valer para
+**todo caminho** que o `when` do bloco afirme presente. `b when notes is present` com
+`{notes}` no texto era o padrão mais natural da linguagem e exigia colchetes redundantes:
+o autor já tinha escrito a condição, e o motor mandava escrevê-la de novo em outra
+notação. A garantia cobre o **prefixo**, e não o caminho inteiro — `seller is present`
+não diz nada sobre `spouse`, que é opcional dentro de `person`.
+
 **Revisão (F2.5).** O refinamento previsto abaixo foi feito assim que `block_rule` e
 `block_foreach` passaram a existir. Um sujeito **não** propaga nulabilidade quando o
 bloco tem `one for each C` — a iteração entrega um elemento, nunca o nulo — ou quando o

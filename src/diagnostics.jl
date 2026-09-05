@@ -130,6 +130,7 @@ const CODE_TITLES = Dict{String,String}(
     "K3012" => "o valor não tem um campo que o esquema promete",
     "K3021" => "campo nos dados que o contrato não declara",
     "K3030" => "valor aninhado fundo demais",
+    "K3040" => "remissão a bloco que as regras removeram",
     # --- recurso ---
     "K4001" => "orçamento de nós excedido",
     "K4002" => "orçamento de bytes excedido",
@@ -187,6 +188,16 @@ end
 
 "Modelo válido, dados incompatíveis."
 struct KanonContractError <: KanonError
+    diagnostics::DiagnosticSet
+end
+
+"""
+Excedeu o orçamento de recursos — a única falha que o render pode ter (§11, D-010).
+
+Mora aqui, com as outras exceções, e não no renderizador, porque `check` também pode
+estourar o orçamento: as regras são avaliadas antes de qualquer texto sair.
+"""
+struct KanonResourceError <: KanonError
     diagnostics::DiagnosticSet
 end
 

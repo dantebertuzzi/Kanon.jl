@@ -36,6 +36,7 @@ struct Bound
     model::Model
     values::Vector{Any}
     today::Union{Nothing,Date}
+    plan::Plan
     diagnostics::Vector{Diagnostic}
 end
 
@@ -393,7 +394,8 @@ end
 Valida os dados contra o contrato e decodifica o que passar. Não lança: devolve o
 `Bound` com os diagnósticos acumulados, para que o chamador decida.
 """
-function bind(m::Model, data; today::Union{Nothing,Date} = nothing)
+function bind(m::Model, data; today::Union{Nothing,Date} = nothing,
+              budget::Budget = Budget())
     ctx = CheckCtx(m, FormatContext(m.env, today),
                    isempty(m.template.sources) ? "<string>" : m.template.sources[1],
                    Diagnostic[])
@@ -410,8 +412,55 @@ function bind(m::Model, data; today::Union{Nothing,Date} = nothing)
         n === nothing || missing_today!(ctx, n.span, "today")
     end
 
+    # O plano é montado sempre, inclusive com dados incompletos: é dele que o rascunho
+    # depende, e uma condição sobre campo ausente tem resposta definida e conservadora —
+    # `is present` é falso, comparação é falsa.
+    plano = build_plan(m, valores, ctx.fctx, budget)
+
+    # A remissão quebrada só se reporta quando não há outro erro: com um campo faltando,
+    # o bloco pode ter sumido por causa do campo, e o K3040 seria cascata.
+    haserrors(DiagnosticSet(ctx.diags)) || check_dangling_refs!(ctx, plano)
+
     sort!(ctx.diags; by = sortkey)
-    Bound(m, valores, today, ctx.diags)
+    Bound(m, valores, today, plano, ctx.diags)
+end
+
+"""
+Uma remissão a bloco que as regras **de fato** removeram, para estes dados.
+
+`analyze` já avisou que isso podia acontecer (`K2035`), e o aviso existe porque o autor
+pode saber que as duas condições coincidem. Quando elas não coincidem, o documento sairia
+com uma remissão a um bloco que não está nele — e isso é erro de dados, reportado aqui,
+onde há dados para reportá-lo. O render não emite diagnóstico.
+"""
+function check_dangling_refs!(ctx::CheckCtx, plano::Plan)
+    isempty(plano.instances) && return nothing
+    m = ctx.model
+    for (pos, b) in enumerate(m.template.text.blocks)
+        plano.present[pos] || continue
+        for p in b.children
+            scan_refs!(ctx, plano, p.children)
+        end
+    end
+end
+
+function scan_refs!(ctx::CheckCtx, plano::Plan, nodes)
+    for n in nodes
+        if n isa BlockRef
+            alvo = findfirst(b -> b.name === n.target, ctx.model.template.text.blocks)
+            alvo === nothing && continue
+            plano.present[alvo] && continue
+            cerr!(ctx, "K3040", n.span,
+                  "a remissão aponta o bloco `$(n.target)`, que as regras removeram " *
+                  "para estes dados.";
+                  hint = "O modelo avisou que isso podia acontecer. Prenda este trecho " *
+                         "à mesma condição do bloco remetido, ou informe os dados que " *
+                         "mantêm os dois.",
+                  path = String(n.target))
+        elseif n isa Group
+            scan_refs!(ctx, plano, n.children)
+        end
+    end
 end
 
 """
@@ -422,5 +471,6 @@ Os dados satisfazem o contrato? Conjunto vazio quer dizer que sim.
 Não lança, de propósito: `check` é a pergunta, e quem responde "não" merece a lista
 inteira do que falta, e não o primeiro problema.
 """
-check(m::Model, data; today::Union{Nothing,Date} = nothing) =
-    diagnostics(bind(m, data; today))
+check(m::Model, data; today::Union{Nothing,Date} = nothing,
+      budget::Budget = Budget()) =
+    diagnostics(bind(m, data; today, budget))

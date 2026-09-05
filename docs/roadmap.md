@@ -11,7 +11,7 @@
 | **F2** Validador | ✅ concluída | protocolo de tipo, ambiente, `analyze`, teorema da lacuna, `check` e o checklist |
 | **F3** Renderizador | ✅ concluída | elisão, reparo de emenda, numeração, remissões, orçamento e a CLI |
 | **F4** `Extenso.jl` | ✅ concluída | flexão por marca, extenso, datas, junção, separadores e as palavras-chave em pt |
-| F5 Numeração e regras | ⬜ | — |
+| **F5** Numeração e regras | ✅ concluída | `when` remove, `one for each` repete, e a numeração passa a ser dos dados |
 | F6 Domínios | ⬜ | — |
 | F7 Ingestão e reuso | ⬜ | — |
 | F8 Saída | ⬜ | — |
@@ -20,12 +20,12 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **939 testes** no núcleo, ~21 s; **170** em `Extenso`.
+Suíte: **992 testes** no núcleo, ~21 s; **170** em `Extenso`.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'              # 939 testes, ~21 s
+julia --project=. -e 'using Pkg; Pkg.test()'              # 992 testes, ~21 s
 julia --project=lib/Extenso lib/Extenso/test/runtests.jl  # 170 testes
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
@@ -49,6 +49,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/analyze.jl` | caminhos, formatadores, grupos, remissões, regras; `load_string` / `load_template` |
 | `src/check.jl` | os dados contra o contrato; `check`, `bind`, `Bound` |
 | `src/contract.jl` | o checklist em JSON Schema, com emissor determinístico próprio |
+| `src/rules.jl` | avaliação das condições e o **plano**: que blocos existem, quantas vezes, com que número |
 | `src/elide.jl` | **o reparo de emenda** — R1 a R5, local à remoção; a peça mais delicada |
 | `src/render.jl` | interpolação, grupos, sujeito, numeração, remissões, orçamento |
 | `src/cli.jl` | `check`, `render`, `contract`, `preview`; os cinco códigos de saída |
@@ -306,19 +307,35 @@ mas `cento` composto; `mil e duzentos` mas `mil duzentos e trinta`; o dia 1 por 
 
 ---
 
-## F5 — Numeração e regras em execução (a próxima)
+## F5 — Numeração e regras em execução (concluída em 4 de setembro de 2026)
 
-Contadores por estilo, nível pela repetição da unidade do marcador, zeramento dos níveis
-inferiores, tabela `numbering` na `Analysis` — **nunca dentro do nó**. `layout`
-(`:prefix` / `:heading`) e separador decidem onde o rótulo entra no texto. Blocos
-removidos por regra não consomem número; blocos repetidos consomem um por iteração.
+`when` remove, `one for each` repete, e o `when` de um bloco repetido é avaliado por
+iteração — `grantor one for each seller` mais `grantor when seller is not minor` lê-se
+"um bloco por vendedor, exceto os menores", e é assim que funciona.
 
-Invariante anti-XSLT (D-015): regras só removem ou repetem. Nunca inserem, substituem ou
-reordenam.
+**O plano mora no `Bound`, não na `Analysis`.** Blocos removidos não consomem número e
+repetidos consomem um por iteração, então a numeração final depende dos dados.
+`Analysis.numbering` continua sendo a estática — a do editor da F9, que mostra o modelo
+sem dados.
+
+Duas coisas que a fase forçou:
+
+- **Uma remissão a bloco que as regras removeram é erro de contrato** (`K3040`), e é
+  reportada em `check`, não no render — que não emite diagnóstico. Por isso o plano é
+  montado em `bind`: é lá que há dados para saber se o bloco existe. `analyze` continua
+  avisando (`K2035`) que isso *pode* acontecer, porque o autor pode saber que as duas
+  condições coincidem.
+- **D-020 revista pela segunda vez.** A garantia passou a valer para todo caminho que o
+  `when` afirme presente, e não só para o sujeito: `b when notes is present` com
+  `{notes}` no texto era o padrão mais natural da linguagem e exigia colchetes
+  redundantes.
+
+E o defeito que a F4 tinha exposto está resolvido: o `refuse_unimplemented_rule` saiu, e
+a escritura com `um para cada vendedor` sai com um bloco por vendedor.
 
 ---
 
-## F6 — Domínios
+## F6 — Domínios (a próxima)
 
 `KanonLegal.jl` e um domínio científico mínimo, **ambos escritos só com a API pública**.
 Os dois exemplos de `docs/exemplos.md` funcionando byte a byte.
@@ -361,7 +378,7 @@ de `KanonLegal`.
 | Dívida | Onde | Quando resolver |
 |---|---|---|
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
-| O exemplo jurídico de `docs/exemplos.md` analisa, mas não renderiza | falta `KanonLegal` (tipos, `§`) e as regras em execução | F5 e F6 |
+| O exemplo jurídico de `docs/exemplos.md` renderiza com tipos de mentira; falta `KanonLegal` | tipos `pessoa`/`imovel`, estilo `§`, `CLÁUSULA PRIMEIRA` | F6 |
 | As mensagens de erro listam os atributos em inglês mesmo num modelo `pt` | `analyze.jl` | quando a tradução de diagnóstico entrar (não planejada) |
 | A camada `Science` de `test_acceptance.jl` é de mentira e vive na suíte | `test/` | vira pacote de verdade na F6 |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
