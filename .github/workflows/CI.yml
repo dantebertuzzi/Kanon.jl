@@ -87,11 +87,14 @@ jobs:
       # lacuna como propriedade, os goldens byte a byte e o registro de diagnósticos.
       - uses: julia-actions/julia-processcoverage@v1
         if: matrix.os == 'ubuntu-latest' && matrix.version == '1.11'
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         if: matrix.os == 'ubuntu-latest' && matrix.version == '1.11'
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
+          # Falha de upload não derruba a suíte: a cobertura é informação sobre o
+          # projeto, e não uma das garantias dele. Um serviço de fora fora do ar não
+          # pode transformar um commit bom em CI vermelha.
           fail_ci_if_error: false
 
   docs:
