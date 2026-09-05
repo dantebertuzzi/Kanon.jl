@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['1.10', '1.11', 'nightly']
+        os: [ubuntu-latest]
+        include:
+          - version: '1'
+            os: macOS-latest
+          - version: '1'
+            os: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v2
+
+      # O núcleo primeiro, e sozinho: se ele passa aqui, passa sem camada nenhuma
+      # carregada — que é o que o teste de neutralidade precisa para valer.
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+
+      # As três camadas, cada uma no ambiente dela, com o núcleo local.
+      - name: Layers
+        run: |
+          for pkg in Extenso KanonLegal KanonScience; do
+            julia --project=lib/$pkg -e '
+              using Pkg
+              Pkg.develop([PackageSpec(path=".")])
+              isdir("lib/Extenso") && ARGS[1] != "Extenso" &&
+                Pkg.develop([PackageSpec(path="lib/Extenso")])
+              Pkg.instantiate()' $pkg
+            julia --project=lib/$pkg lib/$pkg/test/runtests.jl
+          done
+        shell: bash
+
+  neutrality:
+    name: Neutrality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
+      # Roda o teste de neutralidade num ambiente onde NENHUMA camada existe. Um teste
+      # que precisasse de `Extenso` para provar que `Extenso` não vazou não provaria
+      # nada, e este job existe para que essa condição seja verificada pela máquina.
+      - name: Core alone
+        run: |
+          julia --project=. -e 'using Pkg; Pkg.instantiate()'
+          julia --project=. -e '
+            using Test, Kanon, Dates
+            @testset "neutralidade" begin
+              include("test/test_neutralidade.jl")
+            end'

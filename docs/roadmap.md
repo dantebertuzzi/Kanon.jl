@@ -408,6 +408,13 @@ caminho — nunca por prefixo de cadeia, que `"/raiz"` e `"/raizoutra"` enganari
 
 ## F8 a F10 (as próximas)
 
+O CI entrou fora de fase, junto com o README em inglês: um badge de build sem CI afirma
+o que não se verifica, e é a categoria de coisa que este projeto existe para não fazer.
+Ele roda o núcleo em três versões de Julia e três sistemas, as três camadas cada uma no
+ambiente dela, e **o teste de neutralidade num job separado**, onde nenhuma camada
+existe — um teste que precisasse de `Extenso` para provar que `Extenso` não vazou não
+provaria nada, e agora é a máquina quem garante essa condição.
+
 - **F8** — Markdown primeiro. Preferir pandoc a escrever gerador de `.docx`. **Typst
   como candidato a backend** foi a melhor ideia do levantamento: Kanon garante o
   conteúdo, Typst compõe a página.
@@ -431,7 +438,7 @@ caminho — nunca por prefixo de cadeia, que `"/raiz"` e `"/raizoutra"` enganari
 | As mensagens de erro listam os atributos em inglês mesmo num modelo `pt` | `analyze.jl` | quando a tradução de diagnóstico entrar (não planejada) |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
 | Escalar de camada vira `{}` no checklist; falta um `kanon_json_type` para a camada descrevê-lo | `contract.jl` | aditivo, cabe numa versão menor |
-| Sem CI, sem Aqua, sem Documenter | — | F10 |
+| Sem Aqua, sem Documenter | — | F10 |
 | `is not` em português vira `é não`: a localização troca palavras, não ordem sintática | `parse_rules.jl` | escrever `não (x é y)` resolve; mudar a gramática seria versão maior |
 | Os quatro pacotes vivem num repo só, com `Project.toml` cada | `lib/` | extrair na F10, se o registro exigir |
 | O orçamento não é configurável pela CLI | `cli.jl` | quando alguém precisar |
