@@ -1,0 +1,21 @@
+# Caso 11 de especificacao.md §5.3.
+# O grupo interno elide sozinho e NÃO afeta o externo: a direta do externo é `{b}`,
+# que está presente.
+=== modelo
+kanon 1
+
+data
+  a : text !
+  b : text
+  c : text
+
+text
+
+: p
+{a}[, {b}[ e {c}]], fim
+=== dados
+a = "A"
+b = "B"
+c = null
+=== saida
+A, B, fim

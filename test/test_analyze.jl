@@ -433,7 +433,8 @@ end
     @testset "as tabelas por bloco acompanham a ordem do arquivo" begin
         _, a = anl2(fonte)
         @test any(a.guarded)                        # há um grupo na fonte
-        @test isempty(a.numbering)                  # F5
+        @test length(a.numbering) == 2              # um por bloco, e nenhum é numerado
+        @test all(isempty, a.numbering)
         @test length(a.block_rule) == 2 && length(a.block_foreach) == 2
         @test all(iszero, a.block_rule)             # a fonte não tem regra
     end

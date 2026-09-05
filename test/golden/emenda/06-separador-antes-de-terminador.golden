@@ -1,0 +1,17 @@
+# Caso 6 — R3. O terminador nunca é removido; quem sai é o separador.
+=== modelo
+kanon 1
+
+data
+  a : text !
+  b : text
+
+text
+
+: p
+lista: {a}, [{b}].
+=== dados
+a = "A"
+b = null
+=== saida
+lista: A.

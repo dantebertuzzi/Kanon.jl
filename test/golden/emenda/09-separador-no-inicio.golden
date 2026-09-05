@@ -1,0 +1,17 @@
+# Caso 9 — R5.
+=== modelo
+kanon 1
+
+data
+  a : text
+  b : text !
+
+text
+
+: p
+[{a}, ]{b}
+=== dados
+a = null
+b = "B"
+=== saida
+B

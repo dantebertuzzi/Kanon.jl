@@ -1,0 +1,26 @@
+# Caso 13. Parágrafo inteiro dentro de um grupo: sai o parágrafo e uma das linhas em
+# branco que o cercavam.
+=== modelo
+kanon 1
+
+data
+  a : text !
+  b : text
+  c : text !
+
+text
+
+: p
+{a}
+
+[Nota: {b}.]
+
+{c}
+=== dados
+a = "A"
+b = null
+c = "C"
+=== saida
+A
+
+C

@@ -22,7 +22,7 @@ text
 
 ## Estado
 
-**Fases 1 e 2 concluídas.** O que existe: léxico, gramática dos três planos,
+**Fases 1, 2 e 3 concluídas.** O que existe: léxico, gramática dos três planos,
 árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
 análise completa do modelo sem dados — caminhos, tipos, formatadores, grupos opcionais,
 remissões e regras — e a validação dos dados contra o contrato, tudo com erros que
@@ -77,8 +77,30 @@ versionado ao lado do modelo:
 contract(tmpl, "escritura.contract.json")
 ```
 
-Ainda não existe a renderização (F3): por enquanto o Kanon diz o que está errado, e
-ainda não escreve o documento.
+E o documento é escrito:
+
+```julia
+render(tmpl, dados; today = Date(2026, 3, 12))
+```
+
+```
+$ kanon render escritura.kanon dados.kdata --today 2026-03-12
+
+1. Constitui objeto desta escritura o imóvel Rua X, 100.
+
+2. O preço ajustado é de BRL 450000.00, pago neste ato.
+
+Ana Silva vende a Bruno Costa o imóvel descrito na 1, pelo preço da 2, em 2026-03-12.
+```
+
+O trecho `[, casado sob o regime da {regime},]` saiu inteiro porque `regime` não veio —
+com a vírgula que o separava, e sem deixar buraco nem pontuação órfã.
+
+`kanon preview` mostra o rascunho com «marcadores» no lugar do que falta. Não é um modo
+leniente: é um comando à parte, a saída é sempre visivelmente marcada, e `kanon render`
+continua recusando exatamente os mesmos dados.
+
+Ainda não existe nada de português (F4) nem regras em execução (F5).
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).

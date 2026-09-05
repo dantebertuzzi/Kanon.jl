@@ -35,6 +35,9 @@ include("analysis.jl")
 include("analyze.jl")
 include("check.jl")
 include("contract.jl")
+include("elide.jl")
+include("render.jl")
+include("cli.jl")
 
 # --- árvore ---
 export Template, LangVersion
@@ -73,6 +76,10 @@ export Analysis, ResolvedPath, Model
 export analyze, load_string, load_template
 export Bound, check, bind, value
 export contract
+export render, preview, Budget, KanonResourceError
+
+# --- linha de comando ---
+export main
 export resolved, formatter
 
 # --- entrada ---

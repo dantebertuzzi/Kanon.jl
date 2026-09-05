@@ -21,6 +21,7 @@ Kanon.format(v::Measure, ::Val{:default}, ctx) =
     string(Kanon.plain_number(v.value, ctx), " ", Char(0x00B1), " ",
            Kanon.plain_number(v.uncertainty, ctx), " ", v.unit)
 Kanon.format(v::Measure, ::Val{:bare}, ctx) = Kanon.plain_number(v.value, ctx)
+Kanon.kanon_getfield(v::Measure, ::Val{:value}) = v.value
 Kanon.kanon_attributes(::Type{Measure}) = (:precise,)
 Kanon.kanon_attribute(v::Measure, ::Val{:precise}) = v.uncertainty < 0.01
 
@@ -114,6 +115,28 @@ By {::unbiasedness}, the value {effect} is reported without further correction.
         codigos = Set(d.code for d in e.diagnostics)
         @test "K2005" in codigos      # `measure` não existe no núcleo puro
         @test "K2030" in codigos      # nem o marcador `@`
+    end
+
+    @testset "o documento sai byte a byte igual ao de exemplos.md §2.3" begin
+        # Este texto foi escrito na F0, antes de qualquer código, como a saída que a
+        # linguagem deveria produzir. É o teste mais duro da fase, porque nada nele foi
+        # ajustado depois: ou o motor produz exatamente isso, ou a especificação e a
+        # implementação divergiram em algum ponto.
+        dados = Dict("effect" => Measure(0.42, 0.07, "mm"),
+                     "sample" => 1200,
+                     "method" => "ordinary least squares",
+                     "caveat" => nothing)
+        esperado = rstrip(read(joinpath(@__DIR__, "golden", "report.output.txt"), String), '\n')
+        obtido = render(m, dados)
+        obtido == esperado || println(obtido)
+        @test obtido == esperado
+    end
+
+    @testset "com a nota presente, o grupo fica" begin
+        dados = Dict("effect" => Measure(0.42, 0.07, "mm"), "sample" => 1200,
+                     "method" => "OLS", "caveat" => "the sample was not randomized")
+        @test occursin(", with the caveat that the sample was not randomized.",
+                       render(m, dados))
     end
 
     @testset "o núcleo não conhece nada de português nem de direito" begin

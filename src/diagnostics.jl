@@ -43,7 +43,7 @@ Um código, uma vez publicado, nunca muda de significado (política de compatibi
     K13xx  plano das regras
     K20xx  referência: caminhos, tipos e formatadores
     K30xx  contrato: os dados contra o contrato
-    K4xxx  recurso      (F3)
+    K40xx  recurso: o orçamento do render
 """
 const CODE_TITLES = Dict{String,String}(
     # --- estrutura do arquivo e pragma ---
@@ -130,6 +130,11 @@ const CODE_TITLES = Dict{String,String}(
     "K3012" => "o valor não tem um campo que o esquema promete",
     "K3021" => "campo nos dados que o contrato não declara",
     "K3030" => "valor aninhado fundo demais",
+    # --- recurso ---
+    "K4001" => "orçamento de nós excedido",
+    "K4002" => "orçamento de bytes excedido",
+    "K4003" => "profundidade de inclusão excedida",
+    "K4004" => "orçamento de iterações excedido",
 )
 
 function Diagnostic(code::AbstractString, category::Symbol, span::Span, file::AbstractString,

@@ -1,0 +1,19 @@
+# Caso 8. A conjunção sai com o grupo, e a vírgula de fora fica.
+=== modelo
+kanon 1
+
+data
+  a : text !
+  b : text
+  c : text !
+
+text
+
+: p
+{a}[ e {b}], {c}
+=== dados
+a = "A"
+b = null
+c = "C"
+=== saida
+A, C

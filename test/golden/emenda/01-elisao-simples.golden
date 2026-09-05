@@ -1,0 +1,17 @@
+# Caso 1. A vírgula que separava está dentro do grupo e sai com ele.
+=== modelo
+kanon 1
+
+data
+  address : text !
+  regime  : text
+
+text
+
+: p
+na {address}[, sob o regime da {regime}], doravante
+=== dados
+address = "Rua X"
+regime = null
+=== saida
+na Rua X, doravante

@@ -550,8 +550,14 @@ dados** — e por isso mora aqui, e não na F5 com os contadores.
 """
 function index_blocks!(ctx::AnalysisCtx)
     aberto = Pair{Char,Int}[]      # nível do último bloco visto, por estilo
+    contadores = Pair{Char,Vector{Int32}}[]   # contadores por estilo, um por nível
 
-    for b in ctx.tmpl.text.blocks
+    resize!(ctx.out.numbering, length(ctx.tmpl.text.blocks))
+    for i in eachindex(ctx.out.numbering)
+        ctx.out.numbering[i] = Int32[]
+    end
+
+    for (pos, b) in enumerate(ctx.tmpl.text.blocks)
         push!(ctx.out.block_index, b.name => id(b))
 
         estilo = stylefor(ctx.env, b.unit)
@@ -576,6 +582,8 @@ function index_blocks!(ctx::AnalysisCtx)
         end
         n == 0 && continue          # não numerado: fora da sequência de níveis
 
+        ctx.out.numbering[pos] = advance_counter!(contadores, b.unit, n)
+
         i = findfirst(p -> first(p) == b.unit, aberto)
         anterior = i === nothing ? 0 : last(aberto[i])
         if n > anterior + 1
@@ -590,6 +598,32 @@ function index_blocks!(ctx::AnalysisCtx)
     end
 
     sort!(ctx.out.block_index; by = first)
+end
+
+"""
+Avança o contador do estilo: um bloco de nível *n* incrementa o contador de nível *n* e
+zera os de nível maior (§6.2). Cada estilo tem sua própria família de contadores.
+
+Esta é a numeração **estática**, com todos os blocos presentes. Quando a F5 aplicar as
+regras, blocos removidos deixarão de consumir número e blocos repetidos consumirão um
+por iteração — e a numeração final passará a ser do render, que tem os dados. Enquanto
+não há regras aplicadas, a estática é a final.
+"""
+function advance_counter!(contadores::Vector{Pair{Char,Vector{Int32}}}, unit::Char, n::Int)
+    i = findfirst(p -> first(p) == unit, contadores)
+    if i === nothing
+        push!(contadores, unit => Int32[])
+        i = length(contadores)
+    end
+    c = last(contadores[i])
+    # `resize!` para cima não inicializa memória em Julia: os níveis novos entram em
+    # zero explicitamente, senão o contador começa em lixo.
+    while length(c) < n
+        push!(c, Int32(0))
+    end
+    resize!(c, n)               # zera os níveis abaixo deste (§6.2)
+    c[n] += Int32(1)
+    copy(c)
 end
 
 # --- regras: a que bloco cada uma se prende ----------------------------------

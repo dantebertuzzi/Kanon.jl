@@ -1,0 +1,5 @@
+#!/usr/bin/env julia
+# Ponto de entrada da CLI. A lógica está em `Kanon.main`, que recebe os fluxos como
+# argumento — é o que a torna testável sem processo filho.
+using Kanon
+exit(Kanon.main(ARGS))

@@ -1,0 +1,18 @@
+# Caso 3. O par de parênteses está inteiro dentro do grupo — se não estivesse, seria
+# erro de referência (K2013), e não um problema de render.
+=== modelo
+kanon 1
+
+data
+  v   : number !
+  obs : text
+
+text
+
+: p
+Valor de {v}[ ({obs})].
+=== dados
+v = 10
+obs = null
+=== saida
+Valor de 10.

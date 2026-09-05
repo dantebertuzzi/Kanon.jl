@@ -1,0 +1,8 @@
+We estimated the treatment effect over 1200 subjects using ordinary least squares.
+The estimated effect was 0.42 ± 0.07 mm.
+
+Theorem 1. For any sample of size at least 1200, the estimator defined above is unbiased.
+
+Theorem 2. The estimator converges in probability to the true effect as the sample grows.
+
+By Theorem 1, the value 0.42 ± 0.07 mm is reported without further correction.

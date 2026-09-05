@@ -1,0 +1,19 @@
+# Caso 2. Duas emendas separadas só por nada: fundem-se numa (§5.2, passo 2).
+=== modelo
+kanon 1
+
+data
+  a : text !
+  b : text
+  c : text
+
+text
+
+: p
+{a}[, {b}][, {c}], fim
+=== dados
+a = "A"
+b = null
+c = null
+=== saida
+A, fim

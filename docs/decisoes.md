@@ -692,3 +692,34 @@ que vaza a implementação não é interface.
 
 **Consequência para a F6.** `@kanon_type` gera os `kanon_getfield` junto com o resto, e o
 teste normativo da §2.3 continua valendo — tudo que a macro gera é escrevível à mão.
+
+---
+
+## D-024 — O marcador de rascunho vive no texto, não nos dados
+
+*2026-09-04 · aceita · surgida ao implementar a F3*
+
+**Decisão.** `preview` não fabrica valores. O marcador `«campo»` é um sentinela de
+render — `PreviewMarker` —, produzido no ponto da interpolação e convertido em texto ali
+mesmo. Os dados que chegam ao rascunho são os mesmos que chegariam ao `render`.
+
+**O que a implementação ingênua fazia.** A primeira versão preenchia os campos ausentes
+com a cadeia `"«preco»"` antes de chamar o motor. Ela falhou no primeiro modelo real, e
+por um motivo que não tem conserto: **`«preco»` não é um `money`**. Um marcador só pode
+ser injetado como dado se o tipo aceitar texto, e a proibição de coerção da §3.4 garante
+que ele não aceita. O rascunho falhava exatamente onde ele precisa funcionar — no campo
+que ainda não veio.
+
+**Alternativas.** (a) Um valor nulo próprio por tipo, para o marcador ocupar. (b) Relaxar
+a decodificação no modo rascunho. (c) O marcador no texto (escolhida).
+
+**Por quê.** Contra (a): a §14 proíbe que qualquer tipo tenha valor nulo próprio — não
+existe "`money` vazio" —, e criar um só para o rascunho o traria de volta pela porta dos
+fundos, onde ele acabaria escapando para o render. Contra (b): dois caminhos de
+decodificação, um deles frouxo, é a definição de modo leniente.
+
+**Consequência, e o que ela protege.** Um campo **nulável** que falta continua elidindo o
+grupo no rascunho, exatamente como faria no documento — o rascunho mostra o texto que
+sairá, e não uma versão inflada dele. Só o valor **garantido** que falta vira marcador,
+porque é o único cuja ausência não tem representação no texto final. E `render` continua
+recusando os mesmíssimos dados: o rascunho é um comando à parte, não um modo.

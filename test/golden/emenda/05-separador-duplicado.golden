@@ -1,0 +1,19 @@
+# Caso 5 — R2. A emenda produz `, , ` e sobra `, `.
+=== modelo
+kanon 1
+
+data
+  a : text !
+  b : text
+  c : text !
+
+text
+
+: p
+{a}, [{b}], {c}
+=== dados
+a = "A"
+b = null
+c = "C"
+=== saida
+A, C

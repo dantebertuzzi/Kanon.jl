@@ -1,0 +1,17 @@
+# Caso 7. Sem nada à direita, não há o que reparar.
+=== modelo
+kanon 1
+
+data
+  a : text !
+  b : text
+
+text
+
+: p
+{a}[, {b}]
+=== dados
+a = "A"
+b = null
+=== saida
+A

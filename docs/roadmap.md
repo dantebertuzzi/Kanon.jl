@@ -9,7 +9,7 @@
 | **F0** Especificação | ✅ aceita | 6 documentos em `docs/`, 18 decisões registradas |
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
 | **F2** Validador | ✅ concluída | protocolo de tipo, ambiente, `analyze`, teorema da lacuna, `check` e o checklist |
-| F3 Renderizador | ⬜ | — |
+| **F3** Renderizador | ✅ concluída | elisão, reparo de emenda, numeração, remissões, orçamento e a CLI |
 | F4 `Extenso.jl` | ⬜ | — |
 | F5 Numeração e regras | ⬜ | — |
 | F6 Domínios | ⬜ | — |
@@ -20,12 +20,12 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **782 testes**, ~17 s.
+Suíte: **936 testes**, ~21 s.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 782 testes, ~17 s
+julia --project=. -e 'using Pkg; Pkg.test()'     # 936 testes, ~21 s
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -48,6 +48,9 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/analyze.jl` | caminhos, formatadores, grupos, remissões, regras; `load_string` / `load_template` |
 | `src/check.jl` | os dados contra o contrato; `check`, `bind`, `Bound` |
 | `src/contract.jl` | o checklist em JSON Schema, com emissor determinístico próprio |
+| `src/elide.jl` | **o reparo de emenda** — R1 a R5, local à remoção; a peça mais delicada |
+| `src/render.jl` | interpolação, grupos, sujeito, numeração, remissões, orçamento |
+| `src/cli.jl` | `check`, `render`, `contract`, `preview`; os cinco códigos de saída |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -231,29 +234,35 @@ dados e `check` recusa, com mensagens nomeando campo e linha, um JSON a que falt
 
 ---
 
-## F3 — Renderizador (a próxima)
+## F3 — Renderizador (concluída em 4 de setembro de 2026)
 
-Interpolação, blocos com sujeito, algoritmo dos colchetes, tipos base. Saída em texto
-puro, **ainda sem nada de português**.
+Os treze casos normativos foram escritos como arquivos golden **antes** do renderizador,
+em `test/golden/emenda/`, começando pelos casos 11 e 12 — e passaram todos na primeira
+execução do algoritmo.
 
-**Escreva os treze casos normativos de `especificacao.md` §5.3 como arquivos golden
-ANTES de escrever o renderizador.** Risco 16.4: é onde os bugs vão morar. Comece pelos
-casos 11 e 12, que fixam a regra de aninhamento.
+**O documento sai byte a byte igual ao de `exemplos.md` §2.3**, que foi escrito na F0,
+antes de qualquer código, como a saída que a linguagem deveria produzir. Está fixado em
+`test/golden/report.output.txt`. É o teste mais duro da fase: nada nele foi ajustado
+depois.
 
-Ordem sugerida: golden falhando → literais e interpolação → elisão com registro de
-emendas → reparo R1–R5 → sujeito e escopo → orçamento determinístico (D-010) e testes
-adversariais da §11 → teste de propriedade do teorema da lacuna.
+O que a fase entregou, além do previsto:
 
-Lembretes que a F3 não pode esquecer: `render` é puro, sem I/O, sem relógio, sem
-aleatoriedade; `today` é injetado; `render` não emite diagnóstico (se `analyze` e
-`check` passaram, só pode falhar por orçamento).
+- **A numeração estática entrou aqui**, não na F5. Sem regras aplicadas, os contadores
+  por estilo são determinísticos, e sem eles `{::x}` não teria o que render. A F5
+  recalcula quando as regras removerem e repetirem blocos — aí a numeração passa a ser
+  do render, que tem os dados, e `Analysis.numbering` fica sendo a estática.
+- **D-024**: o marcador do rascunho vive no texto, não nos dados. A implementação ingênua
+  injetava `"«preco»"` como valor e falhava no primeiro modelo real, porque `«preco»` não
+  é um `money` — e a §3.4 garante que nunca será.
+- **A CLI**, com os cinco códigos de saída da §12 e `Kanon.main` recebendo os fluxos como
+  argumento, o que a torna testável sem processo filho.
 
-**Uma CLI fina cabe aqui** (`kanon check`, `kanon render`, `kanon contract`), porque as
-três funções já existirão. Códigos de saída em `especificacao.md` §12.
+Armadilha de Julia registrada: `resize!` para cima **não inicializa memória**. O contador
+de numeração começava em lixo, e o primeiro bloco saía como `7`.
 
 ---
 
-## F4 — `Extenso.jl`
+## F4 — `Extenso.jl` (a próxima)
 
 Flexão por marca, valores e ordinais por extenso, datas por extenso, junção de listas,
 separadores decimal e de milhar, apelidos de palavra-chave, gancho de recapitalização
@@ -325,9 +334,9 @@ de `KanonLegal`.
 | A camada `Science` de `test_acceptance.jl` é de mentira e vive na suíte | `test/` | vira pacote de verdade na F6 |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
 | Escalar de camada vira `{}` no checklist; falta um `kanon_json_type` para a camada descrevê-lo | `contract.jl` | aditivo, cabe numa versão menor |
-| CLI não existe | — | depois da F3 |
-| Corpus golden tem só o checklist; faltam os treze casos de elisão | `test/golden/` | F3 |
 | Sem CI, sem Aqua, sem Documenter | — | F10 |
+| A CLI lê dados num formato `chave = valor` próprio, não JSON | `cli.jl` | F7, com `StructTypes.jl` |
+| O orçamento não é configurável pela CLI | `cli.jl` | quando alguém precisar |
 | `K1213` está no registro e nunca é emitido: a unidade fora do conjunto fechado nunca vira cabeçalho | `diagnostics.jl` | remover ou dar uso na F3 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | quando a primeira camada de idioma existir (F4) |
 | `money` emite duas casas para toda moeda; JPY não tem centavos | `core_types.jl` | quando alguém precisar — exige casas por moeda no ambiente |

@@ -19,4 +19,7 @@ include("helpers.jl")
     include("test_acceptance.jl")
     include("test_check.jl")
     include("test_contract.jl")
+    include("test_render.jl")
+    include("test_security.jl")
+    include("test_cli.jl")
 end

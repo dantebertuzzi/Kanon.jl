@@ -1,0 +1,19 @@
+# Caso 10. Duas emendas na mesma frase, uma antes e uma depois do texto garantido.
+=== modelo
+kanon 1
+
+data
+  q    : number
+  item : text !
+  p    : money
+
+text
+
+: par
+Comprou [{q} de ]{item}[ por {p}].
+=== dados
+q = null
+item = "casa"
+p = null
+=== saida
+Comprou casa.

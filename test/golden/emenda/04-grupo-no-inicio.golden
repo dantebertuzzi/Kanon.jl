@@ -1,0 +1,17 @@
+# Caso 4. O espaço que separava está dentro do grupo.
+=== modelo
+kanon 1
+
+data
+  titulo : text
+  nome   : text !
+
+text
+
+: p
+[{titulo} ]{nome}
+=== dados
+titulo = null
+nome = "Fulano"
+=== saida
+Fulano
