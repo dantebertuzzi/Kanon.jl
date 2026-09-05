@@ -3,7 +3,7 @@
 [![CI](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Julia](https://img.shields.io/badge/Julia-1.10%2B-9558B2.svg)](https://julialang.org)
-[![Tests](https://img.shields.io/badge/tests-1615-brightgreen.svg)](test/)
+[![Tests](https://img.shields.io/badge/tests-1669-brightgreen.svg)](test/)
 
 **A document template language whose templates declare their own data contract.**
 What does not satisfy the contract does not render.
@@ -129,8 +129,17 @@ kanon contract template.kanon
 kanon preview  template.kanon [data.json]   # draft with «markers», never exports
 ```
 
+```
+kanon outline  template.kanon              # every block, and the rule that governs it
+kanon ask      template.kanon              # asks for what is missing, one at a time
+```
+
 `preview` is the only command that produces incomplete output, and it is always visibly
 marked. It is not a lenient mode: `render` still refuses exactly the same data.
+
+Neither is `ask`. Whoever asks for a lenient mode almost always wants to see the document
+while still gathering the data — so `ask` gathers the data and `preview` shows the draft.
+The need was real; the proposed solution was what was wrong.
 
 ## The core knows no language and no domain
 
@@ -204,14 +213,15 @@ render_each(tmpl, table)     # one document per row
 
 ## Status
 
-Phases 1 through 8 are done. The language is usable end to end: parse, validate, render,
+Phases 1 through 8 are done, and F9 in part. The language is usable end to end: parse, validate, render,
 and a CLI.
 
 | Phase | State |
 |---|---|
 | F0 Specification · F1 Parser · F2 Validator | done |
 | F3 Renderer · F4 `Extenso` · F5 Rules · F6 Domains · F7 Ingestion · F8 Output | done |
-| F9 Editor · F10 Registry | to do |
+| F9 Editor | partial — `outline` and `ask` shipped; the GUI is an application |
+| F10 Registry | to do |
 
 **Syntax is not frozen.** The gate to 1.0 is fifteen real templates rewritten in the
 language — after that there is a corpus, every design mistake becomes permanent, and the

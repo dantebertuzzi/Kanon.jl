@@ -890,3 +890,40 @@ fonte intermediário.
 **Sobre `.docx` e PDF.** O motor não os gera, e não deve: `kanon render --to markdown |
 pandoc -o saida.docx` põe a composição de página em quem sabe fazê-la. O Kanon garante o
 conteúdo.
+
+---
+
+## D-029 — O editor é uma aplicação; a biblioteca entrega o que ele consome
+
+*2026-09-05 · aceita · surgida ao implementar a F9*
+
+**Decisão.** A F9 do roadmap mistura duas coisas de naturezas diferentes: uma **interface**
+— o editor de três colunas, com a regra ao lado de cada bloco e a pré-visualização sempre
+visível — e a **API que ela precisa** para existir. O motor entrega a segunda:
+`outline(model)`, mais `kanon outline` e `kanon ask` na linha de comando.
+
+**Por quê.** Um editor gráfico é uma aplicação, com ciclo de vida, dependências de
+interface e público próprios; embutir um numa biblioteca de motor de documentos amarraria
+os dois. O que ninguém mais pode fornecer é a estrutura do modelo **já resolvida** — qual
+regra governa cada bloco, que número ele consome, que campos ele usa, e quais deles podem
+faltar.
+
+**A restrição que isso impõe, e que é o ponto.** `outline` sai inteiro da `Analysis`, sem
+uma segunda travessia com regras próprias. Se tivesse regras próprias, a coluna do meio
+poderia discordar do motor — e uma ferramenta que mente sobre o que vai sair é pior que
+nenhuma, porque o redator passa a confiar nela.
+
+Pelo mesmo motivo a condição é **reconstruída da árvore** e não copiada do arquivo:
+`a and b or c` aparece como `(a and b) or c`, que é o que o motor faz. "Como isto se
+combina" é precisamente a pergunta que o leitor não deveria ter de fazer (D-002).
+
+**`kanon ask`, e o pedido de modo leniente.** Quem pede modo leniente quase sempre quer
+ver o documento enquanto ainda reúne os dados. `ask` reúne os dados, perguntando um a um
+o que falta; `preview` mostra o rascunho com «marcadores». **Nenhum dos dois afrouxa o
+contrato**, e é exatamente por isso que os dois podem existir — a necessidade era real, e
+o que a atendia mal era a solução proposta.
+
+`ask` pergunta apenas o que cabe numa linha digitada: `text`, `number`, `boolean`, `date`.
+Um `money` precisa de quantia e moeda, e um composto precisa dos campos dele; perguntar
+por eles numa linha só levaria a inventar uma mini-sintaxe de entrada, que é como um
+projeto ganha o segundo formato de dados que ninguém queria.

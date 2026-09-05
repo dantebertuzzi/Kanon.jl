@@ -15,18 +15,18 @@
 | **F6** Domínios | ✅ concluída | `KanonLegal` e `KanonScience`, `@kanon_type`, e o teste de neutralidade |
 | **F7** Ingestão e reuso | ✅ concluída | inclusão de fragmentos com contrato unificado; `Tables.jl` e JSON por extensão |
 | **F8** Saída | ✅ concluída | `text`, `markdown` e `typst`; o valor é escapado, a prosa não |
-| F9 Editor | ⬜ | — |
+| **F9** Editor | ✅ parcial | `outline`, `kanon outline` e `kanon ask`; a interface gráfica é aplicação (D-029) |
 | F10 Publicação | ⬜ | — |
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **1.615 testes** ao todo — 1.325 no núcleo (~26 s), 175 em `Extenso`, 74 em
+Suíte: **1.669 testes** ao todo — 1.379 no núcleo (~27 s), 175 em `Extenso`, 74 em
 `KanonLegal`, 41 em `KanonScience`. CI em Linux, macOS e Windows.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.325, ~26 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.379, ~27 s
 for p in Extenso KanonLegal KanonScience; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -65,6 +65,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída e o escape do valor interpolado |
+| `src/outline.jl` | o esqueleto do modelo, para o editor e para ferramentas |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -428,7 +429,29 @@ saida.docx` põe a composição de página em quem sabe fazê-la.
 
 ---
 
-## F9 e F10 (as próximas)
+## F9 — Editor (parcial, 5 de setembro de 2026)
+
+**D-029** separou o que a fase misturava. O editor de três colunas é uma aplicação — com
+ciclo de vida, dependências de interface e público próprios —, e embutir uma numa
+biblioteca de motor amarraria as duas. O que só o motor pode dar é a estrutura já
+resolvida, e é o que ele passou a dar:
+
+- `outline(model)` — por bloco: a regra que o governa, o número que ele consome, o
+  sujeito, os campos que usa e quais deles podem faltar sem estar em grupo.
+- `kanon outline` — as duas primeiras colunas do editor, no terminal.
+- `kanon ask` — pergunta o que falta, um a um, e emite os dados que `kanon render` lê de
+  volta.
+
+A restrição que isso impõe é o ponto: `outline` sai inteiro da `Analysis`, sem regras
+próprias. Uma ferramenta que discordasse do motor seria pior que nenhuma.
+
+**O que falta**, e é trabalho de interface, não de motor: a terceira coluna — a
+pré-visualização sempre visível — e a edição. Um servidor de linguagem (LSP) é o formato
+mais provável, e `outline` já é o que ele consumiria.
+
+---
+
+## F10 (a próxima)
 
 O CI entrou fora de fase, junto com o README em inglês: um badge de build sem CI afirma
 o que não se verifica, e é a categoria de coisa que este projeto existe para não fazer.

@@ -27,4 +27,5 @@ include("helpers.jl")
     include("test_include.jl")
     include("test_ingestao.jl")
     include("test_output.jl")
+    include("test_outline.jl")
 end

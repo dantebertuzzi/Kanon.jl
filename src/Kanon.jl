@@ -40,6 +40,7 @@ include("contract.jl")
 include("output.jl")
 include("elide.jl")
 include("render.jl")
+include("outline.jl")
 include("cli.jl")
 include("macro.jl")
 
@@ -85,6 +86,7 @@ export Bound, check, bind, value
 export rows, render_each, read_json, parse_json
 export Plan, BlockInstance
 export contract
+export outline, format_outline, BlockOutline, FieldUse
 export render, preview, Budget, KanonResourceError
 export OutputFormat, PlainText, Markdown, Typst, output_format
 

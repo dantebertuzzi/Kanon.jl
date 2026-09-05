@@ -25,6 +25,8 @@ kanon — motor de modelos de documento
   kanon render   modelo.kanon dados.json     escreve o documento
   kanon contract modelo.kanon                emite o checklist em JSON Schema
   kanon preview  modelo.kanon [dados.json]   rascunho com «marcadores», nunca exporta
+  kanon outline  modelo.kanon                o esqueleto: cada bloco e a regra dele
+  kanon ask      modelo.kanon [dados]        pergunta o que falta, e emite os dados
 
 Opções
   -o ARQUIVO     escreve a saída no arquivo, em vez do stdout
@@ -48,8 +50,10 @@ composição da página é de quem sabe fazê-la:
 O corpo da CLI, escrito para ser chamável de um teste: recebe os fluxos em vez de os
 buscar no processo, e devolve o código de saída em vez de encerrar.
 """
+# `input`, e não `in`: `in` é função de `Base`, e o argumento nomeado a sombrearia
+# dentro da função inteira — inclusive nos `x in y` que ela usa.
 function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr,
-              env::Union{Nothing,Environment} = nothing)
+              input::IO = Base.stdin, env::Union{Nothing,Environment} = nothing)
     isempty(args) && (print(err, USAGE); return EXIT_USAGE)
 
     if args[1] in ("--help", "-h", "help")
@@ -62,7 +66,7 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
     end
 
     cmd = args[1]
-    cmd in ("check", "render", "contract", "preview") ||
+    cmd in ("check", "render", "contract", "preview", "outline", "ask") ||
         (println(err, "kanon: `", cmd, "` não é um comando.\n"); print(err, USAGE); return EXIT_USAGE)
 
     opts = parse_options(args[2:end], err)
@@ -78,7 +82,7 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
     ambiente === nothing && return EXIT_USAGE
 
     try
-        return run_command(cmd, posicionais, saida, hoje, formato, ambiente, out, err)
+        return run_command(cmd, posicionais, saida, hoje, formato, ambiente, out, err, input)
     catch e
         e isa KanonSyntaxError && return report(err, e, EXIT_MODEL)
         e isa KanonReferenceError && return report(err, e, EXIT_MODEL)
@@ -164,9 +168,19 @@ function tryparse_date(s::AbstractString)
     end
 end
 
-function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::IO)
+function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::IO,
+                    entrada::IO)
     modelo = load_template(env, posicionais[1])
     dados = length(posicionais) == 2 ? read_data(posicionais[2]) : nothing
+
+    if cmd == "outline"
+        format_outline(out, modelo)
+        return EXIT_OK
+    end
+
+    if cmd == "ask"
+        return do_ask(modelo, dados, saida, hoje, out, err, entrada)
+    end
 
     if cmd == "contract"
         emit(out, saida, contract(modelo))
@@ -211,6 +225,82 @@ end
 
 function emit(out::IO, saida::Union{Nothing,String}, texto::AbstractString)
     saida === nothing ? println(out, texto) : open(io -> println(io, texto), saida, "w")
+end
+
+"""
+`kanon ask` pergunta os campos que faltam, um a um, e emite os dados completos.
+
+É o candidato herdado do docassemble, e atende à necessidade **real** por trás do pedido
+de "modo leniente": quem pede modo leniente quase sempre quer ver o documento enquanto
+ainda está reunindo os dados. `ask` reúne os dados; `preview` mostra o rascunho. Nenhum
+dos dois afrouxa o contrato, e é por isso que os dois podem existir.
+
+Escreve as perguntas no *stderr* e os dados no *stdout*, para que
+`kanon ask m.kanon > dados.kdata` funcione.
+"""
+function do_ask(modelo, dados, saida, hoje, out::IO, err::IO, entrada::IO)
+    valores = Dict{String,Any}()
+    dados === nothing || for (k, v) in pairs(dados)
+        valores[String(k)] = v
+    end
+
+    for f in modelo.template.data.fields
+        haskey(valores, String(f.name)) && valores[String(f.name)] !== nothing && continue
+        f.presence === OPTIONAL && continue      # opcional não se pergunta: ele pode faltar
+        f.presence === DEFAULTED && continue     # o padrão preenche
+
+        if !(f.type in DIGITAVEIS) || islist(f.card)
+            println(err, "  ", f.name, " — ", f.type,
+                    islist(f.card) ? " (uma lista)" : "",
+                    ": preencha no arquivo de dados; não cabe numa linha.")
+            continue
+        end
+
+        println(err, prompt_de(f))
+        print(err, "  ", f.name, " = ")
+        flush(err)
+        linha = readline(entrada)
+        isempty(strip(linha)) && continue
+        valores[String(f.name)] = coerce_answer(f, strip(linha))
+    end
+
+    conjunto = check(modelo, valores; today = hoje)
+    if haserrors(conjunto)
+        format_diagnostics(err, conjunto)
+        println(err, "kanon: os dados ainda não bastam.")
+    end
+    emit(out, saida, serialize_data(valores))
+    return haserrors(conjunto) ? EXIT_CONTRACT : EXIT_OK
+end
+
+"""
+Os tipos que cabem numa linha digitada.
+
+`money` precisa de quantia **e** moeda, e um composto precisa dos campos dele: perguntar
+por eles numa linha só levaria a inventar uma mini-sintaxe de entrada, que é como se
+constrói o segundo formato de dados de um projeto. Para esses, `ask` diz que o campo
+fica para o arquivo.
+"""
+const DIGITAVEIS = (:text, :number, :boolean, :date)
+
+"A resposta, convertida pelo tipo **declarado** — e não adivinhada pela forma."
+function coerce_answer(f::FieldDecl, texto::AbstractString)
+    f.type === :text && return String(texto)
+    parse_data_value(texto)
+end
+
+"A pergunta de um campo: o nome, o tipo, e a linha em que ele foi declarado."
+prompt_de(f::FieldDecl) = string(f.name, " — ", f.type, ", linha ", f.span.line)
+
+"Os dados no formato `chave = valor`, que é o que `kanon render` lê de volta."
+function serialize_data(valores::Dict{String,Any})
+    io = IOBuffer()
+    for k in sort!(collect(keys(valores)))
+        v = valores[k]
+        v === nothing && continue
+        println(io, k, " = ", v isa AbstractString ? "\"" * v * "\"" : v)
+    end
+    String(take!(io))
 end
 
 """
