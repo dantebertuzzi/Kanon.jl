@@ -28,12 +28,18 @@ kanon — motor de modelos de documento
 
 Opções
   -o ARQUIVO     escreve a saída no arquivo, em vez do stdout
+  --to FORMATO   text (padrão), markdown ou typst
   --today DATA   a data de hoje, em AAAA-MM-DD; `today` nunca vem do relógio
   --locale IDIOMA
   --version
   --help
 
 Códigos de saída: 0 sucesso, 1 contrato, 2 modelo, 3 uso, 4 recurso.
+
+Para .docx, .odt ou PDF, o caminho é o pandoc — este motor garante o conteúdo, e a
+composição da página é de quem sabe fazê-la:
+
+  kanon render modelo.kanon dados.json --to markdown | pandoc -o saida.docx
 """
 
 """
@@ -61,7 +67,7 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
 
     opts = parse_options(args[2:end], err)
     opts === nothing && return EXIT_USAGE
-    posicionais, saida, hoje, idioma = opts
+    posicionais, saida, hoje, idioma, formato = opts
 
     isempty(posicionais) &&
         (println(err, "kanon: falta o arquivo do modelo."); return EXIT_USAGE)
@@ -72,7 +78,7 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
     ambiente === nothing && return EXIT_USAGE
 
     try
-        return run_command(cmd, posicionais, saida, hoje, ambiente, out, err)
+        return run_command(cmd, posicionais, saida, hoje, formato, ambiente, out, err)
     catch e
         e isa KanonSyntaxError && return report(err, e, EXIT_MODEL)
         e isa KanonReferenceError && return report(err, e, EXIT_MODEL)
@@ -109,6 +115,7 @@ function parse_options(args::Vector{String}, err::IO)
     saida = nothing
     hoje = nothing
     idioma = nothing
+    formato = PlainText()
     i = 1
     while i <= length(args)
         a = args[i]
@@ -122,6 +129,16 @@ function parse_options(args::Vector{String}, err::IO)
             hoje = tryparse_date(args[i])
             hoje === nothing &&
                 (println(err, "kanon: `", args[i], "` não é uma data `AAAA-MM-DD`."); return nothing)
+        elseif a == "--to"
+            i += 1
+            i > length(args) && (println(err, "kanon: `--to` precisa de um formato."); return nothing)
+            try
+                formato = output_format(Symbol(args[i]))
+            catch e
+                e isa ArgumentError || rethrow()
+                println(err, "kanon: ", e.msg)
+                return nothing
+            end
         elseif a == "--locale"
             i += 1
             i > length(args) && (println(err, "kanon: `--locale` precisa de um idioma."); return nothing)
@@ -134,7 +151,7 @@ function parse_options(args::Vector{String}, err::IO)
         end
         i += 1
     end
-    (posicionais, saida, hoje, idioma)
+    (posicionais, saida, hoje, idioma, formato)
 end
 
 function tryparse_date(s::AbstractString)
@@ -147,7 +164,7 @@ function tryparse_date(s::AbstractString)
     end
 end
 
-function run_command(cmd, posicionais, saida, hoje, env, out::IO, err::IO)
+function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::IO)
     modelo = load_template(env, posicionais[1])
     dados = length(posicionais) == 2 ? read_data(posicionais[2]) : nothing
 
@@ -165,12 +182,12 @@ function run_command(cmd, posicionais, saida, hoje, env, out::IO, err::IO)
     end
 
     if cmd == "preview"
-        return do_preview(modelo, dados, saida, hoje, out, err)
+        return do_preview(modelo, dados, saida, hoje, formato, out, err)
     end
 
     dados === nothing &&
         (println(err, "kanon: `render` precisa dos dados."); return EXIT_USAGE)
-    emit(out, saida, render(modelo, dados; today = hoje))
+    emit(out, saida, render(modelo, dados; today = hoje, to = formato))
     return EXIT_OK
 end
 
@@ -183,12 +200,12 @@ A necessidade real por trás do pedido de "modo leniente" é ver o rascunho enqu
 dados ainda estão sendo reunidos. Atendê-la aqui é o que permite que o motor nunca
 relaxe em lugar nenhum.
 """
-function do_preview(modelo, dados, saida, hoje, out::IO, err::IO)
+function do_preview(modelo, dados, saida, hoje, formato, out::IO, err::IO)
     dados = dados === nothing ? Dict{String,Any}() : dados
     conjunto = check(modelo, dados; today = hoje)
     isempty(conjunto) || format_diagnostics(err, conjunto)
     println(err, "kanon: rascunho — não exporte este arquivo.")
-    emit(out, saida, preview(modelo, dados; today = hoje))
+    emit(out, saida, preview(modelo, dados; today = hoje, to = formato))
     return EXIT_OK
 end
 

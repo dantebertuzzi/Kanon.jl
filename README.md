@@ -3,7 +3,7 @@
 [![CI](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Julia](https://img.shields.io/badge/Julia-1.10%2B-9558B2.svg)](https://julialang.org)
-[![Tests](https://img.shields.io/badge/tests-1581-brightgreen.svg)](test/)
+[![Tests](https://img.shields.io/badge/tests-1615-brightgreen.svg)](test/)
 
 **A document template language whose templates declare their own data contract.**
 What does not satisfy the contract does not render.
@@ -159,6 +159,28 @@ form, that the language is neither legal nor Portuguese — and
 loaded at all** and fails if anything leaked. CI runs it as a separate job, in an
 environment where the layers do not exist.
 
+## Output
+
+```julia
+render(tmpl, data; to = :markdown)
+```
+
+Three formats — `text`, `markdown`, `typst` — and a rule that matters:
+
+> **An interpolated value never alters the structure of the document.**
+
+The author's prose passes through untouched: `**important**` written in the template
+stays bold. A value carrying `*Maria*` comes out as five characters and two asterisks. A
+name containing `# Clause` cannot open a heading. It is the concern behind HTML escaping,
+for the same reason — with the added weight that the document may be signed.
+
+For `.docx`, `.odt` or PDF the answer is pandoc. Kanon guarantees the content; page
+composition belongs to something that knows how to do it:
+
+```
+kanon render deed.kanon data.json --to markdown | pandoc -o deed.docx
+```
+
 ## Reuse and ingestion
 
 A template includes fragments, and the fragment's contract is **unified** with the host's
@@ -182,14 +204,14 @@ render_each(tmpl, table)     # one document per row
 
 ## Status
 
-Phases 1 through 7 are done. The language is usable end to end: parse, validate, render,
+Phases 1 through 8 are done. The language is usable end to end: parse, validate, render,
 and a CLI.
 
 | Phase | State |
 |---|---|
 | F0 Specification · F1 Parser · F2 Validator | done |
-| F3 Renderer · F4 `Extenso` · F5 Rules · F6 Domains · F7 Ingestion | done |
-| F8 Output (Markdown, `.docx`) · F9 Editor · F10 Registry | to do |
+| F3 Renderer · F4 `Extenso` · F5 Rules · F6 Domains · F7 Ingestion · F8 Output | done |
+| F9 Editor · F10 Registry | to do |
 
 **Syntax is not frozen.** The gate to 1.0 is fifteen real templates rewritten in the
 language — after that there is a corpus, every design mistake becomes permanent, and the

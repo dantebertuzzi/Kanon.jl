@@ -37,6 +37,7 @@ include("analyze.jl")
 include("rules.jl")
 include("check.jl")
 include("contract.jl")
+include("output.jl")
 include("elide.jl")
 include("render.jl")
 include("cli.jl")
@@ -85,6 +86,7 @@ export rows, render_each, read_json, parse_json
 export Plan, BlockInstance
 export contract
 export render, preview, Budget, KanonResourceError
+export OutputFormat, PlainText, Markdown, Typst, output_format
 
 # --- linha de comando ---
 export main

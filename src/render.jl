@@ -41,12 +41,14 @@ mutable struct RenderCtx
     subject::Any
     # rascunho: valor garantido que falta vira marcador visível, em vez de erro
     preview::Bool
+    # como o texto vira arquivo, e o que precisa de escape (F8)
+    format::OutputFormat
 end
 
-function RenderCtx(b::Bound, budget::Budget, preview::Bool)
+function RenderCtx(b::Bound, budget::Budget, preview::Bool, fmt::OutputFormat)
     RenderCtx(b, FormatContext(b.model.env, b.today), budget, 0,
               isempty(b.model.template.sources) ? "<string>" : b.model.template.sources[1],
-              nothing, preview)
+              nothing, preview, fmt)
 end
 
 model(ctx::RenderCtx) = ctx.bound.model
@@ -114,10 +116,20 @@ end
 O texto de uma interpolação. O formatador efetivo já foi resolvido por `analyze`, e uma
 lista é formatada **como lista** — é o que faz `{witnesses:count}` valer.
 """
-function interp_text(ctx::RenderCtx, n::Interp, v)
+function interp_text(ctx::RenderCtx, n::Interp, v, inicio::Bool)
     v isa PreviewMarker && return string(Char(0x00AB), v.path, Char(0x00BB))
     f = analysis(ctx).formatter[id(n)]
-    format(v, Val(f), ctx.fctx)
+    # O valor vem dos dados, e é escapado; a prosa em volta é do autor, e não é.
+    escape_value(ctx.format, format(v, Val(f), ctx.fctx), inicio)
+end
+
+"O que já foi emitido termina no começo de uma linha?"
+function at_start(out::Vector{Char})
+    for i in length(out):-1:1
+        out[i] == '\n' && return true
+        (out[i] == ' ' || out[i] == '\t') || return false
+    end
+    return true
 end
 
 # --- travessia ---------------------------------------------------------------
@@ -136,7 +148,7 @@ function emit_nodes!(ctx::RenderCtx, out::Vector{Char}, seams::Vector{Int}, node
             append!(out, n.value)
         elseif n isa Interp
             v = path_value(ctx, n)
-            v === nothing || append!(out, interp_text(ctx, n, v))
+            v === nothing || append!(out, interp_text(ctx, n, v, at_start(out)))
         elseif n isa FlexPoint
             # O núcleo não sabe flexionar. Marca não registrada volta a ser prosa
             # literal, que é o que ela era antes de a camada de idioma existir.
@@ -210,7 +222,7 @@ function render_block(ctx::RenderCtx, b::Block, inst::BlockInstance)
     rotulo === nothing && return paras
     estilo = stylefor(model(ctx).env, b.unit)
     if estilo.layout === :heading
-        pushfirst!(paras, rotulo)
+        pushfirst!(paras, heading(ctx.format, length(inst.number), rotulo))
     elseif isempty(paras)
         push!(paras, rotulo)
     else
@@ -267,16 +279,17 @@ end
 
 Renderiza dados já validados. Puro: sem I/O, sem relógio, sem aleatoriedade.
 """
-function render(b::Bound; budget::Budget = Budget(), preview::Bool = false)
+function render(b::Bound; budget::Budget = Budget(), preview::Bool = false,
+                to = PlainText())
     preview || haserrors(b) && throw(KanonContractError(diagnostics(b)))
-    ctx = RenderCtx(b, budget, preview)
+    ctx = RenderCtx(b, budget, preview, output_format(to))
 
     paras = String[]
     for inst in b.plan.instances
         append!(paras, render_block(ctx, template(ctx).text.blocks[inst.pos], inst))
     end
 
-    s = join(paras, "\n\n")
+    s = document(ctx.format, paras)
     check_bytes!(ctx, s)
     return s
 end
@@ -288,8 +301,8 @@ Valida e renderiza. Lança `KanonContractError` se os dados não satisfazem o co
 **não existe render sem validação**, nem como opção (§14).
 """
 function render(m::Model, data; today::Union{Nothing,Date} = nothing,
-                budget::Budget = Budget())
-    render(bind(m, data; today, budget); budget)
+                budget::Budget = Budget(), to = PlainText())
+    render(bind(m, data; today, budget); budget, to)
 end
 
 """
@@ -304,6 +317,6 @@ estão sendo reunidos. Atendê-la aqui é o que permite que o motor nunca relaxe
 nenhum.
 """
 function preview(m::Model, data; today::Union{Nothing,Date} = nothing,
-                 budget::Budget = Budget())
-    render(bind(m, data; today, budget); budget, preview = true)
+                 budget::Budget = Budget(), to = PlainText())
+    render(bind(m, data; today, budget); budget, preview = true, to)
 end

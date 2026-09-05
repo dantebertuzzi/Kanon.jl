@@ -26,4 +26,5 @@ include("helpers.jl")
     include("test_neutralidade.jl")
     include("test_include.jl")
     include("test_ingestao.jl")
+    include("test_output.jl")
 end

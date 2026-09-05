@@ -14,19 +14,19 @@
 | **F5** Numeração e regras | ✅ concluída | `when` remove, `one for each` repete, e a numeração passa a ser dos dados |
 | **F6** Domínios | ✅ concluída | `KanonLegal` e `KanonScience`, `@kanon_type`, e o teste de neutralidade |
 | **F7** Ingestão e reuso | ✅ concluída | inclusão de fragmentos com contrato unificado; `Tables.jl` e JSON por extensão |
-| F8 Saída | ⬜ | — |
+| **F8** Saída | ✅ concluída | `text`, `markdown` e `typst`; o valor é escapado, a prosa não |
 | F9 Editor | ⬜ | — |
 | F10 Publicação | ⬜ | — |
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **1.581 testes** ao todo — 1.291 no núcleo (~24 s), 175 em `Extenso`, 74 em
-`KanonLegal`, 41 em `KanonScience`.
+Suíte: **1.615 testes** ao todo — 1.325 no núcleo (~26 s), 175 em `Extenso`, 74 em
+`KanonLegal`, 41 em `KanonScience`. CI em Linux, macOS e Windows.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.291, ~24 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.325, ~26 s
 for p in Extenso KanonLegal KanonScience; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -64,6 +64,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
+| `src/output.jl` | os formatos de saída e o escape do valor interpolado |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -406,7 +407,28 @@ caminho — nunca por prefixo de cadeia, que `"/raiz"` e `"/raizoutra"` enganari
 
 ---
 
-## F8 a F10 (as próximas)
+## F8 — Saída (concluída em 5 de setembro de 2026)
+
+Três formatos — `text`, `markdown`, `typst` —, por despacho, como tudo o mais: uma camada
+acrescenta o quarto definindo três métodos.
+
+**D-028** é a decisão da fase, e é o princípio do projeto dito para outro problema: o
+valor interpolado nunca altera a estrutura. A prosa do modelo passa intacta — o autor que
+escreve `**importante**` quer negrito, e tirá-lo dele seria o mesmo erro que o reparo
+global de emenda seria (D-014).
+
+A precisão que a implementação exigiu: em Markdown há **duas classes** de caractere
+especial, e tratá-las igual torna o motor inútil. `12.345` viraria `12\.345` se o ponto
+fosse escapado no meio de uma frase; e o `#` de `"X\n\n# Cláusula falsa"` precisa ser
+escapado, porque um valor com quebras de linha alcança o começo de uma. Quem sabe a
+posição é o render, e `escape_value` passou a recebê-la.
+
+`.docx` e PDF continuam fora do motor, como o roadmap pedia: `--to markdown | pandoc -o
+saida.docx` põe a composição de página em quem sabe fazê-la.
+
+---
+
+## F9 e F10 (as próximas)
 
 O CI entrou fora de fase, junto com o README em inglês: um badge de build sem CI afirma
 o que não se verifica, e é a categoria de coisa que este projeto existe para não fazer.

@@ -849,3 +849,44 @@ o núcleo **sem camada carregada** — um teste que precisasse de `Extenso` para
 **O que o teste ganha ao não medir acentos.** Ele mede comportamento, e comportamento é
 o que quebra. O não-ASCII teria dado uma falsa sensação de rigor enquanto D-026 — um
 formatador de camada vazando para ambiente neutro — passava despercebida por duas fases.
+
+---
+
+## D-028 — O valor interpolado nunca altera a estrutura do documento
+
+*2026-09-05 · aceita · surgida ao implementar a F8*
+
+**Decisão.** Ao emitir num formato com marcação — Markdown, Typst —, o motor escapa o
+**valor interpolado** e não toca na **prosa do modelo**. `**importante**` escrito pelo
+autor sai como negrito; `*Maria*` vindo dos dados sai como as três letras e os dois
+asteriscos.
+
+**Por quê.** É o mesmo princípio do projeto inteiro, dito para outro problema: o dado
+preenche o documento, não o reescreve. Um nome com `#` não pode abrir uma cláusula falsa,
+e um campo com `\` não pode escapar nada. É a preocupação de quem escapa HTML, pela mesma
+razão — e aqui com o peso extra de que o documento pode ser assinado.
+
+Não escapar a prosa é a outra metade da decisão, e vem de D-014: o motor não tem o
+direito de editar o texto que o autor digitou. Um modelo Markdown que escreve `**` quer
+negrito.
+
+**A precisão que a implementação exigiu.** Escapar tudo em toda posição é conservador e
+inútil: `12.345` viraria `12\.345` e nenhum valor sairia legível. Em Markdown há duas
+classes — o que é marcação **em qualquer posição** (ênfase, código, colchetes, HTML) e o
+que só é marcação **no início de uma linha** (títulos, citações, itens de lista). O
+segundo grupo só é escapado quando o valor de fato cai no começo de uma linha, e **quem
+sabe disso é o render**, que tem o buffer: `escape_value` recebe a posição.
+
+Isso importa porque um valor pode conter quebras de linha. `"X\n\n# Cláusula"` põe um
+título no documento se o `#` não for escapado *ali* — e escapá-lo em toda posição encheria
+o texto de barras sem proteger nada.
+
+**O que fica assumido.** `$` é escapado sempre, mesmo produzido por um formatador da
+camada: `R$ 250.000,00` sai como `R\$ 250.000,00` no fonte, e renderiza correto. Separar
+"o que o formatador escreveu" de "o que veio do dado" exigiria que o formatador
+devolvesse texto marcado, e o custo dessa mudança na API é maior que o de uma barra no
+fonte intermediário.
+
+**Sobre `.docx` e PDF.** O motor não os gera, e não deve: `kanon render --to markdown |
+pandoc -o saida.docx` põe a composição de página em quem sabe fazê-la. O Kanon garante o
+conteúdo.
