@@ -1244,6 +1244,57 @@ function load_string(env::Environment, text::AbstractString;
 end
 
 """
+    Loaded
+
+O resultado de ler um modelo **sem lançar**: o que deu para construir, e tudo o que se
+soube dizer sobre ele.
+
+`model` é `nothing` só quando não houve árvore — erro de sintaxe ou de inclusão, os dois
+casos em que a §10.3 manda suprimir as fases seguintes. Com árvore, o modelo vem mesmo
+que a análise tenha acusado erro: **o editor precisa da estrutura do arquivo quebrado**,
+que é justamente o arquivo em que ele passa o tempo todo.
+"""
+struct Loaded
+    model::Union{Nothing,Model}
+    diagnostics::DiagnosticSet
+end
+
+Base.isempty(l::Loaded) = isempty(l.diagnostics)
+
+function Base.show(io::IO, l::Loaded)
+    print(io, "Loaded(", l.model === nothing ? "sem árvore" : "com modelo", ", ",
+          length(l.diagnostics), " diagnósticos)")
+end
+
+"""
+    load_source(env, text; name, root) -> Loaded
+
+Lê e analisa **sem lançar**. É a porta por onde entra uma ferramenta interativa: um
+editor não pode ser interrompido por exceção a cada tecla, e precisa do que o motor
+conseguiu entender do arquivo mal-escrito tanto quanto da lista do que está errado.
+
+Recebe **texto**, e não caminho, porque quem a chama tem o buffer na mão e ele quase
+sempre difere do que está no disco. `name` é o nome que os diagnósticos usam, e `root` a
+raiz de onde os fragmentos podem vir.
+
+Não há segunda travessia nem regra própria: é o mesmo caminho de [`load_string`](@ref),
+sem o `throw` no fim. Uma ferramenta que discordasse do motor seria pior que nenhuma
+(D-029).
+"""
+function load_source(env::Environment, text::AbstractString;
+                     name::AbstractString = "<string>", root = nothing)
+    tmpl = try
+        compose(parse_string(text; name, keywords = env.keywords),
+                Loader(root), env.keywords)
+    catch e
+        e isa KanonError || rethrow()
+        return Loaded(nothing, sorted(e.diagnostics))
+    end
+    a = analyze(env, tmpl)
+    Loaded(Model(env, tmpl, a), diagnostics(a))
+end
+
+"""
     load_template(env, path; root = dirname(path)) -> Model
 
 Como [`load_string`](@ref), lendo do disco. `root` é a raiz de onde os fragmentos podem

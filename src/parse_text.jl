@@ -352,6 +352,15 @@ function scan_run!(ctx::ParseCtx, c::Cursor, stop_at_bracket::Bool)
     end
 
     flush!()
+
+    # O fim do trecho é o fim do último **nó**, e não o do último caractere: `lastc` só
+    # avança com prosa, e um parágrafo terminado em interpolação, grupo, remissão ou
+    # ponto de flexão declarava um trecho que parava antes dele. O grupo fechado já
+    # termina no `]`, que é depois de qualquer filho, e a comparação o preserva.
+    if !isempty(children)
+        fim = children[end].span
+        (fim.endline, fim.endcol) > (lastl, lastc) && ((lastl, lastc) = (fim.endline, fim.endcol))
+    end
     return children, closed, lastl, lastc
 end
 

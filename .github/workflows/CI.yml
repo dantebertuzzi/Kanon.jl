@@ -64,6 +64,13 @@ jobs:
           julia --project=lib/KanonScience lib/KanonScience/test/runtests.jl
         shell: bash
 
+      - name: KanonLSP
+        run: |
+          julia --project=lib/KanonLSP -e '
+            using Pkg; Pkg.develop([PackageSpec(path=".")]); Pkg.instantiate()'
+          julia --project=lib/KanonLSP lib/KanonLSP/test/runtests.jl
+        shell: bash
+
   docs:
     name: Documentation
     runs-on: ubuntu-latest

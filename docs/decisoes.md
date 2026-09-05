@@ -1141,3 +1141,119 @@ direta: um editor mapeia código de diagnóstico a ação, e a ação acontece n
 blocos entram, que o contrato unifica, que o ciclo erra. Nenhum teste tinha um fragmento
 com um erro dentro. É a mesma forma dos buracos que os modelos nº 2 e nº 3 acharam: a
 peça foi testada, a interseção não.
+
+---
+
+## D-036 — `load_source`: uma porta que lê sem lançar
+
+*2026-09-05 · aceita · surgida ao implementar o servidor de linguagem*
+
+**O problema.** Todas as portas do motor lançam: `parse_string` lança `KanonSyntaxError`,
+`compose` lança `KanonReferenceError`, e `load_string` lança de novo quando a análise
+acusa erro. Para um programa isso é certo — a §14 exige que nada renderize com contrato
+insatisfeito.
+
+Para uma **ferramenta interativa** é inútil. Um editor não pode ser interrompido por
+exceção a cada tecla, e precisa de duas coisas ao mesmo tempo que o `throw` torna
+mutuamente exclusivas: **a lista do que está errado** e **a estrutura do que o motor
+conseguiu entender**. O arquivo com erro é justamente o arquivo em que o redator passa o
+tempo todo.
+
+**Decisão.** `load_source(env, text; name, root) -> Loaded`, com
+`Loaded(model, diagnostics)`. `model` é `nothing` **só** quando não houve árvore — erro
+de sintaxe ou de inclusão, os dois casos em que a §10.3 já manda suprimir as fases
+seguintes. Com árvore, o modelo vem mesmo com erro de referência.
+
+`load_string` e `load_template` continuam lançando, e não mudaram de comportamento.
+
+**Alternativas.** (a) A ferramenta chamar `parse_string` e `analyze` por conta própria.
+(b) Um argumento `strict = false` em `load_string`. (c) Uma porta própria (escolhida).
+
+**Por quê.** Contra (a): funciona, e é o começo de a ferramenta ter caminho próprio —
+hoje ela repetiria o `compose`, amanhã repetiria uma decisão. Contra (b): uma função cujo
+tipo de retorno depende de um argumento booleano é pior de usar e pior de ler, e a
+tentação seguinte seria usar o modo leniente em produção, que a §14 proíbe.
+
+**O que ela não é.** Não é modo leniente: nada aqui renderiza. É `analyze` com o
+resultado embrulhado, e o `throw` movido para quem quer ele.
+
+---
+
+## D-037 — O trecho de um nó termina no último nó, e não no último caractere
+
+*2026-09-05 · aceita · surgida ao implementar o servidor de linguagem*
+
+**O defeito.** `scan_run!` mantinha a posição final em `lastl, lastc`, e só `push_char!`
+a atualizava — isto é, **só prosa avançava o fim do trecho**. Um parágrafo terminado em
+interpolação, grupo, remissão ou ponto de flexão declarava um trecho que parava antes
+dele.
+
+`{a}` sozinho num parágrafo produzia `Paragraph` com trecho `(9,1)–(9,1)`, enquanto a
+`Interp` dentro dele ocupava `(9,1)–(9,3)`. **O pai era menor que o filho**, o que
+nenhuma leitura da árvore espera.
+
+Passou despercebido porque nada no motor consulta o trecho de um parágrafo: os
+diagnósticos apontam o nó culpado, e o render não usa posição. Foi a primeira consulta
+por posição — "que nó está sob o cursor" — que topou nele.
+
+**Decisão.** Depois de fechar o trecho, o fim é o do último filho, quando ele for maior.
+O grupo fechado já termina no `]`, que vem depois de qualquer filho, e a comparação o
+preserva.
+
+**Por que a comparação, e não a atribuição.** Porque as duas fontes são legítimas: o `]`
+de um grupo é posição de caractere e é o fim certo; o fim de um parágrafo é o do último
+nó. Escolher a maior das duas é a regra que vale nos dois casos, e não tem exceção para
+alguém esquecer depois.
+
+**A regra geral que isto fixa.** O trecho de um nó **contém** os trechos dos filhos dele.
+Não estava escrito em lugar nenhum porque parecia óbvio demais para escrever.
+
+---
+
+## D-038 — Completar lê a última análise que deu certo
+
+*2026-09-05 · aceita · surgida ao implementar o servidor de linguagem*
+
+**A descoberta.** Completar é a única funcionalidade que roda **exatamente quando o
+arquivo não analisa**. No instante em que alguém pede uma sugestão, o que ele digitou é
+`{`, ou `{price:`, ou `{::` — nenhum deles fecha, e nenhum produz árvore.
+
+Um servidor que consultasse só a análise corrente não sugeriria nada, nunca. A primeira
+versão fazia isso, e a suíte a pegou na primeira execução com uma lista vazia.
+
+**Decisão.** O documento guarda `last_model` — a última análise que produziu árvore — e
+**só a completação** o lê. Diagnóstico, estrutura e o que está sob o cursor continuam
+saindo da análise corrente.
+
+**Por que isso não é a ferramenta discordando do motor (D-029).** A distinção é *onde a
+resposta é calculada*, e não *quão recente ela é*. As sugestões continuam saindo do
+`Environment` e das tabelas que o motor produziu; o que muda é de qual instante. Uma
+completação que varresse o texto atrás de palavras seria a ferramenta com regra própria —
+e sugeriria `extenso` para um campo `text` sem que nada a corrigisse.
+
+**Por que a divisão é essa, e não "tudo usa o último bom".** Para um arquivo quebrado, o
+diagnóstico tem uma resposta certa, e é dizer o que está quebrado. Mostrar o diagnóstico
+de dois segundos atrás seria mentir sobre o estado do arquivo — que é o oposto do que
+esta ferramenta existe para fazer.
+
+---
+
+## D-039 — O servidor não escolhe as camadas; quem o inicia escolhe
+
+*2026-09-05 · aceita · surgida ao implementar o servidor de linguagem*
+
+**A tentação.** Um servidor de linguagem que carregasse `Extenso`, `KanonLegal` e
+`KanonScience` por conta própria funcionaria para todo mundo sem configuração nenhuma, e
+seria a decisão que qualquer um tomaria primeiro.
+
+**Por que ela está errada.** Um modelo que usa `pessoa` sem a camada carregada **é um
+modelo inválido**, e o motor o recusa. Um servidor que aceitasse esse modelo mostraria o
+arquivo limpo enquanto a CLI o recusa — e o redator descobriria a diferença no dia da
+entrega, com o editor dizendo que está tudo certo.
+
+O teste de neutralidade existe para impedir exatamente isso dentro do motor; deixar a
+ferramenta desfazê-lo por fora seria pior, porque ninguém procuraria ali.
+
+**Decisão.** `serve(; env)` recebe o ambiente, e o padrão é o **núcleo puro** — a mesma
+escolha da CLI, que recebe `--locale`. Quem inicia o processo sabe que acervo vai editar;
+o servidor não tem como adivinhar, e adivinhar errado é pior que perguntar.

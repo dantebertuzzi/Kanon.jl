@@ -1,0 +1,38 @@
+#!/usr/bin/env julia
+# Ponto de entrada do servidor de linguagem.
+#
+# As camadas são escolhidas aqui, e não pelo servidor: quem inicia o processo sabe que
+# acervo vai editar, e o servidor não tem como adivinhar. Um servidor que carregasse
+# tudo aceitaria um modelo que o motor recusaria na hora de gerar o documento.
+#
+#   kanon-lsp                      o núcleo puro
+#   kanon-lsp --locale pt          com a camada de idioma
+#   kanon-lsp --locale pt --domain KanonLegal
+#
+# No editor, aponte o cliente LSP para este arquivo, com `languageId = "kanon"`.
+
+using Kanon
+using KanonLSP
+
+function ambiente(args)
+    locale = nothing
+    dominios = Module[]
+    i = 1
+    while i <= length(args)
+        if args[i] == "--locale" && i < length(args)
+            locale = Symbol(args[i + 1]); i += 2
+        elseif args[i] == "--domain" && i < length(args)
+            nome = Symbol(args[i + 1])
+            # `@eval using` porque o domínio é escolhido em tempo de execução; é a única
+            # forma, e acontece **fora** do motor — o modelo continua sem executar nada.
+            push!(dominios, @eval (using $nome; $nome))
+            i += 2
+        else
+            println(stderr, "kanon-lsp: opção desconhecida `", args[i], "`.")
+            exit(3)
+        end
+    end
+    Environment(locale = locale, domains = dominios)
+end
+
+KanonLSP.serve(env = ambiente(ARGS))

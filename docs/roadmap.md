@@ -15,15 +15,16 @@
 | **F6** Domínios | ✅ concluída | `KanonLegal` e `KanonScience`, `@kanon_type`, e o teste de neutralidade |
 | **F7** Ingestão e reuso | ✅ concluída | inclusão de fragmentos com contrato unificado; `Tables.jl` e JSON por extensão |
 | **F8** Saída | ✅ concluída | `text`, `markdown` e `typst`; o valor é escapado, a prosa não |
-| **F9** Editor | ✅ parcial | `outline`, `kanon outline` e `kanon ask`; a interface gráfica é aplicação (D-029) |
+| **F9** Editor | ✅ concluída | `outline`, `kanon ask`, e o **servidor de linguagem** — diagnóstico, estrutura, cursor, salto e completação |
 | **F10** Publicação | 🔨 quase | CI, Aqua e Documenter feitos; falta o registro no General, que é ação sua |
 
 **O produto existe.** `load_template` → `check` → `render`, mais a CLI, os três formatos
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **1.842 testes** ao todo — 1.435 no núcleo (~50 s com Aqua), 195 em `Extenso`,
-119 em `KanonLegal`, 93 em `KanonScience`. CI em Linux, macOS e Windows.
+Suíte: **1.998 testes** ao todo — 1.451 no núcleo (~50 s com Aqua), 195 em `Extenso`,
+119 em `KanonLegal`, 93 em `KanonScience`, 140 em `KanonLSP`. CI em Linux, macOS e
+Windows.
 
 ---
 
@@ -85,14 +86,22 @@ estabilidade que quinze modelos ainda podem desfazer.
 Se a decisão for registrar assim mesmo — o que é defensável, `0.1.x` não promete nada —, o
 que o registro vai cobrar está na seção da F10.
 
-### 3. A terceira coluna do editor
+### 3. A pré-visualização sempre visível
 
-`outline` já entrega o que uma interface consome. Falta a interface: a pré-visualização
-sempre visível e a edição. Um servidor de linguagem (LSP) é o formato mais provável, e é
-onde o esforço rende mais — um editor gráfico serve a um editor; um LSP serve a todos.
+**Feito o servidor de linguagem** (`lib/KanonLSP`), que era este item: diagnóstico
+enquanto se digita, a estrutura do arquivo com a regra ao lado de cada bloco, o que está
+sob o cursor, o salto para a declaração e a completação que conhece os tipos. Um LSP
+serve a todos os editores; um editor gráfico serviria a um.
 
-O roadmap original dizia que sem isso *"a linguagem fica pior na prática que um motor
-convencional"*. Continua verdade, e é o segundo item mais valioso da lista.
+**Falta a terceira coluna propriamente dita** — a pré-visualização do documento ao lado
+do modelo, atualizada a cada tecla. O motor já a entrega (`preview` rende com
+«marcadores» e nunca exporta); o que falta é o caminho até a tela. Como pedido do LSP
+seria uma extensão fora do protocolo, e a alternativa é uma janela de editor comum
+alimentada pelo mesmo servidor.
+
+O roadmap original dizia que sem a interface *"a linguagem fica pior na prática que um
+motor convencional"*. Com o LSP isso deixou de valer para o essencial — o redator agora
+vê o erro onde ele está, e vê que um campo pode faltar antes de gerar o documento.
 
 ### 4. As dívidas
 
@@ -104,8 +113,8 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.435, ~50 s
-for p in Extenso KanonLegal KanonScience; do
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.451, ~50 s
+for p in Extenso KanonLegal KanonScience KanonLSP; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
@@ -134,6 +143,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/elide.jl` | **o reparo de emenda** — R1 a R5, local à remoção; a peça mais delicada |
 | `src/render.jl` | interpolação, grupos, sujeito, numeração, remissões, orçamento |
 | `src/cli.jl` | `check`, `render`, `contract`, `preview`; os cinco códigos de saída |
+| `lib/KanonLSP/` | o servidor de linguagem: JSON-RPC, posições, e as cinco funcionalidades |
 | `lib/Extenso/src/numeros.jl` | extenso, ordinais, dinheiro e datas — tabela, não esperteza |
 | `lib/Extenso/src/flexao.jl` | as marcas, o protocolo de sujeito e a recapitalização |
 | `src/macro.jl` | `@kanon_type` — o açúcar que a D-019 prometeu, por `GlobalRef` |
@@ -524,9 +534,32 @@ resolvida, e é o que ele passou a dar:
 A restrição que isso impõe é o ponto: `outline` sai inteiro da `Analysis`, sem regras
 próprias. Uma ferramenta que discordasse do motor seria pior que nenhuma.
 
-**O que falta**, e é trabalho de interface, não de motor: a terceira coluna — a
-pré-visualização sempre visível — e a edição. Um servidor de linguagem (LSP) é o formato
-mais provável, e `outline` já é o que ele consumiria.
+**O servidor de linguagem** (`lib/KanonLSP`, 5 de setembro de 2026) é a outra metade, e
+`outline` era mesmo o que ele consumia. Cinco funcionalidades, todas lidas da `Analysis`:
+
+| pedido | o que o redator ganha |
+|---|---|
+| diagnósticos | o erro sublinhado onde ele está, com a dica junto — e o do fragmento vai para o fragmento (D-035) |
+| estrutura | a primeira coluna do editor, e a regra de cada bloco no `detail`, que é a segunda |
+| cursor | tipo, formatador, se o valor pode faltar, se está protegido por grupo, que número a remissão rende |
+| salto | do uso para a declaração, da remissão para o bloco, atravessando fronteira de fragmento |
+| completar | campos, campos do sujeito, formatadores **daquele tipo**, blocos numerados, tipos e palavras-chave |
+
+Escrevê-lo cobrou quatro coisas, e duas eram do motor:
+
+- **D-036** — todas as portas do motor lançavam, e uma ferramenta interativa precisa da
+  estrutura do arquivo **e** da lista de erros ao mesmo tempo. `load_source` é a porta
+  que devolve as duas.
+- **D-037** — o trecho de um parágrafo terminava no último **caractere**, e não no último
+  nó: `{a}` sozinho produzia um pai menor que o filho. Nada no motor consultava trecho de
+  parágrafo, e por isso ninguém tinha topado nele.
+- **D-038** — completar roda exatamente quando o arquivo não analisa. A primeira versão
+  lia a análise corrente e não sugeria nada, nunca.
+- **D-039** — o servidor não escolhe as camadas. Um que carregasse todas mostraria limpo
+  um modelo que a CLI recusa.
+
+**O que falta**: a pré-visualização ao lado do modelo. O motor já a entrega — `preview`
+rende com «marcadores» e nunca exporta —, e o que falta é o caminho até a tela.
 
 ---
 
@@ -633,8 +666,8 @@ não caiu quando o código ficou bom.**
 
 ### O que a implementação já mudou na especificação
 
-Dezessete decisões saíram de escrever o código, e nove delas fecharam buracos que nenhuma
-releitura teria encontrado — o texto era internamente coerente em todos os casos:
+Vinte e uma decisões saíram de escrever o código, e dez delas fecharam buracos que
+nenhuma releitura teria encontrado — o texto era internamente coerente em todos os casos:
 
 | | O que estava errado |
 |---|---|
@@ -647,6 +680,7 @@ releitura teria encontrado — o texto era internamente coerente em todos os cas
 | **D-033** | a §3.3 descreve um tipo do núcleo que a §2.1 torna indeclarável, e nenhuma das duas está errada sozinha |
 | **D-034** | a regra do PDG estava certa e o modo de descobrir o algarismo estava errado, num caso em cada dez |
 | **D-035** | a §10.2 promete arquivo, linha e coluna, e o arquivo estava errado sempre que havia mais de um |
+| **D-037** | o trecho de um nó devia conter o dos filhos, e não continha — óbvio demais para estar escrito |
 
 Se doze modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.

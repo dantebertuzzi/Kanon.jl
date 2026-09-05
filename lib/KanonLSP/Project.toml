@@ -1,0 +1,19 @@
+name = "KanonLSP"
+uuid = "c9098b74-a6d5-4719-97ce-59c125cc3a47"
+authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
+version = "0.1.0-DEV"
+
+[deps]
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+Kanon = "3c1f7a2e-9b4d-4a6f-8e21-5d0c7b3f9a14"
+
+[compat]
+JSON3 = "1"
+Kanon = "0.1"
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

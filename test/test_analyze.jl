@@ -472,3 +472,60 @@ end
         @test m.template.sources[1] == caminho
     end
 end
+
+# `load_source` — a porta por onde entra uma ferramenta interativa (F9).
+#
+# Um editor não pode ser interrompido por exceção a cada tecla, e precisa do que o motor
+# conseguiu entender do arquivo mal-escrito tanto quanto da lista do que está errado.
+# Nenhuma regra nova: é o caminho de `load_string` sem o `throw` no fim.
+
+@testset "load_source: ler sem lançar" begin
+    @testset "modelo bom: vem o modelo e nenhum diagnóstico" begin
+        l = load_source(ENVP, modelo("{price}"); name = "m.kanon")
+        @test l.model isa Model
+        @test isempty(l)
+        @test isempty(l.diagnostics)
+    end
+
+    @testset "erro de referência: vem o modelo E o diagnóstico" begin
+        # É o caso que só existe para uma ferramenta: `load_string` lançaria, e o editor
+        # ficaria sem a estrutura do arquivo justamente quando ela é mais útil.
+        l = load_source(ENVP, modelo("{notes}"); name = "m.kanon")
+        @test l.model isa Model
+        @test [d.code for d in l.diagnostics] == ["K2012"]
+        @test [b.name for b in l.model.template.text.blocks] == [:preamble]
+        @test !isempty(l.model.analysis.paths)
+    end
+
+    @testset "erro de sintaxe: não há árvore, e a §10.3 é respeitada" begin
+        l = load_source(ENVP, "kanon 1\n\ntext\n\n: b\n{a\n"; name = "m.kanon")
+        @test l.model === nothing
+        @test [d.code for d in l.diagnostics] == ["K1203"]
+    end
+
+    @testset "erro de inclusão: também não há árvore" begin
+        l = load_source(ENVP, "kanon 1\n\ntext\n\n: b\nA.\n\ninclude \"x.kanon\"\n";
+                        name = "m.kanon")
+        @test l.model === nothing
+        @test "K2055" in [d.code for d in l.diagnostics]   # sem raiz configurada
+    end
+
+    @testset "é o mesmo caminho de load_string, sem o throw" begin
+        # Se divergir, a ferramenta passa a discordar do motor — que é exatamente o que
+        # a D-029 proíbe.
+        src = modelo("{price}")
+        l = load_source(ENVP, src; name = "m.kanon")
+        m = load_string(ENVP, src; name = "m.kanon")
+        @test l.model.analysis.paths == m.analysis.paths
+        @test [b.name for b in l.model.template.text.blocks] ==
+              [b.name for b in m.template.text.blocks]
+    end
+
+    @testset "um aviso não impede o modelo, e vem junto" begin
+        l = load_source(ENVP, "kanon 1\n\ndata\n  f : boolean !\n\ntext\n\n:: p\nP.\n\n" *
+                              "::: q\nQ.\n\nrules\n  p when f\n"; name = "m.kanon")
+        @test l.model isa Model
+        @test [d.code for d in l.diagnostics] == ["K2039"]
+        @test !isempty(l.diagnostics)
+    end
+end

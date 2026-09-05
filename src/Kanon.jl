@@ -80,7 +80,7 @@ export UndecodableValue, IncomparableValues
 
 # --- análise ---
 export Analysis, ResolvedPath, Model
-export analyze, load_string, load_template
+export analyze, load_string, load_template, load_source, Loaded
 export Loader
 export Bound, check, bind, value
 export rows, render_each, read_json, parse_json
