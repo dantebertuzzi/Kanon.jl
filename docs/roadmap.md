@@ -20,13 +20,13 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **992 testes** no núcleo, ~21 s; **170** em `Extenso`.
+Suíte: **999 testes** no núcleo, ~21 s; **172** em `Extenso`.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'              # 992 testes, ~21 s
-julia --project=lib/Extenso lib/Extenso/test/runtests.jl  # 170 testes
+julia --project=. -e 'using Pkg; Pkg.test()'              # 999 testes, ~21 s
+julia --project=lib/Extenso lib/Extenso/test/runtests.jl  # 172 testes
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -328,7 +328,8 @@ Duas coisas que a fase forçou:
 - **D-020 revista pela segunda vez.** A garantia passou a valer para todo caminho que o
   `when` afirme presente, e não só para o sujeito: `b when notes is present` com
   `{notes}` no texto era o padrão mais natural da linguagem e exigia colchetes
-  redundantes.
+  redundantes. A interação com D-021 é intencional e a mensagem a distingue: um grupo
+  que a regra torna redundante manda tirar os colchetes, não mexer no plano de dados.
 
 E o defeito que a F4 tinha exposto está resolvido: o `refuse_unimplemented_rule` saiu, e
 a escritura com `um para cada vendedor` sai com um bloco por vendedor.

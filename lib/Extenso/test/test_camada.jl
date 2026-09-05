@@ -49,8 +49,11 @@ texto
 : b
 O preço é {preco}[, com a nota {nota}].
 
+: c
+A nota é {nota}.
+
 regras
-  b quando nota é presente
+  c quando nota é presente
 """; name = "t.kanon")
         @test m isa Model
 
@@ -137,12 +140,24 @@ O(s) OUTORGANTE(S) VENDEDOR(ES) declara(m) ser(em) legítimo(s) proprietário(s)
         @test !occursin("residentes", s)
     end
 
-    @testset "o bloco com regra é recusado, e não renderizado errado" begin
+    @testset "com `um para cada`, cada instância tem um vendedor por sujeito (F5)" begin
+        # o mesmo texto, agora repetido: o sujeito de cada instância é singular, e as
+        # marcas de plural deixam de se aplicar
         com_regra = plural * "\nregras\n  declaracao um para cada vendedor\n"
         m = load_string(ENV_PT, com_regra; name = "e.kanon")
-        e = try; render(m, Dict("vendedor" => [JOAO])); catch err; err; end
-        @test e isa ErrorException
-        @test occursin("fase 5", e.msg)
+        s = render(m, Dict("vendedor" => [JOAO, MARIA]))
+        @test s == "O OUTORGANTE VENDEDOR declara ser legítimo proprietário, " *
+                   "residente e domiciliado.\n\n" *
+                   "O OUTORGANTE VENDEDOR declara ser legítimo proprietário, " *
+                   "residente e domiciliada."
+        # duas instâncias, na ordem da coleção
+        @test count("OUTORGANTE", s) == 2
+
+        # D-013 no detalhe: `VENDEDOR(ES)` é marca de NÚMERO, e com sujeito singular ela
+        # não se aplica — nem para a vendedora. Gênero e número na mesma palavra pedem
+        # `(as)`/`(os)`, ou duas palavras marcadas. Uma marca, um efeito.
+        @test !occursin("VENDEDORA", s)
+        @test occursin("domiciliada", s)      # esta tem marca de gênero, e ela aplicou
     end
 end
 

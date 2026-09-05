@@ -331,3 +331,27 @@ rules
         @test "K2047" in codigos
     end
 end
+
+@testset "o grupo redundante diante da regra é acusado, e no lugar certo" begin
+    # A interação entre D-020 (2ª revisão) e D-021: se a regra garante o valor, o grupo
+    # que o protege nunca elide — e o culpado é a regra, não a declaração do campo.
+    a = anl(CAB_R * """
+: b
+O preço[, com a nota {notes}].
+
+rules
+  b when notes is present
+"""; env = ENVK)
+    @test [d.code for d in a.diagnostics] == ["K2011"]
+    d = a.diagnostics[1]
+    @test occursin("a regra deste bloco já garante", d.message)
+    @test occursin("redundante", d.hint)
+    @test !occursin("plano de dados", d.hint)     # mandaria mexer no lugar errado
+
+    @testset "sem a regra, a mensagem volta a ser a do contrato" begin
+        d = anl(CAB_R * ": b\nO preço[, de {price}].\n"; env = ENVK).diagnostics[1]
+        @test d.code == "K2011"
+        @test occursin("o contrato sempre garante", d.message)
+        @test occursin("plano de dados", d.hint)
+    end
+end

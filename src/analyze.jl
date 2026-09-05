@@ -461,12 +461,25 @@ function check_group!(ctx::AnalysisCtx, g::Group)
         # Nenhuma resolveu: o erro já foi dito no caminho, não se diz de novo aqui.
         if !isempty(resolvidas) && !any(rp -> rp.nullable, resolvidas)
             nomes = join(sort!(unique!(["`" * string(n.path) * "`" for n in diretas])), ", ")
-            err!(ctx, "K2011", g.span,
-                 "este grupo opcional nunca elide: $nomes " *
-                 (length(diretas) == 1 ? "é um valor que o contrato sempre garante." :
-                                         "são valores que o contrato sempre garante.");
-                 hint = "Marque o campo como opcional no plano de dados, ou escreva o " *
-                        "texto sem os colchetes.")
+            plural = length(diretas) > 1
+            # A garantia pode vir do contrato ou da regra do próprio bloco, e mandar
+            # corrigir o plano de dados quando o culpado é o `when` seria mandar mexer
+            # no lugar errado.
+            pela_regra = any(n -> guaranteed_present(ctx, n.path), diretas)
+            if pela_regra
+                err!(ctx, "K2011", g.span,
+                     "este grupo opcional nunca elide: a regra deste bloco já garante " *
+                     (plural ? "$nomes." : "$nomes.");
+                     hint = "O bloco só existe quando o valor está presente, então o " *
+                            "grupo é redundante — escreva o texto sem os colchetes.")
+            else
+                err!(ctx, "K2011", g.span,
+                     "este grupo opcional nunca elide: $nomes " *
+                     (plural ? "são valores que o contrato sempre garante." :
+                               "é um valor que o contrato sempre garante.");
+                     hint = "Marque o campo como opcional no plano de dados, ou escreva o " *
+                            "texto sem os colchetes.")
+            end
         end
     end
 
