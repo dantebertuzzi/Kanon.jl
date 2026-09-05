@@ -848,6 +848,29 @@ end
 # --- travessia ---------------------------------------------------------------
 
 """
+    has_inflection(ctx, bloco) -> Bool
+
+O bloco tem alguma marca que **este ambiente** registra?
+
+A pergunta é do ambiente, e não do léxico: `casa(s)` num modelo sem camada de idioma é
+prosa literal (§7.1), e um sujeito posto ali para flexioná-la não flexionaria nada.
+"""
+function has_inflection(ctx::AnalysisCtx, b::Block)
+    for p in b.children
+        inflection_in(ctx, p.children) && return true
+    end
+    return false
+end
+
+function inflection_in(ctx::AnalysisCtx, nodes)
+    for n in nodes
+        n isa FlexPoint && hasmark(ctx.env, n.mark) && return true
+        n isa Group && inflection_in(ctx, n.children) && return true
+    end
+    return false
+end
+
+"""
 Valida os tipos declarados no plano de dados. Roda antes de qualquer caminho para que um
 tipo inexistente seja dito **uma vez**, na declaração, e não a cada interpolação que o
 use.
@@ -937,15 +960,26 @@ function analyze_subject!(ctx::AnalysisCtx, b::Block, pos::Int)
         return nothing
     end
 
-    # Um sujeito escalar é legítimo no bloco iterado: o redator refere o elemento
-    # inteiro, e não campos dele.
+    # O sujeito tem dois ofícios (§4.2 e §7.1), e só o primeiro precisa de campos:
+    # resolver caminhos contra eles, e **ser o argumento da flexão**. Um valor sem campos
+    # serve ao segundo — uma lista responde `numero`, um escalar de domínio responde
+    # `genero` —, e recusá-lo tornava a flexão de número inalcançável para qualquer
+    # modelo cujos elementos não fossem compostos (D-040).
+    #
+    # O que continua sendo erro é o sujeito que não faz **nenhum** dos dois: sem campos
+    # para ler e sem marca para flexionar, ele não tem efeito nenhum sobre o bloco, e é
+    # quase sempre um `{campo}` que o redator escreveu como `<- campo` por engano. É a
+    # mesma forma da D-021: o que nunca pode fazer nada é erro.
     T = typefor(ctx.env, rp.typename)
-    if ctx.iterating === nothing && T !== nothing && isempty(kanon_schema(T))
+    if ctx.iterating === nothing && T !== nothing && isempty(kanon_schema(T)) &&
+       !has_inflection(ctx, b)
         err!(ctx, "K2007", b.subject.span,
              "o bloco `$(b.name)` toma `$(string(b.subject))` por sujeito, e " *
-             "`$(rp.typename)` não tem campos.";
-             hint = "Só um valor com campos serve de sujeito; escreva " *
-                    "`{$(string(b.subject))}` no texto do bloco.",
+             "`$(rp.typename)` não tem campos nem há marca de flexão no bloco: " *
+             "o sujeito não tem efeito nenhum aqui.";
+             hint = "Para escrever o valor, use `{$(string(b.subject))}` e remova o " *
+                    "`<-`. Para flexionar por ele, escreva a marca na palavra: " *
+                    "`aprovado(a)`.",
              path = string(b.subject))
         return nothing
     end

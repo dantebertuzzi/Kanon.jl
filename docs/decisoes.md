@@ -1257,3 +1257,59 @@ ferramenta desfazê-lo por fora seria pior, porque ninguém procuraria ali.
 **Decisão.** `serve(; env)` recebe o ambiente, e o padrão é o **núcleo puro** — a mesma
 escolha da CLI, que recebe `--locale`. Quem inicia o processo sabe que acervo vai editar;
 o servidor não tem como adivinhar, e adivinhar errado é pior que perguntar.
+
+---
+
+## D-040 — O sujeito tem dois ofícios, e só o primeiro precisa de campos
+
+*2026-09-05 · aceita · surgida ao escrever o modelo real nº 4*
+
+**O que a especificação já dizia, em dois lugares que ninguém tinha lido juntos.**
+
+- §4.2: o sujeito é aquilo contra o que um caminho resolve primeiro. **Precisa de campos.**
+- §7.1: *"O sujeito é também o argumento passado à camada de idioma nos pontos de
+  flexão."* **Não precisa de campos nenhum** — `flexionar` chama `genero(sujeito)` e
+  `numero(sujeito)`, e um vetor responde ao segundo perfeitamente.
+
+O `K2007` era escrito para o primeiro ofício e recusava os dois: *"só um valor com campos
+serve de sujeito"*.
+
+**A consequência, medida.** `Extenso.numero(::AbstractVector)` existe desde a F4, é
+testado na suíte de unidade, e **nenhum modelo podia alcançá-lo** a menos que os
+elementos da lista fossem de um tipo composto — isto é, a menos que houvesse uma camada
+de domínio. Um certificado com três concluintes, escrito só com os tipos do núcleo, não
+tinha como escrever `aluno(s) matriculado(s)`.
+
+`Extenso` se anuncia desde a F4 como publicável sozinho. Metade do que ele faz era
+inalcançável sem `KanonLegal`.
+
+**Decisão.** Um sujeito sem campos é legítimo **quando o bloco tem alguma marca que este
+ambiente registra**. Continua sendo erro quando não tem: sem campos para ler e sem marca
+para flexionar, o `<-` não tem efeito nenhum sobre o bloco, e é quase sempre um `{campo}`
+que o redator escreveu como `<- campo` por engano.
+
+**Alternativas.** (a) Manter a recusa e mandar usar um tipo de domínio. (b) Aceitar
+qualquer sujeito sem campos. (c) Aceitar quando há marca (escolhida).
+
+**Por quê.** Contra (a): obriga a definir um `struct` Julia para escrever um certificado,
+o que põe a camada de domínio no caminho de quem só quer o idioma — e contradiz a
+promessa do `Extenso`. Contra (b): perde um diagnóstico que pega um engano real, e o
+engano é frequente, porque `<-` e `{}` são as duas formas de nomear o mesmo campo.
+
+A forma da (c) é a da **D-021**, e de propósito: *o que nunca pode fazer nada é erro*. Lá
+era o grupo que nunca elide; aqui é o sujeito que não lê nem flexiona.
+
+**Por que a pergunta é ao ambiente, e não ao léxico.** `casa(s)` num modelo sem camada de
+idioma é prosa literal (§7.1), e um sujeito posto ali para flexioná-la não flexionaria
+nada. `has_inflection` consulta `hasmark(env, ...)`, e por isso o mesmo modelo que passa
+com a camada carregada é recusado sem ela — que é exatamente o comportamento que o teste
+de neutralidade exige.
+
+**Compatibilidade.** É afrouxamento: torna válido um modelo antes inválido, e a §13 põe
+isso em **versão menor**. Nenhum modelo existente muda de comportamento, porque todos os
+que agora passam antes erravam.
+
+**O que continua fora do alcance, e é do idioma e não da linguagem.** O plural de um verbo
+em português não é o singular mais um sufixo — `concluiu` ⟶ `concluíram` muda o radical —,
+e a marca só sufixa (D-013). A frase se escreve com particípios e adjetivos, que sufixam,
+ou o autor escreve `concluiu((ram))` e deixa a forma dupla, como o documento em papel faz.

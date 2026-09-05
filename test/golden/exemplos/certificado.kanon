@@ -1,0 +1,49 @@
+kanon 1 pt
+
+# Certificado de conclusão de curso, emitido **um por linha de uma planilha**.
+#
+# Português sem camada de domínio: só os tipos do núcleo, com os nomes que `Extenso` dá
+# a eles, e o estilo de bloco do próprio núcleo. É a prova, pelo lado do documento, de
+# que a camada de idioma se sustenta sozinha — `Extenso` é publicável sem `KanonLegal`,
+# e este modelo é o que demonstra isso.
+#
+# Duas consequências de não haver domínio, as duas assumidas e as duas visíveis aqui:
+#
+#   1. **Não há flexão de gênero.** O gênero é propriedade do valor, e um `texto` não tem
+#      nenhum a declarar (§7.1). Por isso `pelo((a))` está escapado: a marca não
+#      flexionaria, e sem o escape ela sumiria, deixando `pelo` onde o documento quer a
+#      forma dupla.
+#   2. **A flexão de número não alcança o verbo.** O plural de um verbo em português não
+#      é o singular mais um sufixo — `concluiu` ⟶ `concluíram` muda o radical —, e a marca
+#      só sufixa (D-013). A frase se escreve com particípios e adjetivos, que sufixam:
+#      `matriculado(s)`, `considerado(s)`, `apto(s)`.
+
+dados
+  concluintes : texto[1..] !
+  curso       : texto      !
+  instituicao : texto      !
+  carga       : numero     !
+  inicio      : data       !
+  conclusao   : data       !
+  conteudo    : texto[1..] !
+  conceito    : texto
+  registro    : numero     !
+  cidade      : texto      = "Petrolina"
+  emissao     : data       = hoje
+
+texto
+
+: titulo
+CERTIFICADO
+
+: corpo <- concluintes
+Certificamos, para os devidos fins, a conclusão do curso de {curso} por {concluintes}, aluno(s) regularmente matriculado(s) e considerado(s) apto(s) ao fim das atividades, promovido pelo((a)) {instituicao} com carga horária de {carga:extenso} horas, entre {inicio:corrente} e {conclusao:corrente}[, com o conceito {conceito}].
+
+: fecho
+{cidade}, {emissao:corrente}.
+
+:: conteudo
+O conteúdo programático compreendeu {conteudo}.
+
+:: registro
+Este certificado consta do registro nº {registro:ordinal} do livro próprio da instituição, e a sua autenticidade pode ser conferida junto à secretaria.

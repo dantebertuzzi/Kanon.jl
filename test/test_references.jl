@@ -287,8 +287,35 @@ rules
         @test Kanon.islist(rp.card)
     end
 
-    @testset "sujeito escalar sem iteração continua sendo erro" begin
-        src3 = CABECA * ": b <- price\n{price}\n"
+    @testset "sujeito sem campos e sem marca é erro: ele não faz nada ali" begin
+        # Não é "escalar é erro": é "sujeito sem efeito é erro". Sem campos para ler e
+        # sem marca para flexionar, o `<-` não muda nada no bloco, e quase sempre é um
+        # `{campo}` escrito como `<- campo` por engano (D-040).
         @test "K2007" in ref_codes(": b <- price\n{price}\n")
+        d = only([x for x in ref_diags(": b <- price\n{price}\n") if x.code == "K2007"])
+        @test occursin("não tem efeito nenhum aqui", d.message)
+        @test occursin("remova o `<-`", d.hint)
+    end
+
+    @testset "com marca registrada, o sujeito sem campos é legítimo (D-040)" begin
+        # O sujeito tem dois ofícios (§4.2 e §7.1) e só o primeiro precisa de campos.
+        # Recusá-lo tornava a flexão de número inalcançável para qualquer modelo cujos
+        # elementos não fossem compostos — que é todo modelo sem camada de domínio.
+        env = Environment(locale = :xx)
+        src = "kanon 1 xx\n\ndados\n  quem : text[] !\n\ntexto\n\n" *
+              ": b <- quem\nO(s) fulano(s) {quem}.\n"
+        @test isempty(analyze(env, parse_string(src; name = "t", keywords = env.keywords)).diagnostics)
+
+        # e a marca que este ambiente NÃO registra não vale: `(x)` é prosa (§7.1)
+        src2 = replace(src, "O(s) fulano(s)" => "O(x) fulano(x)")
+        a2 = analyze(env, parse_string(src2; name = "t", keywords = env.keywords))
+        @test [d.code for d in a2.diagnostics] == ["K2007"]
+    end
+
+    @testset "a marca conta mesmo dentro de um grupo" begin
+        env = Environment(locale = :xx)
+        src = "kanon 1 xx\n\ndados\n  quem : text[] !\n  obs : text\n\ntexto\n\n" *
+              ": b <- quem\n{quem}[, aprovado(s) com {obs}].\n"
+        @test isempty(analyze(env, parse_string(src; name = "t", keywords = env.keywords)).diagnostics)
     end
 end

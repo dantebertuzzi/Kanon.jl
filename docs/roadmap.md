@@ -22,7 +22,7 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **1.998 testes** ao todo — 1.451 no núcleo (~50 s com Aqua), 195 em `Extenso`,
+Suíte: **2.030 testes** ao todo — 1.456 no núcleo (~50 s com Aqua), 222 em `Extenso`,
 119 em `KanonLegal`, 93 em `KanonScience`, 140 em `KanonLSP`. CI em Linux, macOS e
 Windows.
 
@@ -35,14 +35,14 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existem **três** modelos reais no repositório, em `test/golden/exemplos/`:
-`escritura.kanon`, `locacao.kanon` e `relatorio.kanon` — este último com um fragmento
-incluído. O portão para a 1.0 pede quinze.
+Existem **quatro** modelos reais no repositório, em `test/golden/exemplos/`:
+`escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído) e
+`certificado.kanon` (emitido um por linha de planilha). O portão para a 1.0 pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos doze que faltam vai cobrar alguma coisa — como os três primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os dois últimos mediram isso:
-escritos com o motor pronto e a suíte verde, produziram **cinco defeitos e uma questão
+dos onze que faltam vai cobrar alguma coisa — como os quatro primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os três últimos mediram isso:
+escritos com o motor pronto e a suíte verde, produziram **seis defeitos e uma questão
 aberta de versão**.
 
 | | O que apareceu | Modelo |
@@ -51,15 +51,18 @@ aberta de versão**.
 | **D-032** | uma regra que remove a cláusula deixava o parágrafo dela órfão, rotulado `0.1` — um número que não existe. Virou o aviso `K2039` | locação |
 | **D-033** | o tipo `list` do núcleo **não é declarável** no plano de dados, e a mensagem mandava o autor para `list[]`, que é uma lista de listas | locação |
 | **D-034** | uma incerteza cujo primeiro algarismo é 3 ganhava **uma casa decimal a mais do que a medição sustenta** — `21.40 ± 0.30` no lugar de `21.4 ± 0.3` —, porque `0.3 / 10.0^-1` vale `2.9999999999999996` | relatório |
+| — | **e um limite do idioma, que não é defeito**: a marca só sufixa, e o plural de um verbo em português muda o radical. `concluiu(ram)` não existe; a frase se escreve com particípios | certificado |
 | **D-035** | todo diagnóstico sobre algo vindo de fragmento nomeava o **hospedeiro**, com a linha do **fragmento**: um ponteiro para uma linha que muitas vezes nem existe no arquivo apontado | relatório |
+| **D-040** | `K2007` recusava sujeito sem campos, e com isso a **flexão de número era inalcançável** para qualquer modelo sem camada de domínio — metade do que `Extenso` faz, e ele se anuncia como publicável sozinho | certificado |
 
-**O padrão nos cinco vale mais que os cinco: o buraco estava sempre na interseção de duas
+**O padrão nos seis vale mais que os seis: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
 nomes já são canônicos; toda a suíte de regras, contrato e `ask` estava em inglês. O tipo
 `list` era testado chamando `format` sobre um vetor, nunca declarando um campo. A regra do
 PDG era testada com incertezas que a potência de dez divide exato. A suíte da inclusão
 verificava que o fragmento **compõe**, e nenhum teste tinha um fragmento com um erro
-dentro.
+dentro. `Extenso.numero` sobre um vetor era testado direto, e nenhum modelo podia
+alcançá-lo.
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -67,7 +70,7 @@ modelo nº 3 foi escolhido justamente por atravessar três interseções vazias 
 um modelo em arquivo, com fragmento incluído, na camada científica, emitido também em
 Markdown.
 
-O que procurar em cada um dos doze que faltam:
+O que procurar em cada um dos onze que faltam:
 
 - Uma construção que a gramática não expressa, ou expressa mal.
 - Uma mensagem de erro que não diz o que fazer.
@@ -113,7 +116,7 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.451, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.456, ~50 s
 for p in Extenso KanonLegal KanonScience KanonLSP; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -150,7 +153,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao` e `relatorio` (com fragmento), cada um com a saída exigida ao lado |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento) e `certificado` (por linha de planilha), cada um com a saída exigida ao lado |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída e o escape do valor interpolado |
@@ -658,15 +661,15 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **3 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **4 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
-contradizer a D-013 que veio depois dele. A locação e o relatório, escritos com o motor
-já pronto e a suíte verde, cobraram mais cinco (D-031 a D-035) — **a taxa de descoberta
-não caiu quando o código ficou bom.**
+contradizer a D-013 que veio depois dele. A locação, o relatório e o certificado, escritos
+com o motor já pronto e a suíte verde, cobraram mais seis (D-031 a D-035 e D-040) — **a
+taxa de descoberta não caiu quando o código ficou bom.**
 
 ### O que a implementação já mudou na especificação
 
-Vinte e uma decisões saíram de escrever o código, e dez delas fecharam buracos que
+Vinte e duas decisões saíram de escrever o código, e onze delas fecharam buracos que
 nenhuma releitura teria encontrado — o texto era internamente coerente em todos os casos:
 
 | | O que estava errado |
@@ -681,8 +684,9 @@ nenhuma releitura teria encontrado — o texto era internamente coerente em todo
 | **D-034** | a regra do PDG estava certa e o modo de descobrir o algarismo estava errado, num caso em cada dez |
 | **D-035** | a §10.2 promete arquivo, linha e coluna, e o arquivo estava errado sempre que havia mais de um |
 | **D-037** | o trecho de um nó devia conter o dos filhos, e não continha — óbvio demais para estar escrito |
+| **D-040** | a §4.2 e a §7.1 davam dois ofícios ao sujeito, e a checagem foi escrita para um só |
 
-Se doze modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
+Se onze modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.
 
 **O método, fixado pelo segundo modelo e confirmado pelo terceiro.** Escreva o modelo

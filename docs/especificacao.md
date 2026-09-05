@@ -328,6 +328,12 @@ verbatim; a camada de saída (F8) decide se são quebras rígidas.
 O sujeito é também o argumento passado à camada de idioma nos pontos de flexão
 (seção 7).
 
+**[precisão da F10 — D-040]** São **dois ofícios**, e só o primeiro precisa de campos.
+Um sujeito de tipo sem campos — uma lista de `text`, um escalar de camada — é legítimo
+**quando o bloco tem alguma marca que o ambiente registra**: ele serve à flexão, e todo
+caminho resolve contra o contrato, que é o passo 2 acima. Sem campos **e** sem marca o
+sujeito não tem efeito nenhum sobre o bloco, e é erro (`K2007`).
+
 ### 4.3 Interpolação
 
 ```ebnf
