@@ -1,0 +1,15 @@
+# Fins de linha.
+#
+# Os arquivos de `test/golden/` são comparados **byte a byte**: a conversão de LF para
+# CRLF no checkout do Windows os quebraria, e quebraria dizendo que o motor errou quando
+# quem mudou foi o git. Nunca converter.
+test/golden/** -text
+
+# Modelos e fontes ficam em LF em todo sistema. O motor normaliza CRLF na leitura
+# (`source.jl`), então um modelo com CRLF funciona — mas o repositório é uniforme.
+*.kanon   text eol=lf
+*.jl      text eol=lf
+*.md      text eol=lf
+*.toml    text eol=lf
+*.yml     text eol=lf
+*.json    text eol=lf
