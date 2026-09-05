@@ -45,10 +45,19 @@ jobs:
       # Os caminhos vão numa chamada só: `develop` resolve o ambiente inteiro, e fazer
       # o do núcleo antes do de `Extenso` faria o Pkg procurar `Extenso` no registro —
       # onde ele não está, e não vai estar antes da F10.
+      #
+      # E é por isso que a suíte de cada camada roda pelo ARQUIVO, e não por `Pkg.test()`:
+      # `Pkg.test()` monta um ambiente próprio a partir de `[targets] test` e mandaria o
+      # Pkg ao registro atrás das camadas irmãs. A consequência é que as dependências
+      # declaradas em `[extras]` **não entram sozinhas** — quem as instala aqui é este
+      # arquivo, uma a uma, com o motivo escrito ao lado.
       - name: Extenso
         run: |
           julia --project=lib/Extenso -e '
-            using Pkg; Pkg.develop([PackageSpec(path=".")]); Pkg.instantiate()'
+            using Pkg
+            Pkg.develop([PackageSpec(path=".")])
+            Pkg.add("Tables")          # só a suíte: é o certificado que gera um por linha
+            Pkg.instantiate()'
           julia --project=lib/Extenso lib/Extenso/test/runtests.jl
         shell: bash
 
