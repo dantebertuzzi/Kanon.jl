@@ -244,7 +244,11 @@ function format_diagnostics(io::IO, set::DiagnosticSet)
         title = "  $(CATEGORY_LABEL[d.category]), $(CODE_TITLES[d.code])"
         pad = max(1, 66 - length(title))
         println(io, title, " "^pad, "[", d.code, "]")
-        loc = d.line > 0 ? "linha $(d.line), coluna $(d.col): " : ""
+        # Com mais de um arquivo — um modelo que inclui fragmentos —, a linha sozinha
+        # não localiza nada: o nome vai junto, em cada problema.
+        arquivo = length(files) == 1 ? "" : d.file * ", "
+        loc = d.line > 0 ? "$(arquivo)linha $(d.line), coluna $(d.col): " :
+              (isempty(arquivo) ? "" : rstrip(arquivo, [',', ' ']) * ": ")
         println(io, "    ", loc, d.message)
         d.hint === nothing || println(io, "    ", d.hint)
     end

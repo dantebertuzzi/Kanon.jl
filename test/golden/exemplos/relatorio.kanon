@@ -1,0 +1,47 @@
+kanon 1
+
+# Relatório de medição. Escrito em inglês canônico e sem nenhuma camada de idioma: o
+# mesmo motor que produz uma escritura em português produz este documento, e nenhum dos
+# dois pacotes sabe da existência do outro.
+
+data
+  study       : text    !
+  instrument  : text    !
+  operator    : text    !
+  reviewer    : text
+  effect      : measure !
+  baseline    : measure !
+  temperature : measure
+  runs        : number  !
+  caveat      : text
+  dataset     : text    !
+  date        : date    !
+
+text
+
+: title
+# {study}
+
+: summary
+Across {runs} independent runs on the {instrument}, the estimated effect was {effect}, against a baseline of {baseline}[, at {temperature}].
+
+@@ estimate
+The reported effect is {effect}, whose relative uncertainty is {effect:relative}. Its central value is {effect:bare}, stated to the precision the uncertainty supports and not one digit beyond it.
+
+@@@ resolution
+The effect is resolved to better than one percent of its own value. The digits shown are the digits the measurement earned.
+
+@@ subtraction
+The baseline of {baseline} was measured under the same conditions and subtracted from every run before the effect was estimated.
+
+@@ limitation
+This report carries one caveat, and it is the following: {caveat}.
+
+include "fragmentos/reprodutibilidade.kanon"
+
+: closing
+Prepared by {operator} on {date}[, reviewed by {reviewer}]. By {::estimate}, the value above is reported without further correction.
+
+rules
+  resolution  when effect is precise
+  limitation  when caveat is present

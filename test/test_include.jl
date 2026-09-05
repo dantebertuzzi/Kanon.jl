@@ -223,6 +223,55 @@ end
         @test Kanon.compose(t, Loader(INC), canonical_keywords()) === t
     end
 
+    @testset "um problema no fragmento aponta o fragmento" begin
+        # Descoberto ao escrever o modelo real nº 3. `Span` sempre guardou o índice do
+        # arquivo; quem emitia o diagnóstico é que o ignorava e usava o nome do
+        # hospedeiro. O resultado era um ponteiro para **a linha do fragmento no arquivo
+        # do hospedeiro** — uma linha que muitas vezes nem existe lá, e que manda quem
+        # for corrigir o erro para o lugar errado.
+        h = frag("ptr.kanon", "kanon 1\n\ntext\n\n: a\nA.\n\ninclude \"ptr-frag.kanon\"\n")
+        frag("ptr-frag.kanon",
+             "kanon 1\n\ndata\n  obs : text\n\ntext\n\n: nota\nUma linha.\nOutra linha.\nA nota diz {obs}.\n")
+
+        e = try; load_template(Environment(), h); catch err; err; end
+        @test e isa KanonReferenceError
+        d = collect(e.diagnostics)[1]
+        @test d.code == "K2012"
+        @test endswith(d.file, "ptr-frag.kanon")
+        @test d.line == 11                      # a linha 11 do fragmento; o hospedeiro tem 8
+        @test countlines(h) < d.line            # e é por isso que o ponteiro antigo não servia
+    end
+
+    @testset "com dois arquivos, cada problema diz de qual é" begin
+        # A linha sozinha não localiza nada quando há mais de um arquivo, e o cabeçalho
+        # só sabe dizer "2 arquivos".
+        h = frag("dois.kanon",
+                 "kanon 1\n\ndata\n  tit : text\n\ntext\n\n: a\nAbertura {tit}.\n\ninclude \"dois-frag.kanon\"\n")
+        frag("dois-frag.kanon",
+             "kanon 1\n\ndata\n  obs : text\n\ntext\n\n: nota\nA nota diz {obs}.\n")
+
+        e = try; load_template(Environment(), h); catch err; err; end
+        texto = sprint(showerror, e)
+        @test occursin("2 arquivos: 2 problemas encontrados", texto)
+        @test occursin("dois.kanon, linha 9, coluna 10", texto)
+        @test occursin("dois-frag.kanon, linha 9, coluna 12", texto)
+    end
+
+    @testset "com um arquivo só, a linha continua nua" begin
+        # O nome do arquivo em cada problema seria ruído quando ele é sempre o mesmo, e
+        # o cabeçalho já o disse.
+        e = try
+            load_string(Environment(), "kanon 1\n\ndata\n  a : text\n\ntext\n\n: b\n{a}\n";
+                        name = "um.kanon")
+        catch err
+            err
+        end
+        texto = sprint(showerror, e)
+        @test occursin("um.kanon: 1 problema encontrado", texto)
+        @test occursin("    linha 9, coluna 1:", texto)
+        @test !occursin("um.kanon, linha", texto)
+    end
+
     @testset "a posição da inclusão é onde os blocos entram" begin
         h = frag("pos.kanom", "")
         h = frag("pos.kanon", """

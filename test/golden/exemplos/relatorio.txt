@@ -1,0 +1,17 @@
+# Thermal drift of the reference cavity
+
+Across 12 independent runs on the Zygo interferometer, the estimated effect was 4.237 ± 0.008 mm, against a baseline of 1.102 ± 0.015 mm, at 21.4 ± 0.3 °C.
+
+Theorem 1. The reported effect is 4.237 ± 0.008 mm, whose relative uncertainty is 0.2%. Its central value is 4.237, stated to the precision the uncertainty supports and not one digit beyond it.
+
+Theorem 1.1. The effect is resolved to better than one percent of its own value. The digits shown are the digits the measurement earned.
+
+Theorem 2. The baseline of 1.102 ± 0.015 mm was measured under the same conditions and subtracted from every run before the effect was estimated.
+
+Theorem 3. This report carries one caveat, and it is the following: the cavity was not re-evacuated between the seventh and eighth runs.
+
+Theorem 4. The data supporting this report are deposited at doi:10.5281/zenodo.9999999 and released under the CC BY 4.0 license. No result reported above depends on material that is not in that deposit.
+
+Theorem 5. The analysis plan was registered before collection began, and no outcome was added to it afterwards.
+
+Prepared by R. Tavares on 2026-09-05, reviewed by H. Duarte. By Theorem 1, the value above is reported without further correction.

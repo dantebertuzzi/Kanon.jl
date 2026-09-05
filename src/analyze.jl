@@ -44,8 +44,11 @@ end
 
 function err!(ctx::AnalysisCtx, code::AbstractString, sp::Span, msg::AbstractString;
               hint = nothing, path = nothing, severity::Symbol = :error)
+    # Pelo índice do trecho, e não por `ctx.file`: num modelo composto o erro pode estar
+    # num fragmento, e nomear o hospedeiro aponta uma linha que nem existe nele.
     push!(ctx.out.diagnostics,
-          Diagnostic(code, :reference, sp, ctx.file, msg; hint, path, severity))
+          Diagnostic(code, :reference, sp, source_of(ctx.tmpl, sp), msg;
+                     hint, path, severity))
     return nothing
 end
 

@@ -1065,3 +1065,79 @@ exemplos da F0 usava, e o formatador padrão dele — a única convenção tipog
 núcleo, declarada como tal na §3.3 — é testado por dentro, chamando `format` sobre um
 vetor. Nenhum teste tentou **declarar um campo** desse tipo. É a diferença entre testar a
 peça e escrever um documento com ela, que é o que o portão da 1.0 existe para forçar.
+
+---
+
+## D-034 — Algarismo significativo se lê em decimal, nunca por aritmética de ponto flutuante
+
+*2026-09-05 · aceita · surgida ao escrever o modelo real nº 3*
+
+**O defeito.** A regra do PDG que `KanonScience` implementa — a incerteza fica com um
+algarismo significativo, ou dois quando o primeiro é 1 ou 2 — decidia o primeiro
+algarismo assim:
+
+```julia
+expoente = floor(Int, log10(uncertainty))
+primeiro = floor(Int, uncertainty / 10.0^expoente)
+```
+
+`0.3 / 10.0^-1` vale `2.9999999999999996` em `Float64`. O `floor` devolve **2**, a
+incerteza cai na regra dos dois algarismos, e o relatório sai com `21.40 ± 0.30` no
+lugar de `21.4 ± 0.3` — **uma casa decimal a mais do que a medição sustenta**, que é
+exatamente o que a regra existe para impedir.
+
+Quebrava com `0.3`, `0.03` e `0.0003`; não quebrava com `3.0` nem `30.0`, porque só ali a
+potência de dez divide exato. **Um defeito que depende do dado é um defeito que passa na
+revisão**, e este passaria como um dígito a mais — a coisa que um revisor de periódico
+procura e um leitor acredita.
+
+**Decisão.** `decimal_lead(u)` lê o primeiro algarismo e o expoente da **representação
+decimal mais curta que volta ao mesmo `Float64`** — que é o número que quem mediu
+escreveu.
+
+**Alternativas.** (a) Somar uma tolerância antes do `floor`. (b) `Rational` ou
+`BigFloat`. (c) Ler a representação decimal (escolhida).
+
+**Por quê.** Contra (a): a tolerância certa depende da magnitude, e escolher uma é trocar
+um erro conhecido por um erro que aparece mais longe. Contra (b): `BigFloat` tem precisão
+em **estado global** (`setprecision`) e a F2.1 já o recusou pela mesma razão; `Rational`
+resolveria, mas a pergunta não é sobre o valor exato do binário — é sobre qual algarismo
+a pessoa escreveu, e isso é uma propriedade da escrita decimal, não do número real.
+
+A conversão mais curta é especificada e determinística, e não depende de estado nenhum.
+
+**O que isto ensina para além do caso.** Toda vez que o motor precisar do *dígito* de um
+número — e não do seu valor —, a pergunta é sobre a representação, e a aritmética é a
+ferramenta errada. É a mesma família do arredondamento por `Rational{BigInt}` da F2.1,
+com o problema de cabeça para baixo.
+
+---
+
+## D-035 — Um diagnóstico aponta o arquivo do trecho, e não o do modelo carregado
+
+*2026-09-05 · aceita · surgida ao escrever o modelo real nº 3*
+
+**O defeito.** `Span` sempre guardou um índice na tabela de fontes do modelo composto —
+a informação estava lá desde a F1. Quem emitia o diagnóstico é que a ignorava e usava o
+nome do arquivo que foi carregado.
+
+O resultado, num modelo com fragmentos: **o nome do hospedeiro com a linha do
+fragmento**. Um hospedeiro de oito linhas produzia `host.kanon: linha 11`. Quem seguisse
+o ponteiro não acharia nada, e um editor saltaria para o vazio.
+
+**Decisão.** `err!` e `cerr!` resolvem o arquivo por `source_of(tmpl, span)`. E o
+relatório da §10.4 ganha o nome em cada problema **quando há mais de um arquivo** — com
+um só, o cabeçalho já o disse e repeti-lo seria ruído.
+
+**Alternativas.** (a) Manter o nome do carregado, aceitando que a linha é do fragmento.
+(b) Resolver pelo índice (escolhida).
+
+**Por quê.** Contra (a): a §10.2 promete que um diagnóstico carrega **arquivo, linha e
+coluna**, e um ponteiro que aponta para o lugar errado é pior que nenhum ponteiro — quem
+o segue conclui que o erro é do hospedeiro e vai procurar lá. A F9 depende disso de forma
+direta: um editor mapeia código de diagnóstico a ação, e a ação acontece num arquivo.
+
+**Por que não apareceu antes.** A suíte da F7 verifica que a inclusão **compõe** — que os
+blocos entram, que o contrato unifica, que o ciclo erra. Nenhum teste tinha um fragmento
+com um erro dentro. É a mesma forma dos buracos que os modelos nº 2 e nº 3 acharam: a
+peça foi testada, a interseção não.

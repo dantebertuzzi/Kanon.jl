@@ -48,10 +48,47 @@ o valor por conta própria produziria o `0.42 ± 0.1` que nenhum revisor aceita.
 """
 function decimals_for(uncertainty::Float64)
     (uncertainty <= 0 || !isfinite(uncertainty)) && return 2
-    expoente = floor(Int, log10(uncertainty))
-    primeiro = floor(Int, uncertainty / 10.0^expoente)     # 1 a 9
+    primeiro, expoente = decimal_lead(uncertainty)
+    primeiro == 0 && return 2
     significativos = primeiro <= 2 ? 2 : 1
     clamp(significativos - 1 - expoente, 0, 12)
+end
+
+"""
+    decimal_lead(u) -> (primeiro_algarismo, expoente)
+
+O primeiro algarismo significativo de `u` e o expoente decimal dele, lidos da
+**representação decimal mais curta que volta ao mesmo `Float64`** — que é o número que
+quem mediu escreveu.
+
+Calcular isso por aritmética não funciona, e a forma de não funcionar é sorrateira:
+`0.3 / 10.0^-1` vale `2.9999999999999996` em ponto flutuante, e o `floor` devolve **2**.
+Uma incerteza cujo primeiro algarismo é 3 caía na regra dos dois algarismos, e o
+relatório saía com `21.40 ± 0.30` no lugar de `21.4 ± 0.3` — **uma casa a mais do que a
+medição sustenta**, que é exatamente o que a regra do PDG existe para impedir. Quebrava
+com `0.3`, `0.03` e `0.0003`, e não com `3.0` nem `30.0`, porque só ali a potência de dez
+divide exato.
+
+A leitura decimal é determinística: a conversão mais curta é especificada e não depende
+de estado global, ao contrário da precisão do `BigFloat` — é a mesma razão pela qual o
+arredondamento do núcleo é por `Rational{BigInt}`.
+"""
+function decimal_lead(u::Float64)
+    s = string(abs(u))
+
+    e10 = 0
+    i = findfirst(==('e'), s)
+    if i !== nothing
+        e10 = parse(Int, s[(i + 1):end])
+        s = s[1:(i - 1)]
+    end
+
+    ponto = something(findfirst(==('.'), s), length(s) + 1)
+    digitos = replace(s, "." => "")
+    k = findfirst(c -> '1' <= c <= '9', digitos)
+    k === nothing && return (0, 0)              # o zero não tem algarismo significativo
+
+    (digitos[k] - '0', (ponto - 1) - k + e10)
 end
 
 "O separador decimal é do idioma, nunca do tipo (§3.3): ele vem do contexto."

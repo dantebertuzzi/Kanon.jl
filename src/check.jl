@@ -100,7 +100,10 @@ end
 
 function cerr!(ctx::CheckCtx, code::AbstractString, sp::Span, msg::AbstractString;
                hint = nothing, path = nothing, severity::Symbol = :error)
-    push!(ctx.diags, Diagnostic(code, :contract, sp, ctx.file, msg; hint, path, severity))
+    # Pelo índice do trecho (veja `source_of`): um campo declarado num fragmento tem de
+    # apontar o fragmento, e não o hospedeiro.
+    push!(ctx.diags, Diagnostic(code, :contract, sp, source_of(ctx.model.template, sp), msg;
+                                hint, path, severity))
     return nothing
 end
 

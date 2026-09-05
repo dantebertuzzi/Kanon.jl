@@ -309,6 +309,23 @@ struct Template
     nnodes::Int32
 end
 
+"""
+    source_of(tmpl, span) -> String
+
+O arquivo em que o trecho está. `Span` guarda um **índice** na tabela de fontes, e não um
+nome, porque um modelo composto tem várias fontes e repetir o nome em cada nó custaria
+mais do que o modelo inteiro.
+
+Existe porque resolver o índice não é opcional: um diagnóstico sobre um bloco vindo de
+fragmento que nomeie o hospedeiro aponta uma linha que muitas vezes nem existe lá, e
+quem seguir o ponteiro não acha nada.
+"""
+function source_of(t::Template, sp::Span)
+    i = Int(sp.file)
+    1 <= i <= length(t.sources) ? t.sources[i] :
+        (isempty(t.sources) ? "<string>" : t.sources[1])
+end
+
 function Base.show(io::IO, t::Template)
     print(io, "Template(kanon ", t.version)
     t.language === nothing || print(io, ' ', t.language)

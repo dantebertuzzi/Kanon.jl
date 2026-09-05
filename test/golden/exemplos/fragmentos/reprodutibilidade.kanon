@@ -1,0 +1,21 @@
+kanon 1
+
+# O trecho que todo relatório do laboratório repete, escrito uma vez. É o caso que a
+# D-005 previu: um fragmento traz o próprio contrato, e o hospedeiro não precisa saber
+# quais campos ele exige — a carga unifica os dois.
+
+data
+  dataset       : text    !
+  license       : text    = "CC BY 4.0"
+  preregistered : boolean !
+
+text
+
+@@ availability
+The data supporting this report are deposited at {dataset} and released under the {license} license. No result reported above depends on material that is not in that deposit.
+
+@@ preregistration
+The analysis plan was registered before collection began, and no outcome was added to it afterwards.
+
+rules
+  preregistration  when preregistered

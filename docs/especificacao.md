@@ -780,6 +780,12 @@ Regras de redação, normativas: nomear o campo; apontar linha; dizer o que se e
 o que veio; sugerir a correção provável quando houver uma; nunca usar vocabulário de
 implementação (`AST`, `token`, `Val{:written}`, `MethodError`).
 
+**[precisão da F10 — D-035]** O arquivo de um diagnóstico é o do **trecho**, e não o do
+modelo que foi carregado: num modelo com fragmentos, um problema dentro do fragmento
+nomeia o fragmento. Quando os diagnósticos vêm de mais de um arquivo, o cabeçalho diz
+quantos são e **cada problema traz o nome do seu** — com um arquivo só, o cabeçalho já o
+disse, e repeti-lo em cada linha seria ruído.
+
 ---
 
 ## 11. Modelo de segurança

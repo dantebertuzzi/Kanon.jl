@@ -13,6 +13,37 @@
               "1200 ± 30 kg"
     end
 
+    @testset "o primeiro algarismo da incerteza é lido em decimal, não em ponto flutuante" begin
+        # Descoberto ao escrever o modelo real nº 3: `0.3 / 10.0^-1` vale
+        # `2.9999999999999996`, e o `floor` devolvia 2. A incerteza caía na regra dos
+        # dois algarismos e o relatório saía com UMA CASA A MAIS do que a medição
+        # sustenta — que é exatamente o que a regra do PDG existe para impedir.
+        #
+        # Quebrava com 0.3, 0.03 e 0.0003, e não com 3.0 nem 30.0: só ali a potência de
+        # dez divide exato. Um defeito que depende do dado é um defeito que passa na
+        # revisão.
+        @test Kanon.format(Measure(21.4, 0.3, "°C"), Val(:default), ctx) == "21.4 ± 0.3 °C"
+        @test Kanon.format(Measure(1.25, 0.03), Val(:default), ctx) == "1.25 ± 0.03"
+        @test Kanon.format(Measure(0.12341, 0.0003), Val(:default), ctx) == "0.1234 ± 0.0003"
+
+        # e os que já funcionavam continuam
+        @test Kanon.format(Measure(17.0, 3.0), Val(:default), ctx) == "17 ± 3"
+        @test Kanon.format(Measure(170.0, 30.0), Val(:default), ctx) == "170 ± 30"
+
+        @testset "o primeiro algarismo e o expoente, um a um" begin
+            # A regra: dois algarismos significativos quando o primeiro é 1 ou 2, um nos
+            # demais. Afirmada aqui sobre o algarismo, e não sobre a saída formatada,
+            # porque é dele que a saída depende.
+            for (u, primeiro, expoente) in
+                ((0.1, 1, -1), (0.2, 2, -1), (0.3, 3, -1), (0.9, 9, -1),
+                 (0.03, 3, -2), (0.0003, 3, -4), (0.008, 8, -3), (0.015, 1, -2),
+                 (1.4, 1, 0), (3.0, 3, 0), (12.0, 1, 1), (30.0, 3, 1), (3.0e-5, 3, -5))
+                @test KanonScience.decimal_lead(u) == (primeiro, expoente)
+            end
+            @test KanonScience.decimal_lead(0.0) == (0, 0)
+        end
+    end
+
     @testset "o valor e a incerteza são arredondados juntos" begin
         # arredondar cada um por conta própria daria `0.42 ± 0.1`, que nenhum revisor aceita
         s = Kanon.format(Measure(0.42, 0.07), Val(:default), ctx)
