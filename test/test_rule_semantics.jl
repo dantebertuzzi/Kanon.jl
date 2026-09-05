@@ -84,6 +84,21 @@ end
         @test occursin("Você quis dizer `minor`?", d.hint)
     end
 
+    @testset "o atributo canônico é o que chega à análise, em qualquer idioma" begin
+        # `present` e `absent` são palavras-chave: o parser as canonicaliza, senão elas
+        # não existiriam num modelo que não fosse inglês
+        t = parse_string(mod_r("preamble when notes is present"); name = "t",
+                         keywords = canonical_keywords())
+        @test t.rules.rules[1].when.attr === :present
+        t = parse_string(mod_r("preamble when notes is not absent"); name = "t",
+                         keywords = canonical_keywords())
+        @test t.rules.rules[1].when.attr === :absent
+        # um atributo de domínio não é palavra-chave e passa como está
+        t = parse_string(mod_r("preamble when seller is minor"); name = "t",
+                         keywords = canonical_keywords())
+        @test t.rules.rules[1].when.attr === :minor
+    end
+
     @testset "condição sempre verdadeira sobre campo garantido é aviso" begin
         ds = sdiags("preamble when price is present")
         @test [d.code for d in ds] == ["K2047"]

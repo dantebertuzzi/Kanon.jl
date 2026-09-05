@@ -98,8 +98,13 @@ function parse_primary!(ctx::ParseCtx, c::Cursor)
                  hint = "Atributos do núcleo: `present`, `absent`. Os demais vêm das camadas.")
             return nothing
         end
+        # `present` e `absent` são palavras-chave (§9), e em português o autor escreve
+        # `presente` e `ausente`. Sem canonicalizar aqui, os dois atributos do núcleo
+        # simplesmente não existiriam fora do inglês.
+        canonico = keyword(ctx.kw, attr)
         sp = merge_span(lhs.span, Span(ctx.fileidx, c.line, max(Int32(1), c.col - Int32(1))))
-        return AttrExpr(newid!(ctx), lhs, Symbol(attr), negated, sp)
+        return AttrExpr(newid!(ctx), lhs, canonico === nothing ? Symbol(attr) : canonico,
+                        negated, sp)
     end
 
     # comparação

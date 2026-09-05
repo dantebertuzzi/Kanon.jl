@@ -65,6 +65,7 @@ export Environment, EnvironmentBuilder, FormatContext, BlockStyle
 export register_type!, register_aliases!, register_block_style!
 export register_inflection!, register_repair_hook!, register_currency!
 export register_separators!, register_date_pattern!
+export register_type_alias!, register_list_joiner!
 export configure!, configure_locale!
 export typefor, typenames, stylefor, hasmark, currency_symbol
 export KanonEnvironmentError, KanonProtocolError

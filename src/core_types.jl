@@ -273,8 +273,11 @@ camada, não daqui.
 """
 const LIST_SEPARATOR = ", "
 
-format(v::AbstractVector, ::Val{:default}, ctx) =
-    join((format(x, Val(:default), ctx) for x in v), LIST_SEPARATOR)
+function format(v::AbstractVector, ::Val{:default}, ctx)
+    partes = [format(x, Val(:default), ctx) for x in v]
+    j = ctx.env.joiner
+    j === nothing ? join(partes, LIST_SEPARATOR) : String(j(partes, ctx))
+end
 format(v::AbstractVector, ::Val{:count}, ctx) = plain_number(length(v), ctx)
 
 kanon_attributes(::Type{<:AbstractVector}) = (:empty,)

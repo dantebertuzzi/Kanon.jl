@@ -218,6 +218,7 @@ quando o bloco é numerado.
 `:heading` põe o rótulo num parágrafo próprio (§6.4).
 """
 function render_block(ctx::RenderCtx, b::Block, pos::Int)
+    refuse_unimplemented_rule(ctx, b, pos)
     ctx.subject = block_subject(ctx, b)
     paras = String[]
     for p in b.children
@@ -238,6 +239,25 @@ function render_block(ctx::RenderCtx, b::Block, pos::Int)
         paras[1] = rotulo * estilo.separator * paras[1]
     end
     return paras
+end
+
+"""
+Regras em execução são da F5. Até lá o motor **recusa** o bloco que tem uma, em vez de
+renderizá-lo como se a regra não existisse.
+
+Um bloco com `one for each` renderizado uma vez, com a coleção inteira no lugar do
+elemento, é exatamente a saída errada em silêncio que a linguagem existe para impedir —
+e ela seria produzida pelo motor que promete não produzi-la. Recusar é a única opção
+honesta enquanto a F5 não chega.
+"""
+function refuse_unimplemented_rule(ctx::RenderCtx, b::Block, pos::Int)
+    a = analysis(ctx)
+    tem = (!isempty(a.block_foreach) && a.block_foreach[pos] != 0) ||
+          (!isempty(a.block_rule) && a.block_rule[pos] != 0)
+    tem || return nothing
+    error("o bloco `", b.name, "` tem uma regra, e as regras em execução — `when` e " *
+          "`one for each` — são da fase 5. O modelo é válido; o motor é que ainda não " *
+          "as aplica, e renderizar ignorando a regra daria um documento errado em silêncio.")
 end
 
 "O rótulo do bloco, ou `nothing` se ele não é numerado."
@@ -267,8 +287,8 @@ function render_paragraph(ctx::RenderCtx, p::Paragraph)
     seams = Int[]
     emit_nodes!(ctx, out, seams, p.children)
 
-    s = isempty(seams) ? String(out) : repair(out, seams)
-    s = apply_repair_hook(ctx, s, seams)
+    s, finais = isempty(seams) ? (String(out), seams) : repair(out, seams)
+    s = apply_repair_hook(ctx, s, finais)
     check_bytes!(ctx, s)
     all(isspace, s) ? nothing : s
 end

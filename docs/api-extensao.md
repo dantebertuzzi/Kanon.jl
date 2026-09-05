@@ -148,7 +148,19 @@ register_aliases!(b, :pt, (
 ))
 
 register_repair_hook!(b, :pt, (text, seams, ctx) -> recapitalize_after_elision(text, seams))
+
+register_list_joiner!(b, :pt, (partes, ctx) -> join_with_conjunction(partes))
+
+register_type_alias!(b, :dinheiro, :money)
 ```
+
+**[acrescentados na F4 — D-025]** `register_list_joiner!` substitui a única convenção
+tipográfica do núcleo (o `", "` de `list`, §3.3), e `register_type_alias!` dá nome em
+outro idioma a um tipo que **outro** registrou — o caso dos seis tipos do núcleo, que o
+núcleo registra sem apelido nenhum porque é neutro.
+
+Os dois são registro no ambiente, e não método: um método sobre `AbstractVector` seria
+global, e carregar a camada mudaria a saída de um ambiente que não a declarou.
 
 O protocolo de sujeito que a camada de idioma usa é ela mesma quem define
 (`gender(v)`, `number(v)` despachados sobre os tipos do domínio). **O núcleo não conhece
@@ -281,6 +293,8 @@ alcançar uma mensagem de erro é ordenada, por I4:
 | marcas de flexão e `apply` | `register_inflection!` | duas camadas de idioma |
 | gancho de reparo | `register_repair_hook!` | duas camadas de idioma |
 | símbolo de moeda | `register_currency!` | dois símbolos para a mesma moeda |
+| junção de lista | `register_list_joiner!` | duas camadas de idioma |
+| apelido de tipo de outrem | `register_type_alias!` | dois apelidos iguais |
 | separadores decimal e de milhar | `register_separators!` | último vence (é do idioma) |
 | padrão de `date:numeric` | `register_date_pattern!` | último vence (é do idioma) |
 

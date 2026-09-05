@@ -1,0 +1,19 @@
+name = "Extenso"
+uuid = "7b3d5e91-2a48-4c6f-9d13-8e4a2f60c5b7"
+authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
+version = "0.1.0-DEV"
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Kanon = "3c1f7a2e-9b4d-4a6f-8e21-5d0c7b3f9a14"
+
+[compat]
+Dates = "1"
+Kanon = "0.1"
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

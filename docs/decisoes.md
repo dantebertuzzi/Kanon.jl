@@ -723,3 +723,38 @@ grupo no rascunho, exatamente como faria no documento — o rascunho mostra o te
 sairá, e não uma versão inflada dele. Só o valor **garantido** que falta vira marcador,
 porque é o único cuja ausência não tem representação no texto final. E `render` continua
 recusando os mesmíssimos dados: o rascunho é um comando à parte, não um modo.
+
+---
+
+## D-025 — O que a camada de idioma substitui é gancho de ambiente, nunca método global
+
+*2026-09-04 · aceita · surgida ao implementar a F4*
+
+**Decisão.** Dois pontos de extensão novos, ambos no `EnvironmentBuilder`:
+
+```julia
+register_list_joiner!(b, :pt, juntar)     # "a, b e c" no lugar de "a, b, c"
+register_type_alias!(b, :dinheiro, :money)
+```
+
+**O problema da junção de lista.** A §3.3 diz que o `", "` do formatador padrão de `list`
+é "a única convenção tipográfica no núcleo" e que ela é "substituível pela camada de
+idioma". O caminho óbvio seria a camada definir
+`format(v::AbstractVector, ::Val{:default}, ctx)` — mas métodos em Julia são **globais e
+aditivos**: bastaria carregar `Extenso` para que um `Environment()` neutro passasse a
+juntar com `e`, e o teste de neutralidade da F6 cairia. Pior, cairia com o motor
+funcionando: o vazamento seria invisível até alguém rodar o teste.
+
+Gancho de ambiente resolve porque o que é conflitante é local (§5): `Extenso` carregado
+não muda ambiente nenhum que não tenha declarado `locale = :pt`.
+
+**O problema do apelido de tipo.** `register_type!` aceita `aliases`, mas só de quem
+registra o tipo — e os seis tipos do núcleo são registrados pelo **núcleo**, que é neutro
+e não tem apelido a dar. Sem `register_type_alias!`, um modelo em português declararia
+`preco : money`, e metade do plano de dados ficaria em inglês. A §2.2 previu o caso do
+tipo de domínio e não o do tipo do núcleo.
+
+**A regra que sai daí, e vale para toda camada futura.** Comportamento é método —
+global, aditivo, seguro. **Nome e convenção de apresentação são registro no ambiente** —
+local, e por isso reversível. Quando as duas leituras forem possíveis, é a segunda que
+preserva a neutralidade, e a neutralidade é o que sustenta a arquitetura inteira.

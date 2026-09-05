@@ -21,13 +21,15 @@ is_terminator(c::Char) = c == '.' || c == '!' || c == '?'
 is_blank(c::Char) = c == ' ' || c == '\t'
 
 """
-    repair(chars, seams) -> String
+    repair(chars, seams) -> (texto, emendas)
 
 Aplica o procedimento da §5.2: funde emendas adjacentes, aplica R1–R5 uma vez, da
 esquerda para a direita, e limpa as linhas que ficaram vazias por causa de uma emenda.
 
 `seams` são posições no texto **como ele saiu da elisão**: a emenda `p` fica entre
-`chars[p-1]` e `chars[p]`.
+`chars[p-1]` e `chars[p]`. Devolve também as posições **depois** do reparo, porque é
+delas que o gancho de idioma precisa: passar as de antes o mandaria olhar para o texto
+errado (§5.4).
 """
 function repair(chars::Vector{Char}, seams::Vector{Int})
     v = copy(chars)
@@ -227,11 +229,13 @@ removida. Linha em branco que o autor escreveu não é tocada — e a diferença
 duas é exatamente a lista de emendas.
 """
 function clean_lines(v::Vector{Char}, seams::Vector{Int})
-    isempty(seams) && return String(v)
+    isempty(seams) && return (String(v), seams)
 
     linhas = String[]
+    finais = Int[]
     inicio = 1
     n = length(v)
+    escrito = 0
     for i in 1:(n + 1)
         (i > n || v[i] == '\n') || continue
         fim = i - 1
@@ -239,8 +243,16 @@ function clean_lines(v::Vector{Char}, seams::Vector{Int})
         # a linha só cai se ficou vazia E alguma emenda caiu dentro dela
         vazia = all(isspace, trecho)
         tocada = any(s -> inicio <= s <= i, seams)
-        (vazia && tocada) || push!(linhas, trecho)
+        if vazia && tocada
+            inicio = i + 1
+            continue
+        end
+        push!(linhas, trecho)
+        for s in seams
+            inicio <= s <= i && push!(finais, escrito + (s - inicio) + 1)
+        end
+        escrito += length(trecho) + 1      # +1 pela quebra que `join` repõe
         inicio = i + 1
     end
-    join(linhas, "\n")
+    (join(linhas, "\n"), sort!(finais))
 end

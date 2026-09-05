@@ -10,7 +10,7 @@
 | **F1** Núcleo mínimo | ✅ concluída | léxico, gramática dos três planos, árvore, 34 códigos de diagnóstico |
 | **F2** Validador | ✅ concluída | protocolo de tipo, ambiente, `analyze`, teorema da lacuna, `check` e o checklist |
 | **F3** Renderizador | ✅ concluída | elisão, reparo de emenda, numeração, remissões, orçamento e a CLI |
-| F4 `Extenso.jl` | ⬜ | — |
+| **F4** `Extenso.jl` | ✅ concluída | flexão por marca, extenso, datas, junção, separadores e as palavras-chave em pt |
 | F5 Numeração e regras | ⬜ | — |
 | F6 Domínios | ⬜ | — |
 | F7 Ingestão e reuso | ⬜ | — |
@@ -20,12 +20,13 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **936 testes**, ~21 s.
+Suíte: **939 testes** no núcleo, ~21 s; **145** em `Extenso`.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'     # 936 testes, ~21 s
+julia --project=. -e 'using Pkg; Pkg.test()'              # 939 testes, ~21 s
+julia --project=lib/Extenso lib/Extenso/test/runtests.jl  # 145 testes
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -51,6 +52,8 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/elide.jl` | **o reparo de emenda** — R1 a R5, local à remoção; a peça mais delicada |
 | `src/render.jl` | interpolação, grupos, sujeito, numeração, remissões, orçamento |
 | `src/cli.jl` | `check`, `render`, `contract`, `preview`; os cinco códigos de saída |
+| `lib/Extenso/src/numeros.jl` | extenso, ordinais, dinheiro e datas — tabela, não esperteza |
+| `lib/Extenso/src/flexao.jl` | as marcas, o protocolo de sujeito e a recapitalização |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -262,20 +265,41 @@ de numeração começava em lixo, e o primeiro bloco saía como `7`.
 
 ---
 
-## F4 — `Extenso.jl` (a próxima)
+## F4 — `Extenso.jl` (concluída em 4 de setembro de 2026)
 
-Flexão por marca, valores e ordinais por extenso, datas por extenso, junção de listas,
-separadores decimal e de milhar, apelidos de palavra-chave, gancho de recapitalização
-depois de elisão.
+Mora em `lib/Extenso/`, com `Project.toml` e suíte próprios, e depende de `Kanon` — nunca
+o contrário. Publicável sozinho: `inteiro_extenso`, `ordinal_extenso`,
+`dinheiro_extenso` e `data_extenso` servem a qualquer programa Julia que gere texto
+formal em português.
 
-Parte com mais exceções e menos previsível. Publicável sozinho.
+D-013 está garantido por assinatura, e não por disciplina: `flexionar` recebe uma palavra
+e devolve uma palavra. **Não há por onde a prosa em volta entrar.**
 
-Invariante que não pode cair: **só a palavra que carrega a marca muda** (D-013). O
-núcleo entrega `(palavra, marca, sujeito)`; a camada devolve a palavra inteira.
+O que a fase acrescentou ao previsto:
+
+- **D-025**, a decisão da fase: o que a camada substitui é gancho de ambiente, nunca
+  método global. Um `format(::AbstractVector, ::Val{:default}, ctx)` em `Extenso` seria
+  global e aditivo — bastaria carregar o pacote para o núcleo puro passar a juntar com
+  `e`, e a neutralidade cairia sem que nada avisasse.
+- **Dois defeitos do núcleo que só a camada revelaria**, os dois corrigidos:
+  o parser não canonicalizava o atributo (`presente` não virava `present`, e os dois
+  atributos do núcleo simplesmente não existiam fora do inglês); e `register_aliases!`
+  só aceitava `NamedTuple`, o que impedia traduzir `for`, `and`, `is`, `true` e `false`
+  — todas reservadas em Julia.
+- **O gancho de reparo recebia emendas desatualizadas.** `repair` agora devolve as
+  posições depois do reparo, que são as que o gancho precisa olhar.
+- **O render passou a recusar bloco com regra.** Ele renderizava um `one for each` uma
+  vez, com a coleção inteira no lugar do elemento — a saída errada em silêncio que a
+  linguagem existe para impedir, produzida pelo motor que promete não produzi-la.
+  Recusar é o honesto até a F5.
+
+Exceções do português que estão na tabela porque nenhuma regra as deriva: `cem` sozinho
+mas `cento` composto; `mil e duzentos` mas `mil duzentos e trinta`; o dia 1 por ordinal
+(`ao primeiro dia`, nunca `um dia`); e grupo misto no masculino.
 
 ---
 
-## F5 — Numeração e regras em execução
+## F5 — Numeração e regras em execução (a próxima)
 
 Contadores por estilo, nível pela repetição da unidade do marcador, zeramento dos níveis
 inferiores, tabela `numbering` na `Analysis` — **nunca dentro do nó**. `layout`
@@ -330,7 +354,8 @@ de `KanonLegal`.
 | Dívida | Onde | Quando resolver |
 |---|---|---|
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
-| O exemplo jurídico de `docs/exemplos.md` ainda não analisa | precisa da camada `pt` | F4 |
+| O exemplo jurídico de `docs/exemplos.md` analisa, mas não renderiza | falta `KanonLegal` (tipos, `§`) e as regras em execução | F5 e F6 |
+| As mensagens de erro listam os atributos em inglês mesmo num modelo `pt` | `analyze.jl` | quando a tradução de diagnóstico entrar (não planejada) |
 | A camada `Science` de `test_acceptance.jl` é de mentira e vive na suíte | `test/` | vira pacote de verdade na F6 |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
 | Escalar de camada vira `{}` no checklist; falta um `kanon_json_type` para a camada descrevê-lo | `contract.jl` | aditivo, cabe numa versão menor |

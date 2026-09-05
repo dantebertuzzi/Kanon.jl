@@ -89,6 +89,8 @@ mutable struct EnvironmentBuilder
     inflect_domain::Symbol
     repair::Union{Nothing,Function}
     repair_domain::Symbol
+    joiner::Union{Nothing,Function}
+    joiner_domain::Symbol
     decimal_separator::String
     group_separator::String
     date_pattern::String
@@ -98,7 +100,7 @@ end
 EnvironmentBuilder(locale::Union{Nothing,Symbol} = nothing) =
     EnvironmentBuilder(locale, :kanon, TypeEntry[], TypeAlias[], KeywordAlias[],
                        BlockStyle[], String[], nothing, :none, nothing, :none,
-                       ".", "", "yyyy-mm-dd", Pair{Symbol,String}[])
+                       nothing, :none, ".", "", "yyyy-mm-dd", Pair{Symbol,String}[])
 
 """
     register_type!(b, T::Type; aliases = (,))
@@ -137,17 +139,62 @@ function register_type!(b::EnvironmentBuilder, T::Type; aliases = NamedTuple())
 end
 
 """
+    register_type_alias!(b, alias, canonical)
+
+Dá a um tipo **já registrado** um nome no idioma ativo. É como `dinheiro` vira apelido
+de `money`: os seis tipos do núcleo são registrados pelo próprio núcleo, que é neutro e
+não tem apelido nenhum a dar, e `register_type!` só aceita apelidos de quem registra o
+tipo (D-025).
+"""
+function register_type_alias!(b::EnvironmentBuilder, alias::Symbol, canonical::Symbol)
+    prev = findfirst(e -> e.alias === alias, b.typealiases)
+    if prev !== nothing
+        old = b.typealiases[prev]
+        old.canonical === canonical && return b
+        enverr("o apelido de tipo `$alias` é registrado por `$(old.domain)` (para " *
+               "`$(old.canonical)`) e por `$(b.domain)` (para `$canonical`).")
+    end
+    push!(b.typealiases, TypeAlias(alias, canonical, b.domain))
+    return b
+end
+
+"""
+    register_list_joiner!(b, lang, f)
+
+Como o idioma junta os elementos de uma lista. `f` recebe as **partes já formatadas** e
+devolve o texto inteiro: `["a","b","c"]` ⟶ `"a, b e c"`.
+
+O núcleo junta por `", "` — a única convenção tipográfica dele, declarada como tal na
+§3.3 e explicitamente substituível. A substituição é **gancho no ambiente**, e não um
+método sobre `AbstractVector`: um método seria global e aditivo, e carregar a camada
+mudaria a saída do núcleo puro, quebrando a neutralidade que a F6 verifica (D-025).
+"""
+function register_list_joiner!(b::EnvironmentBuilder, lang::Symbol, f::Function)
+    lang === b.locale || return b
+    b.joiner === nothing ||
+        enverr("`$(b.joiner_domain)` e `$(b.domain)` registram junção de lista para `$lang`.")
+    b.joiner = f
+    b.joiner_domain = b.domain
+    return b
+end
+
+"""
     register_aliases!(b, lang, forms)
 
-Formas escritas das palavras-chave no idioma `lang`, como
-`(data = "dados", when = "quando")`. Aplicado só quando `lang` é o idioma ativo.
+Formas escritas das palavras-chave no idioma `lang`. Aceita um `NamedTuple`
+(`(data = "dados", when = "quando")`) ou qualquer iterável de pares
+(`[:data => "dados", Symbol("for") => "para"]`) — a segunda forma existe porque
+`for`, `and` e outras palavras-chave da linguagem são reservadas em Julia e não cabem
+num `NamedTuple`.
+
+Aplicado só quando `lang` é o idioma ativo.
 
 A forma inglesa correspondente **deixa** de ser palavra-chave: um arquivo que declara
 `pt` escreve `dados`, não `data`. Misturar é erro (D-003).
 """
 function register_aliases!(b::EnvironmentBuilder, lang::Symbol, forms)
     lang === b.locale || return b
-    for (canon, form) in pairs(forms)
+    for (canon, form) in (forms isa NamedTuple ? pairs(forms) : forms)
         canon in CANONICAL_KEYWORD_SYMBOLS ||
             enverr("`$(b.domain)` dá um apelido a `$canon`, que não é palavra-chave da " *
                    "linguagem. As palavras-chave são: $(join(CANONICAL_KEYWORDS, ", ")).")
@@ -288,6 +335,7 @@ struct Environment
     marks::Vector{String}
     inflect::Union{Nothing,Function}
     repair::Union{Nothing,Function}
+    joiner::Union{Nothing,Function}
     decimal_separator::String
     group_separator::String
     date_pattern::String
@@ -353,7 +401,7 @@ function freeze(b::EnvironmentBuilder, domains::Vector{Symbol})
 
     Environment(b.locale, domains, types, aliases,
                 build_keywords(b), sort(b.styles; by = s -> s.name), copy(b.marks),
-                b.inflect, b.repair, b.decimal_separator, b.group_separator,
+                b.inflect, b.repair, b.joiner, b.decimal_separator, b.group_separator,
                 b.date_pattern, sort(b.currency; by = first))
 end
 

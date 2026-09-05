@@ -22,7 +22,7 @@ text
 
 ## Estado
 
-**Fases 1, 2 e 3 concluídas.** O que existe: léxico, gramática dos três planos,
+**Fases 1 a 4 concluídas.** O que existe: léxico, gramática dos três planos,
 árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
 análise completa do modelo sem dados — caminhos, tipos, formatadores, grupos opcionais,
 remissões e regras — e a validação dos dados contra o contrato, tudo com erros que
@@ -100,7 +100,29 @@ com a vírgula que o separava, e sem deixar buraco nem pontuação órfã.
 leniente: é um comando à parte, a saída é sempre visivelmente marcada, e `kanon render`
 continua recusando exatamente os mesmos dados.
 
-Ainda não existe nada de português (F4) nem regras em execução (F5).
+## Português
+
+`lib/Extenso` é a camada de idioma, publicável sozinha:
+
+```julia
+using Kanon, Extenso
+env = Environment(locale = :pt)
+```
+
+```
+Maria Alves, brasileira, casada, residente e domiciliada, doravante denominada
+OUTORGANTE VENDEDORA;
+
+1. O preço certo e ajustado é de R$ 1.234,57 (mil, duzentos e trinta e quatro reais
+   e cinquenta e sete centavos), pago neste ato.
+```
+
+O modelo que produziu isso escreve `brasileiro(a)`, `domiciliado(a)`, `denominado(a)` e
+`VENDEDOR(A)`. **Só a palavra que carrega a marca muda** — `residente`, sem marca, fica
+como está mesmo com sujeito plural. Escrever a marca é o consentimento do autor, palavra
+a palavra.
+
+Ainda não existem as regras em execução (F5) nem os domínios (F6).
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).
