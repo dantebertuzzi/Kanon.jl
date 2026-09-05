@@ -22,9 +22,9 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.066 testes** ao todo — 1.456 no núcleo (~50 s com Aqua), 222 em `Extenso`,
+Suíte: **2.072 testes** ao todo — 1.462 no núcleo (~50 s com Aqua), 222 em `Extenso`,
 150 em `KanonLegal`, 98 em `KanonScience`, 140 em `KanonLSP`. CI em Linux, macOS e
-Windows.
+Windows, com cobertura no Codecov.
 
 ---
 
@@ -120,7 +120,7 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.456, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.462, ~50 s
 for p in Extenso KanonLegal KanonScience KanonLSP; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -572,8 +572,23 @@ rende com «marcadores» e nunca exporta —, e o que falta é o caminho até a 
 
 ## F10 — Publicação (quase, 5 de setembro de 2026)
 
-**Feito:** CI (entrou junto com o README em inglês), Aqua na suíte, e Documenter gerando a
-referência da API a partir das docstrings — publicada pelo próprio CI.
+**Feito:** CI (entrou junto com o README em inglês), Aqua na suíte, Documenter gerando a
+referência da API a partir das docstrings — publicada pelo próprio CI — e cobertura no
+Codecov.
+
+**Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos oito defeitos que os
+cinco modelos reais acharam, nem dos quatro que o servidor de linguagem achou, era linha
+descoberta: todos estavam na **interseção de duas coisas cobertas separadamente**, que é
+uma coisa que percentual de linha não mede e não pode medir. O `codecov.yml` põe as duas
+checagens em `informational` de propósito — uma equipe que persegue o número escreve
+testes que cobrem linhas sem afirmar nada.
+
+O que ela pega, e que vale, é código que teste nenhum alcança. E há uma trava melhor que
+ela para este projeto, na suíte: **todo código de diagnóstico registrado tem de ser
+emitido em algum lugar de `src/` ou `lib/`**. Ela achou três de imediato — `K1213` e
+`K1304`, que saíram do registro, e `K4003`, que era o código **certo** para o teto de
+profundidade de inclusão num sítio que emitia o do vizinho, com a mensagem chutando
+"provavelmente há um ciclo" sobre um caso em que não havia ciclo nenhum.
 
 O Documenter mora em `docs/src/`, e os documentos **normativos** continuam em `docs/*.md`
 sem passar por ele: eles são o registro do projeto, escritos para serem lidos no
@@ -638,8 +653,8 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | O orçamento não é configurável pela CLI | `cli.jl` | um documento legítimo estourar o padrão |
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
-| `K1213` está no registro e nunca é emitido | `diagnostics.jl` | remover, ou dar uso. Um código que não erra nunca é um código a menos |
-| Os quatro pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
+| Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
+| A cobertura mede só o núcleo; as quatro camadas não sobem `lcov` | `CI.yml` | quando uma camada crescer a ponto de a leitura do número dela dizer algo. Hoje diria pouco: o sinal deste projeto está nas invariantes, não no percentual |
 
 ## Invariantes que nenhuma fase pode quebrar
 

@@ -35,8 +35,12 @@ jobs:
       # carregada — que é o que o teste de neutralidade precisa para valer.
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        with:
+          # A cobertura sai de uma execução só, a do Linux com a versão estável: medir a
+          # mesma coisa cinco vezes não acrescenta informação e atrasa o retorno.
+          coverage: ${{ matrix.os == 'ubuntu-latest' && matrix.version == '1.11' }}
 
-      # As três camadas, cada uma no ambiente dela, com o núcleo local.
+      # As camadas e a ferramenta, cada uma no ambiente dela, com o núcleo local.
       #
       # Os caminhos vão numa chamada só: `develop` resolve o ambiente inteiro, e fazer
       # o do núcleo antes do de `Extenso` faria o Pkg procurar `Extenso` no registro —
@@ -75,6 +79,20 @@ jobs:
             using Pkg; Pkg.develop([PackageSpec(path=".")]); Pkg.instantiate()'
           julia --project=lib/KanonLSP lib/KanonLSP/test/runtests.jl
         shell: bash
+
+      # A cobertura é sinal fraco neste projeto e vale dizê-lo: nenhum dos defeitos que
+      # os cinco modelos reais acharam era linha descoberta — todos estavam na interseção
+      # de duas coisas cobertas separadamente. O que ela pega, e que vale, é código que
+      # teste nenhum alcança. O sinal forte está na suíte: as invariantes, o teorema da
+      # lacuna como propriedade, os goldens byte a byte e o registro de diagnósticos.
+      - uses: julia-actions/julia-processcoverage@v1
+        if: matrix.os == 'ubuntu-latest' && matrix.version == '1.11'
+      - uses: codecov/codecov-action@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.version == '1.11'
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   docs:
     name: Documentation

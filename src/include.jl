@@ -162,10 +162,14 @@ function expand!(t::Template, ldr::Loader, kw::KeywordTable, ctx::ParseCtx,
     regras = copy(t.rules.rules)
     nomes = Set{Symbol}(b.name for b in t.text.blocks)
 
+    # `K4003`, e não `K2051`: o ciclo é detectado por `visitados`, logo chegar aqui é uma
+    # cadeia **acíclica** mais funda que o teto — um limite de recurso (§11.6), e não um
+    # ciclo. O código certo estava registrado desde a F1 e o sítio usava o do vizinho.
     if nivel > ldr.limit
-        push!(diags, Diagnostic("K2051", :reference, Span(1, 0, 0), arquivo,
-            "a inclusão passou de $(ldr.limit) níveis.";
-            hint = "Provavelmente há um ciclo que a detecção não alcançou."))
+        push!(diags, Diagnostic("K4003", :resource, Span(1, 0, 0), arquivo,
+            "a inclusão passou de $(ldr.limit) níveis de profundidade.";
+            hint = "O teto é do carregador: `Loader(raiz; limit = n)`. " *
+                   "Uma cadeia mais funda que isso quase sempre é um engano de composição."))
         return data, t.text.blocks, RulesPlane(regras)
     end
 

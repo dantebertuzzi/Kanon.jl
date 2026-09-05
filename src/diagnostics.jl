@@ -37,6 +37,14 @@ cabeçalho do problema; a mensagem completa vem do ponto de emissão.
 Um código, uma vez publicado, nunca muda de significado (política de compatibilidade,
 `docs/especificacao.md` §13). Códigos novos são aditivos.
 
+**Todo código aqui é emitido em algum lugar de `src/` ou `lib/`, e há um teste que
+verifica isso.** Um código que nunca erra é um código a menos: ele engorda a tabela, dá a
+impressão de que o motor distingue um caso que ele não distingue, e a primeira pessoa a
+escrever uma ferramenta contra ele descobre que a condição nunca acontece. `K1213`
+(marcador desconhecido) e `K1304` (operador desconhecido) foram removidos por isso — o
+primeiro é impossível por construção (o parser não consulta o ambiente, `ast.md` §8, e
+quem acusa marcador sem estilo é o `K2030`), e o segundo estava coberto pelo `K1302`.
+
     K10xx  estrutura do arquivo e pragma
     K11xx  plano de dados
     K12xx  plano do texto
@@ -78,13 +86,11 @@ const CODE_TITLES = Dict{String,String}(
     "K1210" => "texto fora de qualquer bloco",
     "K1211" => "remissão malformada",
     "K1212" => "nível de bloco acima do teto da versão 1",
-    "K1213" => "marcador de bloco desconhecido",
     "K1214" => "linha de inclusão malformada",
     # --- plano das regras ---
     "K1301" => "regra malformada",
     "K1302" => "expressão malformada",
     "K1303" => "parêntese não fechado",
-    "K1304" => "operador desconhecido",
     # --- referência: caminhos e tipos ---
     "K2001" => "campo não declarado",
     "K2002" => "nome ambíguo",

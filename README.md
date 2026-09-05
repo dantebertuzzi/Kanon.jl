@@ -5,7 +5,8 @@
 [![Julia](https://img.shields.io/badge/Julia-1.10%2B-9558B2.svg)](https://julialang.org)
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://dantebertuzzi.github.io/Kanon.jl/dev/)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
-[![Tests](https://img.shields.io/badge/tests-1701-brightgreen.svg)](test/)
+[![codecov](https://codecov.io/gh/dantebertuzzi/Kanon.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/dantebertuzzi/Kanon.jl)
+[![Tests](https://img.shields.io/badge/tests-2072-brightgreen.svg)](test/)
 
 **A document template language whose templates declare their own data contract.**
 What does not satisfy the contract does not render.

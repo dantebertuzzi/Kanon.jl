@@ -1,0 +1,35 @@
+# Cobertura, com a expectativa no lugar certo.
+#
+# Este projeto não é governado por percentual. Nenhum dos defeitos que os cinco modelos
+# reais acharam — nem os quatro que o servidor de linguagem achou — era linha descoberta:
+# todos estavam na **interseção de duas coisas cobertas separadamente**, que é uma coisa
+# que percentual de linha não mede e não pode medir.
+#
+# O que a cobertura pega, e que vale: código que teste nenhum alcança. Por isso o alvo é
+# `auto` com uma folga de 1% — a checagem existe para acusar queda, não para virar meta.
+# Uma equipe que persegue o número escreve testes que cobrem linhas sem afirmar nada.
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: true
+
+# Só o motor e as camadas. Os `bin/` são três linhas de despacho, e `docs/` não é código.
+ignore:
+  - "docs/**"
+  - "**/bin/**"
+  - "test/**"
+  - "**/test/**"

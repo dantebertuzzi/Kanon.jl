@@ -272,6 +272,29 @@ end
         @test !occursin("um.kanon, linha", texto)
     end
 
+    @testset "cadeia funda demais é limite de recurso, e não ciclo (K4003)" begin
+        # O ciclo é detectado por `visitados`; chegar ao teto significa uma cadeia
+        # **acíclica** mais funda que ele. O sítio emitia `K2051` — "inclusão cíclica" —
+        # e a mensagem chutava "provavelmente há um ciclo que a detecção não alcançou",
+        # sobre um caso em que a detecção alcançou tudo e não havia ciclo nenhum.
+        dir = mktempdir()
+        for i in 1:40
+            prox = i < 40 ? "\ninclude \"f$(i + 1).kanon\"\n" : ""
+            write(joinpath(dir, "f$i.kanon"), "kanon 1\n\ntext\n\n: b$i\nNível $i.\n$prox")
+        end
+        e = try
+            load_template(Environment(), joinpath(dir, "f1.kanon"); root = dir)
+        catch err
+            err
+        end
+        @test e isa KanonError
+        d = only(e.diagnostics)
+        @test d.code == "K4003"
+        @test d.category === :resource
+        @test occursin("32 níveis", d.message)
+        @test !occursin("ciclo", d.message)          # porque não há um
+    end
+
     @testset "a posição da inclusão é onde os blocos entram" begin
         h = frag("pos.kanom", "")
         h = frag("pos.kanon", """
