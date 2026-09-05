@@ -20,13 +20,13 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **939 testes** no núcleo, ~21 s; **166** em `Extenso`.
+Suíte: **939 testes** no núcleo, ~21 s; **170** em `Extenso`.
 
 ## Como retomar
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test()'              # 939 testes, ~21 s
-julia --project=lib/Extenso lib/Extenso/test/runtests.jl  # 145 testes
+julia --project=lib/Extenso lib/Extenso/test/runtests.jl  # 170 testes
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
