@@ -22,7 +22,7 @@ text
 
 ## Estado
 
-**Fases 1 a 4 concluídas.** O que existe: léxico, gramática dos três planos,
+**Fases 1 a 6 concluídas.** O que existe: léxico, gramática dos três planos,
 árvore sintática, o protocolo de tipo com os seis tipos do núcleo, o ambiente, e a
 análise completa do modelo sem dados — caminhos, tipos, formatadores, grupos opcionais,
 remissões e regras — e a validação dos dados contra o contrato, tudo com erros que
@@ -136,8 +136,46 @@ regras
 Um bloco por vendedor; a cláusula do imposto só quando há preço. Blocos removidos não
 consomem número, e as remissões renumeram junto.
 
-Ainda não existem os domínios (F6): `KanonLegal` com os tipos `pessoa` e `imovel`, o
-marcador `§` e o rótulo `CLÁUSULA PRIMEIRA`.
+## Domínios
+
+Dois, no mesmo repositório, escritos **só com a API pública**:
+
+| Pacote | O que traz |
+|---|---|
+| `lib/Extenso` | português: flexão por marca, extenso, datas, separadores |
+| `lib/KanonLegal` | `pessoa`, `imovel`, `parte`; o marcador `§` e `CLÁUSULA PRIMEIRA` |
+| `lib/KanonScience` | `measure` — valor com incerteza —; o marcador `@` e `Theorem 1` |
+
+`KanonScience` não conhece `Extenso` nem `KanonLegal`, escreve em inglês canônico, e
+produz relatórios com o mesmo núcleo que produz a escritura. É a prova, em forma de
+pacote, de que a linguagem não é jurídica nem portuguesa — e há um
+[teste de neutralidade](test/test_neutralidade.jl) que roda o núcleo **sem camada
+nenhuma** e falha se algo tiver vazado.
+
+```julia
+env = Environment(locale = :pt, domains = [KanonLegal])
+tmpl = load_template(env, "escritura.kanon")
+render(tmpl, dados; today = Date(2026, 3, 12))
+```
+
+```
+João Alves de Souza, brasileiro, casado, portador do CPF 123.456.789-00, residente e
+domiciliado na Rua das Acácias, 120, Petrolina/PE, sob o regime da comunhão parcial de
+bens, doravante denominado OUTORGANTE VENDEDOR;
+
+Maria Alves de Souza, brasileira, casada, portadora do CPF 987.654.321-00, residente e
+domiciliada na Rua das Acácias, 120, Petrolina/PE, doravante denominada OUTORGANTE
+VENDEDORA;
+
+CLÁUSULA SEGUNDA. O preço certo e ajustado da presente transação é de R$ 250.000,00
+(duzentos e cinquenta mil reais), pago neste ato.
+
+Conforme o disposto na cláusula segunda, as partes se obrigam por si e por seus
+sucessores.
+```
+
+Falta a F7 em diante: ingestão via `Tables.jl`, saída em Markdown e `.docx`, o editor, e
+o registro no General.
 
 A especificação normativa está em [`docs/`](docs/README.md); o registro das decisões de
 projeto, em [`docs/decisoes.md`](docs/decisoes.md).

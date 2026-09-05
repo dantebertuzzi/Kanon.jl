@@ -12,7 +12,7 @@
 | **F3** Renderizador | ✅ concluída | elisão, reparo de emenda, numeração, remissões, orçamento e a CLI |
 | **F4** `Extenso.jl` | ✅ concluída | flexão por marca, extenso, datas, junção, separadores e as palavras-chave em pt |
 | **F5** Numeração e regras | ✅ concluída | `when` remove, `one for each` repete, e a numeração passa a ser dos dados |
-| F6 Domínios | ⬜ | — |
+| **F6** Domínios | ✅ concluída | `KanonLegal` e `KanonScience`, `@kanon_type`, e o teste de neutralidade |
 | F7 Ingestão e reuso | ⬜ | — |
 | F8 Saída | ⬜ | — |
 | F9 Editor | ⬜ | — |
@@ -20,13 +20,16 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **999 testes** no núcleo, ~21 s; **172** em `Extenso`.
+Suíte: **1.498 testes** ao todo — 1.208 no núcleo (~25 s), 175 em `Extenso`, 74 em
+`KanonLegal`, 41 em `KanonScience`.
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'              # 999 testes, ~21 s
-julia --project=lib/Extenso lib/Extenso/test/runtests.jl  # 172 testes
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.208, ~25 s
+for p in Extenso KanonLegal KanonScience; do
+  julia --project=lib/$p lib/$p/test/runtests.jl
+done
 julia --project=. -e 'using Kanon; load_template(Environment(), "modelo.kanon")'
 ```
 
@@ -55,6 +58,10 @@ Pontos de entrada, na ordem em que o código executa:
 | `src/cli.jl` | `check`, `render`, `contract`, `preview`; os cinco códigos de saída |
 | `lib/Extenso/src/numeros.jl` | extenso, ordinais, dinheiro e datas — tabela, não esperteza |
 | `lib/Extenso/src/flexao.jl` | as marcas, o protocolo de sujeito e a recapitalização |
+| `src/macro.jl` | `@kanon_type` — o açúcar que a D-019 prometeu, por `GlobalRef` |
+| `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
+| `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
+| `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
 tipos) e §14 (teorema da lacuna), `docs/api-extensao.md` inteiro, `docs/ast.md` §7–8.
@@ -336,25 +343,42 @@ a escritura com `um para cada vendedor` sai com um bloco por vendedor.
 
 ---
 
-## F6 — Domínios (a próxima)
+## F6 — Domínios (concluída em 5 de setembro de 2026)
 
-`KanonLegal.jl` e um domínio científico mínimo, **ambos escritos só com a API pública**.
-Os dois exemplos de `docs/exemplos.md` funcionando byte a byte.
+`KanonLegal` e `KanonScience`, ambos escritos **só com a API pública**, e os dois
+exemplos de `docs/exemplos.md` renderizando byte a byte.
 
-Dois testes que provam a arquitetura:
-- `@macroexpand` de `@kanon_type` não contém nenhum nome não exportado por `Kanon`.
-- O tipo `party` (D-006) modelado como composto com atributo `is company`, sem tocar o
-  núcleo. Se não der, a separação núcleo/domínio é mais fraca do que se supõe.
+Os três testes que o roadmap pedia, e o que cada um mostrou:
 
-**Teste de neutralidade**, a espinha dorsal: roda o núcleo sem nenhuma camada e falha se
-algo de português ou de direito tiver vazado. Mecanismos concretos: proibir literal de
-string não-ASCII no fonte do núcleo; rodar o corpus golden com `Environment()` puro e
-exigir erro nomeado; conferir que `Project.toml` do núcleo não depende de `Extenso` nem
-de `KanonLegal`.
+- **`@macroexpand` sem nome não exportado.** Passou, mas só depois de a macro trocar a
+  qualificação por `GlobalRef`: o *hygiene* do Julia produzia `Kanon.Kanon.format` e
+  `Kanon.Val`, que funcionam e tornam a expansão ilegível. Com `GlobalRef` a varredura é
+  exata, e o teste afirma o conjunto **completo** dos métodos gerados.
+- **`parte` no lugar de tipo-soma (D-006).** Passou: um composto com atributo `empresa`
+  faz o que `pessoa | empresa` faria, e o núcleo continua recusando a sintaxe de soma.
+  A separação núcleo/domínio aguentou.
+- **O teste de neutralidade.** Passou — mas um dos mecanismos que o roadmap propunha teve
+  de ser trocado, e a troca virou **D-027**.
+
+O que a fase encontrou:
+
+- **D-027**: "proibir literal não-ASCII no núcleo" foi escrito supondo mensagens em
+  inglês, e as do Kanon estão em português. O mecanismo mediria acentos onde deveria
+  medir comportamento — e teria dado falsa sensação de rigor enquanto a D-026 passava
+  despercebida por duas fases.
+- **O exemplo da F0 contradizia a D-013.** A saída exigida trazia `OUTORGADA` de um
+  `OUTORGADO` sem marca. O exemplo foi escrito antes da decisão que estabeleceu que só a
+  palavra marcada muda; corrigido para `OUTORGADO(A)`, e a nota está em `exemplos.md`.
+- **A localização traduz palavras, não ordem sintática.** `is not` vira `é não`, que é
+  agramatical; a forma natural em português é o `não (...)` prefixo, que a gramática já
+  tem. Fica documentado, porque nenhuma tradução de palavras resolve.
+- **Um atributo não pode depender do relógio.** `kanon_attribute(v, ::Val{name})` recebe
+  o valor e mais nada, então a maioridade não é atributo de `pessoa` — pergunta-se
+  comparando a data de nascimento, que é injetada.
 
 ---
 
-## F7 a F10
+## F7 a F10 (as próximas)
 
 - **F7** — ingestão via `Tables.jl` (não escrever adaptador por formato) e
   `StructTypes.jl` para decodificar JSON. Inclusão de blocos com carregador de raiz
@@ -381,10 +405,11 @@ de `KanonLegal`.
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | O exemplo jurídico de `docs/exemplos.md` renderiza com tipos de mentira; falta `KanonLegal` | tipos `pessoa`/`imovel`, estilo `§`, `CLÁUSULA PRIMEIRA` | F6 |
 | As mensagens de erro listam os atributos em inglês mesmo num modelo `pt` | `analyze.jl` | quando a tradução de diagnóstico entrar (não planejada) |
-| A camada `Science` de `test_acceptance.jl` é de mentira e vive na suíte | `test/` | vira pacote de verdade na F6 |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | quando um tipo composto de verdade tiver campo `text` (F6) |
 | Escalar de camada vira `{}` no checklist; falta um `kanon_json_type` para a camada descrevê-lo | `contract.jl` | aditivo, cabe numa versão menor |
 | Sem CI, sem Aqua, sem Documenter | — | F10 |
+| `is not` em português vira `é não`: a localização troca palavras, não ordem sintática | `parse_rules.jl` | escrever `não (x é y)` resolve; mudar a gramática seria versão maior |
+| Os quatro pacotes vivem num repo só, com `Project.toml` cada | `lib/` | extrair na F10, se o registro exigir |
 | A CLI lê dados num formato `chave = valor` próprio, não JSON | `cli.jl` | F7, com `StructTypes.jl` |
 | O orçamento não é configurável pela CLI | `cli.jl` | quando alguém precisar |
 | `K1213` está no registro e nunca é emitido: a unidade fora do conjunto fechado nunca vira cabeçalho | `diagnostics.jl` | remover ou dar uso na F3 |

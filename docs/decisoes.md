@@ -810,3 +810,42 @@ arquitetura.
 `{preco:extenso}` sem a camada agora lê "`extenso` é um formatador do idioma `pt`;
 construa o ambiente com `locale = :pt`", em vez de ser mandado procurar um erro de
 digitação num nome que está certo.
+
+---
+
+## D-027 — A neutralidade é da linguagem e do documento, não das mensagens do motor
+
+*2026-09-05 · aceita · surgida ao escrever o teste de neutralidade da F6*
+
+**Decisão.** O idioma das mensagens de diagnóstico **não** faz parte da invariante de
+neutralidade. O teste de neutralidade verifica que nada de idioma ou de domínio alcança
+a **linguagem** (palavras-chave, tipos, marcadores, marcas, formatadores) nem o
+**documento gerado** — e não o vocabulário com que o motor conversa com quem o opera.
+
+**O mecanismo que caiu.** O roadmap propunha "proibir literal de string não-ASCII no
+fonte do núcleo" como um dos mecanismos concretos. Ele foi escrito supondo mensagens em
+inglês; as do Kanon estão em português, e há mais de mil caracteres acentuados em
+`src/` — o teste falharia na primeira execução, e falharia apontando para o lugar errado.
+
+**Por quê.** Um compilador de C com mensagens em português continua compilando C. O que
+tornaria o Kanon uma linguagem portuguesa seria `dados` ser palavra-chave sem camada, ou
+`R$` sair de um ambiente neutro — não `referência` aparecer numa mensagem de erro. A
+prova disso é que trocar todas as mensagens para o inglês não mudaria **um byte** de
+nenhum documento gerado.
+
+**Os mecanismos que ficaram**, todos em `test/test_neutralidade.jl`, e todos rodando com
+o núcleo **sem camada carregada** — um teste que precisasse de `Extenso` para provar que
+`Extenso` não vazou não provaria nada:
+
+- `Project.toml` do núcleo não menciona camada nenhuma, e as dependências são só `Dates`
+  e `Unicode`;
+- nenhuma palavra-chave em português é reconhecida pela tabela canônica;
+- os seis tipos do núcleo têm nome em inglês, e nenhum nome de domínio resolve;
+- o único estilo de bloco é `:`, sem `§` nem `@`;
+- não há marca de flexão, gancho de idioma nem símbolo de moeda;
+- os valores de fábrica são ISO e ponto decimal, e não de país nenhum;
+- um modelo em português é recusado nomeando o que falta, um a um.
+
+**O que o teste ganha ao não medir acentos.** Ele mede comportamento, e comportamento é
+o que quebra. O não-ASCII teria dado uma falsa sensação de rigor enquanto D-026 — um
+formatador de camada vazando para ambiente neutro — passava despercebida por duas fases.

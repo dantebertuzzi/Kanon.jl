@@ -1,0 +1,19 @@
+name = "KanonScience"
+uuid = "9f4c8b26-3e51-4a7d-b982-6c05d1e3f8a4"
+authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
+version = "0.1.0-DEV"
+
+[deps]
+Kanon = "3c1f7a2e-9b4d-4a6f-8e21-5d0c7b3f9a14"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[compat]
+Kanon = "0.1"
+Printf = "1"
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

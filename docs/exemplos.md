@@ -6,6 +6,12 @@
 >
 > Três problemas de especificação foram descobertos ao escrever estes exemplos e estão
 > anotados no fim do documento.
+>
+> **Correção da F6.** O modelo jurídico escrevia `denominado(a) OUTORGADO COMPRADOR(A)`
+> e a saída exigida trazia `denominada OUTORGADA COMPRADORA` — `OUTORGADO` mudando sem
+> marca. O exemplo foi escrito na F0, **antes** da D-013, que estabeleceu que só a
+> palavra portadora de uma marca é alterada. Corrigido para `OUTORGADO(A)`: a marca
+> ocupa a desinência, e `OUTORGADO` + `(A)` com sujeito feminino dá `OUTORGADA`.
 
 ---
 
@@ -37,7 +43,7 @@ OUTORGANTE VENDEDOR(A);
 
 : outorgado <- comprador
 {nome}, brasileiro(a), {estado_civil}, portador(a) do CPF {cpf}, residente e
-domiciliado(a) na {endereco}, doravante denominado(a) OUTORGADO COMPRADOR(A).
+domiciliado(a) na {endereco}, doravante denominado(a) OUTORGADO(A) COMPRADOR(A).
 
 : declaracao <- vendedor
 O(s) OUTORGANTE(S) VENDEDOR(ES) declara(m), sob as penas da lei, ser(em) legítimo(s)

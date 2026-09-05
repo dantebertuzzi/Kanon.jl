@@ -1,7 +1,7 @@
 using Test
 include("helpers.jl")
 
-@testset "Kanon — F1 a F3" begin
+@testset "Kanon — F1 a F6" begin
     include("test_source.jl")
     include("test_pragma.jl")
     include("test_structure.jl")
@@ -23,4 +23,5 @@ include("helpers.jl")
     include("test_security.jl")
     include("test_cli.jl")
     include("test_rules_runtime.jl")
+    include("test_neutralidade.jl")
 end

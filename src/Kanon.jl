@@ -39,6 +39,7 @@ include("contract.jl")
 include("elide.jl")
 include("render.jl")
 include("cli.jl")
+include("macro.jl")
 
 # --- árvore ---
 export Template, LangVersion
@@ -68,6 +69,7 @@ export register_inflection!, register_repair_hook!, register_currency!
 export register_separators!, register_date_pattern!
 export register_type_alias!, register_list_joiner!
 export configure!, configure_locale!
+export @kanon_type
 export typefor, typenames, stylefor, hasmark, currency_symbol
 export KanonEnvironmentError, KanonProtocolError
 export UnregisteredType, UnknownFormatter, UnknownAttribute

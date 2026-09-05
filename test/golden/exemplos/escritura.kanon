@@ -1,0 +1,38 @@
+kanon 1 pt
+
+dados
+  vendedor  : pessoa[1..] !
+  comprador : pessoa      !
+  imovel    : imovel      !
+  preco     : dinheiro    !
+  data      : data        = hoje
+
+texto
+
+: preambulo
+Saibam quantos este público instrumento virem que, aos {data:extenso}, nesta cidade de Petrolina, Estado de Pernambuco, perante mim, Tabelião, compareceram as partes entre si justas e contratadas, a saber:
+
+: outorgante <- vendedor
+{nome}, brasileiro(a), {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}[, sob o regime da {regime}], doravante denominado(a) OUTORGANTE VENDEDOR(A);
+
+: outorgado <- comprador
+{nome}, brasileiro(a), {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}, doravante denominado(a) OUTORGADO(A) COMPRADOR(A).
+
+: declaracao <- vendedor
+O(s) OUTORGANTE(S) VENDEDOR(ES) declara(m), sob as penas da lei, ser(em) legítimo(s) proprietário(s) do imóvel ora transacionado, livre e desembaraçado de quaisquer ônus.
+
+§§ objeto
+Constitui objeto desta escritura o imóvel {imovel:descricao}, matriculado sob o nº {imovel.matricula} no Cartório de Registro de Imóveis desta comarca.
+
+§§ preco
+O preço certo e ajustado da presente transação é de {preco} ({preco:extenso}), pago neste ato, em moeda corrente nacional, pelo OUTORGADO ao OUTORGANTE, que lhe dá plena e geral quitação.
+
+§§ itbi
+O imposto de transmissão inter vivos foi recolhido na forma da lei, conforme guia apresentada e arquivada nestas notas.
+
+: fecho
+Conforme o disposto na {::preco}, as partes se obrigam por si e por seus sucessores.
+
+regras
+  outorgante  um para cada vendedor
+  itbi        quando preco > 0
