@@ -56,6 +56,22 @@ Kanon.format(v::Date, ::Val{:extenso}, ctx) = data_extenso(v)
 Kanon.format(v::Date, ::Val{:corrente}, ctx) = data_corrente(v)
 Kanon.format(v::Date, ::Val{:mes}, ctx) = MESES[Dates.month(v)]
 
+"""
+Estes formatadores são **do português**, e só existem em ambiente que declare
+`locale = :pt`.
+
+A declaração é necessária porque método em Julia é global: sem ela, carregar este pacote
+faria `{preco:extenso}` valer num ambiente neutro, e um relatório em inglês sairia com
+`mil e duzentos reais` (D-026).
+"""
+Kanon.kanon_format_locale(::Type{T}, ::Val{:extenso}) where {T<:NumberValue} = :pt
+Kanon.kanon_format_locale(::Type{T}, ::Val{:ordinal}) where {T<:NumberValue} = :pt
+Kanon.kanon_format_locale(::Type{T}, ::Val{:ordinal_f}) where {T<:NumberValue} = :pt
+Kanon.kanon_format_locale(::Type{Money}, ::Val{:extenso}) = :pt
+Kanon.kanon_format_locale(::Type{Date}, ::Val{:extenso}) = :pt
+Kanon.kanon_format_locale(::Type{Date}, ::Val{:corrente}) = :pt
+Kanon.kanon_format_locale(::Type{Date}, ::Val{:mes}) = :pt
+
 # --- a camada ----------------------------------------------------------------
 
 """

@@ -20,7 +20,7 @@
 
 **F1 a F6 já constituem um produto.** F7 a F9 são projetos por si só.
 
-Suíte: **939 testes** no núcleo, ~21 s; **145** em `Extenso`.
+Suíte: **939 testes** no núcleo, ~21 s; **166** em `Extenso`.
 
 ## Como retomar
 
@@ -292,6 +292,13 @@ O que a fase acrescentou ao previsto:
   vez, com a coleção inteira no lugar do elemento — a saída errada em silêncio que a
   linguagem existe para impedir, produzida pelo motor que promete não produzi-la.
   Recusar é o honesto até a F5.
+
+**D-026, achada respondendo a uma pergunta.** "O Extenso só é em português?" levou a
+testar um `Environment()` neutro com `Extenso` carregado no processo — e ele renderizava
+`mil e duzentos reais`. Método em Julia é global, e a D-025 tinha fechado o vazamento
+para a junção de listas e os apelidos de tipo sem ver que os **formatadores** têm o mesmo
+problema. `kanon_format_locale` é a décima função do protocolo, e a diferença entre
+`kanon_formats(T)` e `kanon_formats(T, env)` é onde ela age.
 
 Exceções do português que estão na tabela porque nenhuma regra as deriva: `cem` sozinho
 mas `cento` composto; `mil e duzentos` mas `mil duzentos e trinta`; o dia 1 por ordinal

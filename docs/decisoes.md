@@ -758,3 +758,48 @@ tipo de domínio e não o do tipo do núcleo.
 global, aditivo, seguro. **Nome e convenção de apresentação são registro no ambiente** —
 local, e por isso reversível. Quando as duas leituras forem possíveis, é a segunda que
 preserva a neutralidade, e a neutralidade é o que sustenta a arquitetura inteira.
+
+---
+
+## D-026 — Formatador de camada declara o idioma a que pertence
+
+*2026-09-04 · aceita · surgida ao responder "o Extenso só é em português?"*
+
+**Decisão.** Uma décima função genérica, opcional:
+
+```julia
+kanon_format_locale(::Type{T}, ::Val{name}) -> Symbol | Nothing   # padrão: nothing
+```
+
+Um formatador que declara idioma só é **visível** em ambiente que tenha esse `locale`.
+`kanon_formats(T)` continua enumerando tudo que existe no processo — é o protocolo, e ele
+não conhece ambiente; quem filtra é `kanon_formats(T, env)`, e é essa lista que a
+validação usa.
+
+**O defeito.** Método em Julia é global e aditivo. Bastava `Extenso` estar carregado no
+processo para que um `Environment()` **neutro** — `locale = nothing`, zero marcas —
+aceitasse `{preco:extenso}` e renderizasse `mil e duzentos reais`. Um relatório em inglês
+ganhava português de brinde por causa de um `using` em outro arquivo.
+
+**O que isso não era.** Não violava a letra da especificação: o teste de neutralidade da
+F6 roda "o núcleo sem nenhuma camada", num processo onde `Extenso` nem existe, e lá
+passava. Também não impedia dois idiomas de coexistirem — `:extenso` e `:written` são
+nomes diferentes. O que caía era a promessa prática, no único lugar em que ela é
+verificável pelo usuário e não pela suíte.
+
+**Alternativas.** (a) Aceitar, tratando formatador como comportamento puro — o que a §5
+autoriza, já que "o que é global (métodos) é aditivo". (b) Registro de formatadores no
+ambiente: viola a obrigação 5-A e traz de volta a tabela de despacho à mão. (c) Declarar o
+idioma por despacho (escolhida).
+
+**Por quê (c).** Ela mantém a divisão que a D-025 estabeleceu — **comportamento é método,
+visibilidade é do ambiente** — sem inventar mecanismo novo: a declaração é ela própria um
+método, e a camada a escreve do lado dela. Contra (a): a §5 fala de métodos serem
+aditivos como uma garantia de que camadas não brigam, e não como licença para vazar
+idioma; ler assim contradiz a invariante 3 do roadmap, que é a que sustenta a
+arquitetura.
+
+**Efeito colateral que vale mais que a correção.** A mensagem melhorou: quem escreve
+`{preco:extenso}` sem a camada agora lê "`extenso` é um formatador do idioma `pt`;
+construa o ambiente com `locale = :pt`", em vez de ser mandado procurar um erro de
+digitação num nome que está certo.

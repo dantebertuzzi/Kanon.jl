@@ -349,8 +349,20 @@ function resolve_formatter!(ctx::AnalysisCtx, n::Interp, rp::ResolvedPath)
         return nothing
     end
 
-    fmts = kanon_formats(T)
+    fmts = kanon_formats(T, ctx.env)
     n.formatter in fmts && return nothing
+
+    # O formatador pode existir, e ser de outro idioma: dizer "não existe" mandaria o
+    # redator procurar um erro de digitação onde falta uma camada.
+    idioma = format_locale_of(T, n.formatter)
+    if idioma !== nothing
+        err!(ctx, "K2020", n.span,
+             "`$(n.formatter)` é um formatador do idioma `$idioma`, e este ambiente " *
+             (ctx.env.locale === nothing ? "não tem idioma." :
+                                           "está em `$(ctx.env.locale)`.");
+             hint = "Construa o ambiente com `locale = :$idioma`.", path = string(n.path))
+        return nothing
+    end
 
     tail = isempty(fmts) ?
         "`$effective` não tem formatador nomeado; escreva `{$(string(n.path))}`." :

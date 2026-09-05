@@ -448,6 +448,27 @@ end
 "A marca de flexão está registrada? Se não, `analyze` trata o candidato como prosa."
 hasmark(env::Environment, mark::AbstractString) = String(mark) in env.marks
 
+"""
+    kanon_formats(T, env) -> Tuple{Vararg{Symbol}}
+
+Os formatadores de `T` **visíveis neste ambiente**: os sem idioma, mais os do idioma
+ativo. É esta a lista que a validação usa e que aparece na mensagem de erro.
+
+`kanon_formats(T)` sozinho continua enumerando tudo que existe no processo — é o
+protocolo, e ele não conhece ambiente. Quem filtra é aqui (D-026).
+"""
+kanon_formats(::Type{T}, env::Environment) where {T} =
+    Tuple(f for f in kanon_formats(T) if format_visible(T, f, env))
+
+"O formatador vale neste ambiente? Vale se não tem idioma, ou se é o idioma ativo."
+function format_visible(T::Type, name::Symbol, env::Environment)
+    l = kanon_format_locale(T, Val(name))
+    l === nothing || l === env.locale
+end
+
+"O idioma em que um formatador existe, para a mensagem de quem o pediu sem a camada."
+format_locale_of(T::Type, name::Symbol) = kanon_format_locale(T, Val(name))
+
 "Símbolo da moeda, ou o próprio código quando o ambiente não declara símbolo (§3.3)."
 function currency_symbol(env::Environment, code::Symbol)
     i = findfirst(p -> first(p) === code, env.currency)

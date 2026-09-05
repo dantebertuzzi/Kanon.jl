@@ -172,6 +172,19 @@ function kanon_formats(::Type{T}) where {T}
 end
 
 """
+    kanon_format_locale(::Type{T}, ::Val{name}) -> Symbol | Nothing
+
+O idioma a que um formatador pertence, ou `nothing` se ele vale em qualquer ambiente.
+O padrão é `nothing`; uma camada de idioma declara os seus.
+
+Existe porque método em Julia é **global e aditivo**: sem esta declaração, bastaria
+carregar `Extenso` no processo para que `{preco:extenso}` passasse a valer num ambiente
+neutro e um relatório em inglês saísse com `mil e duzentos reais`. O comportamento
+continua sendo despacho — o que o ambiente decide é a **visibilidade** (D-026).
+"""
+kanon_format_locale(::Type, ::Val) = nothing
+
+"""
     kanon_attribute(v, ::Val{name}) -> Bool
 
 Predicado nomeado, usado no plano das regras (`when property is rural`).

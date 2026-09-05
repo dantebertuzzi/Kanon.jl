@@ -56,7 +56,7 @@ export KanonError, KanonSyntaxError, KanonReferenceError, KanonContractError
 export FieldSpec
 export kanon_typename, kanon_schema, kanon_validate, kanon_formats
 export kanon_attribute, kanon_attributes, kanon_decode, kanon_compare
-export kanon_getfield
+export kanon_getfield, kanon_format_locale
 export format
 export Money, NumberValue
 

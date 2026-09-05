@@ -26,8 +26,9 @@ está lutando contra a linguagem. Pare e reveja.
 
 ## 2. O protocolo de tipo
 
-Nove funções genéricas. Um tipo escalar implementa quatro; um composto, seis, mais um
-`kanon_getfield` por campo cujo nome não seja o da propriedade Julia.
+Dez funções genéricas. Um tipo escalar implementa quatro; um composto, seis, mais um
+`kanon_getfield` por campo cujo nome não seja o da propriedade Julia; e uma camada de
+idioma declara `kanon_format_locale` para cada formatador que só faça sentido nela.
 
 ```julia
 kanon_typename(::Type{T})            -> Symbol            # obrigatória
@@ -39,6 +40,7 @@ kanon_formats(::Type{T})             -> Tuple{Vararg{Symbol}}      # sem :defaul
 kanon_attribute(v::T, ::Val{name})   -> Bool
 kanon_attributes(::Type{T})          -> Tuple{Vararg{Symbol}}
 kanon_getfield(v::T, ::Val{name})    -> valor do campo declarado por kanon_schema
+kanon_format_locale(::Type{T}, ::Val{name}) -> Symbol | Nothing   # idioma do formatador
 kanon_decode(::Type{T}, raw, ctx)    -> T                 # da entrada externa
 kanon_compare(a::T, b)               -> Int               # -1, 0, 1; ou erro
 ```
@@ -77,6 +79,13 @@ não é nome escrevível numa interpolação: quem quer o padrão escreve `{pric
 `{price:default}` é erro de referência. Uma camada pode
 sobrescrevê-la para documentar ou para cobrir métodos genéricos (`format(v::T, ::Val{N}, ctx) where N`),
 que a introspecção não consegue enumerar.
+
+**[acrescentado na F4 — D-026]** `kanon_formats(T)` enumera tudo que existe **no
+processo**; `kanon_formats(T, env)` enumera o que é **visível naquele ambiente**, e é
+esta a lista que a validação usa e que aparece na mensagem de erro. A diferença entre as
+duas é `kanon_format_locale`: um formatador que declara idioma só existe onde aquele
+idioma está ativo. Sem isso, carregar uma camada num processo faria os formatadores dela
+valerem em todo ambiente, e um documento em inglês sairia com trechos em português.
 
 Isso é introspecção de **tabela de métodos**, não de dados do usuário: não executa
 código do modelo, não viola a seção 11 da especificação, e é determinística por causa da

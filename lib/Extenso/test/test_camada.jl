@@ -214,6 +214,40 @@ end
         @test Kanon.format(Date(2026, 3, 12), Val(:numeric), ctx) == "2026-03-12"
     end
 
+    @testset "os formatadores do idioma não existem em ambiente neutro (D-026)" begin
+        # Métodos em Julia são globais: sem a declaração de idioma, bastaria este
+        # arquivo carregar `Extenso` para `{p:extenso}` valer num modelo em inglês.
+        @test :extenso in kanon_formats(Kanon.Money)              # existe no processo
+        @test !(:extenso in kanon_formats(Kanon.Money, neutro))   # e não neste ambiente
+        @test :extenso in kanon_formats(Kanon.Money, ENV_PT)
+
+        for (T, f) in ((Kanon.Money, :extenso), (Date, :extenso), (Date, :corrente),
+                       (Date, :mes), (Int, :extenso), (Int, :ordinal), (Int, :ordinal_f))
+            @test Kanon.kanon_format_locale(T, Val(f)) === :pt
+            @test !(f in kanon_formats(T, neutro))
+        end
+
+        # e os do núcleo continuam valendo em todo ambiente
+        for f in (:code, :plain, :symbol)
+            @test Kanon.kanon_format_locale(Kanon.Money, Val(f)) === nothing
+            @test f in kanon_formats(Kanon.Money, neutro)
+        end
+    end
+
+    @testset "pedi-lo sem a camada diz qual idioma falta, não que ele não existe" begin
+        e = try
+            load_string(neutro, "kanon 1\n\ndata\n  p : money !\n\ntext\n\n: b\n{p:extenso}\n";
+                        name = "n.kanon")
+        catch err
+            err
+        end
+        @test e isa KanonReferenceError
+        d = collect(e.diagnostics)[1]
+        @test d.code == "K2020"
+        @test occursin("idioma `pt`", d.message)
+        @test occursin("locale = :pt", d.hint)
+    end
+
     @testset "uma marca não registrada volta a ser prosa (§7.1)" begin
         m = load_string(neutro, "kanon 1\n\ntext\n\n: b\numa casa(s) aqui\n"; name = "t")
         @test render(m, Dict()) == "uma casa(s) aqui"
