@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 5 de setembro de 2026. Escrito para retomar sem depender de memória.
+> Estado em 7 de setembro de 2026. Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -14,7 +14,7 @@
 | **F5** Numeração e regras | ✅ concluída | `when` remove, `one for each` repete, e a numeração passa a ser dos dados |
 | **F6** Domínios | ✅ concluída | `KanonLegal` e `KanonScience`, `@kanon_type`, e o teste de neutralidade |
 | **F7** Ingestão e reuso | ✅ concluída | inclusão de fragmentos com contrato unificado; `Tables.jl` e JSON por extensão |
-| **F8** Saída | ✅ concluída | `text`, `markdown` e `typst`; o valor é escapado, a prosa não |
+| **F8** Saída | ✅ concluída | `text`, `markdown` e `typst`; o valor é escapado, a prosa não, e o rótulo sai intacto |
 | **F9** Editor | ✅ concluída | `outline`, `kanon ask`, e o **servidor de linguagem** — diagnóstico, estrutura, cursor, salto e completação |
 | **F10** Publicação | 🔨 quase | CI, Aqua e Documenter feitos; falta o registro no General, que é ação sua |
 
@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.084 testes** ao todo — 1.462 no núcleo (~50 s com Aqua), 222 em `Extenso`,
-150 em `KanonLegal`, 98 em `KanonScience`, 152 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.133 testes** ao todo — 1.471 no núcleo (~50 s com Aqua), 260 em `Extenso`,
+150 em `KanonLegal`, 98 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -35,15 +35,16 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existem **cinco** modelos reais no repositório, em `test/golden/exemplos/`:
+Existem **seis** modelos reais no repositório, em `test/golden/exemplos/`:
 `escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
-`certificado.kanon` (um por linha de planilha) e `laudo.kanon` (dois domínios ao mesmo
-tempo). O portão para a 1.0 pede quinze.
+`certificado.kanon` (um por linha de planilha), `laudo.kanon` (dois domínios ao mesmo
+tempo) e `edital.kanon` (três níveis de numeração, e a primeira saída Typst). O portão
+para a 1.0 pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos dez que faltam vai cobrar alguma coisa — como os cinco primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os quatro últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **oito defeitos e uma
+dos nove que faltam vai cobrar alguma coisa — como os seis primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os cinco últimos mediram
+isso: escritos com o motor pronto e a suíte verde, produziram **dez defeitos e uma
 questão aberta de versão**.
 
 | | O que apareceu | Modelo |
@@ -57,6 +58,8 @@ questão aberta de versão**.
 | **D-040** | `K2007` recusava sujeito sem campos, e com isso a **flexão de número era inalcançável** para qualquer modelo sem camada de domínio — metade do que `Extenso` faz, e ele se anuncia como publicável sozinho | certificado |
 | **D-041** | o mesmo número saía `41.250` como `number` e `41250,0` como `measure`, **duas linhas depois, no mesmo laudo**: a API mandava a camada pegar os separadores do contexto e não dava função para aplicá-los | laudo |
 | **D-042** | tipo desconhecido despejava quinze nomes e não dizia que a causa provável é uma camada não carregada | laudo |
+| **D-043** | dentro de um bloco repetido, `{lotes}` rendia a **coleção inteira** em cada iteração, contra a §8.3 que a F0 escreveu; e o campo do elemento escrito pelo caminho iterado estourava um `FieldError` de Julia sobre `Array`, sem diagnóstico nenhum | edital |
+| **D-044** | o **rótulo** — a única parte do documento que o motor calcula — era a única que o formato de saída não protegia: em Markdown as cláusulas viravam quatro listas renumeradas pelo renderizador, com as remissões da prosa apontando para os números antigos | edital |
 
 **O padrão nos seis vale mais que os seis: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
@@ -66,7 +69,12 @@ PDG era testada com incertezas que a potência de dez divide exato. A suíte da 
 verificava que o fragmento **compõe**, e nenhum teste tinha um fragmento com um erro
 dentro. `Extenso.numero` sobre um vetor era testado direto, e nenhum modelo podia
 alcançá-lo. A suíte do `measure` roda sem idioma, onde não há separador a aplicar, e a
-suíte em português nunca tinha usado um `measure`.
+suíte em português nunca tinha usado um `measure`. Todo bloco repetido do acervo lia o
+elemento por um campo do sujeito, que resolve pela outra porta — e ler o elemento pelo
+caminho iterado só tem razão de existir quando ele **não tem campos**, o que a D-040
+destravou três dias antes. E nenhum documento numerado por dígitos tinha sido emitido em
+formato de marcação: a numeração do `KanonLegal` é `CLÁUSULA PRIMEIRA`, a do
+`KanonScience` é `Theorem 1`, e nenhuma das duas começa por dígito.
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -157,10 +165,10 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha) e `laudo` (dois domínios), cada um com a saída exigida ao lado |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios) e `edital` (três níveis, com a saída também em Typst), cada um com a saída exigida ao lado |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
-| `src/output.jl` | os formatos de saída e o escape do valor interpolado |
+| `src/output.jl` | os formatos de saída, o escape do valor interpolado e o do rótulo |
 | `src/outline.jl` | o esqueleto do modelo, para o editor e para ferramentas |
 
 Leituras obrigatórias antes de continuar a F2: `docs/especificacao.md` §3 (sistema de
@@ -525,6 +533,16 @@ saida.docx` põe a composição de página em quem sabe fazê-la.
 
 ---
 
+**[D-044, ao escrever o modelo real nº 6]** A frase acima protegia metade do documento.
+A outra metade é o **rótulo**: `1. ` no começo da linha é marcador de lista em Markdown e
+enumeração explícita em Typst, e o número que o motor apurou virava um número que o
+renderizador redefine — com a remissão da prosa apontando para o antigo. O rótulo sai por
+`label(fmt, texto)`, junto com o separador do estilo, e as duas linguagens escapam em
+lugares diferentes: `1\.` no Markdown, `\1.` no Typst. Veio junto o escape de valor do
+Typst passar a olhar o início de linha, que ele recebia e ignorava.
+
+---
+
 ## F9 — Editor (parcial, 5 de setembro de 2026)
 
 **D-029** separou o que a fase misturava. O editor de três colunas é uma aplicação — com
@@ -653,6 +671,7 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | O orçamento não é configurável pela CLI | `cli.jl` | um documento legítimo estourar o padrão |
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
+| **O motor cita a palavra-chave em inglês num modelo escrito em português** — o `K2034` do edital diz "o bloco `lote` se repete (`one for each`, linha 93)" apontando uma linha onde está escrito `um para cada`, e o `outline` imprime "quando amostra is present", que não é nenhuma das duas línguas | `analyze.jl`, `outline.jl` | **puxado pelo modelo nº 6.** É o mesmo mapa reverso da linha acima, agora com dois sítios que citam o que o autor não escreveu — a mesma forma da D-035 |
 | Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
 | A cobertura mede só o núcleo; as quatro camadas não sobem `lcov` | `CI.yml` | quando uma camada crescer a ponto de a leitura do número dela dizer algo. Hoje diria pouco: o sinal deste projeto está nas invariantes, não no percentual |
 
@@ -680,15 +699,15 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **5 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **6 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
-contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado e o laudo,
-escritos com o motor já pronto e a suíte verde, cobraram mais oito (D-031 a D-035 e D-040
-a D-042) — **a taxa de descoberta não caiu quando o código ficou bom.**
+contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo e o
+edital, escritos com o motor já pronto e a suíte verde, cobraram mais dez (D-031 a D-035
+e D-040 a D-044) — **a taxa de descoberta não caiu quando o código ficou bom.**
 
 ### O que a implementação já mudou na especificação
 
-Vinte e quatro decisões saíram de escrever o código, e doze delas fecharam buracos que
+Vinte e seis decisões saíram de escrever o código, e treze delas fecharam buracos que
 nenhuma releitura teria encontrado — o texto era internamente coerente em todos os casos:
 
 | | O que estava errado |
@@ -705,8 +724,14 @@ nenhuma releitura teria encontrado — o texto era internamente coerente em todo
 | **D-037** | o trecho de um nó devia conter o dos filhos, e não continha — óbvio demais para estar escrito |
 | **D-040** | a §4.2 e a §7.1 davam dois ofícios ao sujeito, e a checagem foi escrita para um só |
 | **D-041** | a §3.3 mandava a camada obter os separadores do contexto, e a API não dava função para aplicá-los |
+| **D-044** | a §6.4 dizia onde o rótulo aparece e a §11 dizia que o valor não altera a estrutura; nenhuma das duas percebeu que o **rótulo** alcança o começo da linha num formato de marcação |
 
-Se dez modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
+E uma na direção contrária, que é a primeira: a **D-043** não mudou a especificação —
+a §8.3 dizia desde a F0 que o caminho iterado denota o elemento corrente *"tanto no texto
+quanto no `when`"*, e era o render que não obedecia. O texto normativo achou o defeito no
+código, que é o que ele existe para fazer.
+
+Se nove modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.
 
 **O método, fixado pelo segundo modelo e confirmado pelo terceiro.** Escreva o modelo

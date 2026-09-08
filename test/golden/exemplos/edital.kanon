@@ -1,0 +1,95 @@
+kanon 1 pt
+
+# Edital de pregão — **modelo real nº 6** do portão da 1.0.
+#
+# Escolhido pelo que a numeração ainda não tinha sofrido. Os cinco modelos anteriores
+# numeram em um ou dois níveis, e todos remetem a bloco de nível 1, cujo número é o mesmo
+# em qualquer execução. Um edital não se escreve assim: ele é uma árvore de itens, e o
+# corpo dele remete a item aninhado o tempo todo.
+#
+# Quatro coisas só aparecem aqui:
+#
+#   1. **Nível 3** (`::::`), que a §6.1 admite desde a versão 1 e que nenhum documento
+#      tinha usado.
+#   2. **Remissão a bloco aninhado**: `{::certidoes}` rende `2.1.1`, três componentes.
+#   3. **Bloco numerado repetido dentro de outro numerado**: um item por lote, em nível 2
+#      sob o item do objeto. A §6.2 diz que cada iteração consome um número, e é aqui que
+#      isso vale para um contador que não é o de primeiro nível.
+#   4. **Uma remissão cujo número depende dos dados.** `{::julgamento}` vem depois dos
+#      lotes: com três lotes ele é `1.4`, com um lote é `1.2`. O número não existe antes
+#      de haver dados, e a remissão tem de sair do plano de execução, não da análise.
+#
+# É também o primeiro documento emitido em **Typst** (`edital.typ`), e ele foi escrito
+# com dois valores que o Typst leria como marcação se ninguém os escapasse: o `@` do
+# endereço eletrônico, que lá abre remissão, e o `$` do real, que lá abre matemática.
+
+dados
+  orgao      : texto      !
+  pregao     : texto      !
+  processo   : texto      !
+  objeto     : texto      !
+  lotes      : texto[1..] !
+  valor      : dinheiro   !
+  garantia   : dinheiro
+  contato    : texto      !
+  sessao     : data       !
+  entrega    : numero     !
+  recurso    : numero     !
+  amostra    : texto
+  cidade     : texto      = "Petrolina"
+  publicacao : data       = hoje
+
+texto
+
+: titulo
+EDITAL DE PREGÃO ELETRÔNICO Nº {pregao}
+
+: preambulo
+O {orgao} torna público que fará realizar licitação na modalidade pregão, na forma eletrônica, do tipo menor preço, nos autos do processo administrativo nº {processo}, cuja sessão pública se abrirá em {sessao:corrente}. Os pedidos de esclarecimento serão dirigidos a {contato}.
+
+:: objeto
+Constitui objeto deste pregão {objeto}, pelo valor máximo estimado de {valor} ({valor:extenso}).
+
+::: lote <- lotes
+Compõe o objeto o lote {lotes}, julgado isoladamente e para o qual se exige proposta em separado.
+
+::: julgamento
+O julgamento far-se-á pelo critério de menor preço por lote, e será desclassificada a proposta que exceder o valor máximo estimado.
+
+:: habilitacao
+A habilitação será apreciada depois de encerrada a fase de lances, e somente quanto ao licitante provisoriamente classificado em primeiro lugar.
+
+::: juridica
+A habilitação jurídica far-se-á pelo ato constitutivo em vigor, acompanhado da prova de investidura de quem o representa.
+
+:::: certidoes
+As certidões apresentadas sem prazo de validade expresso reputam-se válidas por noventa dias contados da emissão.
+
+::: fiscal
+A regularidade fiscal e trabalhista far-se-á pelas certidões negativas, ou positivas com efeito de negativa, das fazendas federal, estadual e municipal, do Fundo de Garantia e da Justiça do Trabalho.
+
+::: amostragem
+Será exigida amostra do objeto, na forma seguinte: {amostra}.
+
+:: execucao
+A execução observará as condições deste edital, do termo de referência e da proposta vencedora, naquilo em que esta for mais vantajosa para a Administração.
+
+::: entrega
+O objeto será entregue no prazo de {entrega:extenso} dias, contados do recebimento da ordem de fornecimento.
+
+::: garantia_contratual
+Será exigida garantia de execução no valor de {garantia} ({garantia:extenso}), prestada em qualquer das modalidades admitidas em lei.
+
+:: recursos
+A intenção de recorrer será manifestada ao fim da sessão, sob pena de preclusão, e as razões serão apresentadas no prazo de {recurso:extenso} dias úteis.
+
+: fecho
+O critério do item {::julgamento}, as certidões do item {::certidoes} e o prazo do item {::entrega} são condições de eficácia da proposta, e a sua inobservância importa desclassificação.
+
+: local
+{cidade}, {publicacao:corrente}.
+
+regras
+  lote                 um para cada lotes
+  amostragem           quando amostra é presente
+  garantia_contratual  quando garantia é presente

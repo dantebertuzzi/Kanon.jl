@@ -222,10 +222,15 @@ function resolve_in_contract(ctx::AnalysisCtx, p::Path)
     nulo = iterado ? false : decl.presence === OPTIONAL
     nulo &= !guaranteed_prefix(ctx, segs, 1)
 
-    length(segs) == 1 &&
-        return ResolvedPath(:field, decl.type, nulo, card, decl.id), nothing
+    # `:element` não é um refinamento de `:field`: é outra origem de valor. O render lê
+    # a coleção nos dados validados e o elemento na instância do bloco, e sem esta marca
+    # ele não teria como saber qual dos dois o caminho pede (D-043).
+    kind = iterado ? :element : :field
 
-    descend(ctx, segs, 2, decl.type, card, nulo, :field, decl.id)
+    length(segs) == 1 &&
+        return ResolvedPath(kind, decl.type, nulo, card, decl.id), nothing
+
+    descend(ctx, segs, 2, decl.type, card, nulo, kind, decl.id)
 end
 
 "Resolve contra os campos do sujeito do bloco (§4.2)."
@@ -526,7 +531,10 @@ function nullability_reason(ctx::AnalysisCtx, p::Path, rp::ResolvedPath)
     else
         decl = fielddecl(ctx.tmpl, segs[1])
         decl === nothing && return "o valor é opcional"
-        decl.presence === OPTIONAL && return "o contrato declara `$(segs[1])` opcional"
+        # Numa repetição, a lista opcional não torna o elemento opcional — lista ausente
+        # é iteração nenhuma —, e a causa está adiante, num campo do elemento.
+        decl.presence === OPTIONAL && rp.kind !== :element &&
+            return "o contrato declara `$(segs[1])` opcional"
         typename = decl.type
     end
 

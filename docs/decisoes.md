@@ -1376,3 +1376,102 @@ provável quando há uma, e havia.
 
 **O que não muda.** Com um nome próximo, o *"Você quis dizer `X`?"* continua vindo antes
 de tudo: para um erro de digitação, a camada é ruído.
+---
+
+## D-043 — O caminho iterado é o elemento em toda parte, e não só nas regras
+
+*2026-09-07 · aceita · surgida ao escrever o modelo real nº 6*
+
+**A observação.** A §8.3 diz, desde a F0, que dentro de um bloco repetido *"o
+identificador do caminho denota o elemento corrente, tanto no texto quanto no `when` do
+próprio bloco"*, e que *"o bloco não tem acesso à coleção inteira"*. Três lugares do motor
+precisam saber disso, e dois sabiam:
+
+- `RuleScope.scope_value` substitui o elemento — é o `when`;
+- `resolve_in_contract` substitui o elemento — é a análise, e o comentário dela até diz
+  o que aconteceria sem isso: *"`{witnesses}` renderizaria a lista inteira em cada
+  iteração — e em silêncio, que é a pior forma de estar errado"*;
+- `path_value`, no render, **não substituía**. Lia a coleção nos dados validados.
+
+O efeito tinha duas faces, e a segunda é mais grave que a primeira:
+
+1. `{lotes}` rendia os três lotes juntos em cada uma das três iterações, com a
+   conjunção do idioma — um documento plausível, e errado, sem aviso nenhum;
+2. `{socios.nome}` — o campo do elemento escrito pelo caminho iterado — nem chegava a
+   render: `descend_value` recebia o vetor e `kanon_getfield` caía no `getproperty`
+   padrão, estourando `FieldError: type Array has no field nome`. Um erro de Julia
+   escapando do motor, sem diagnóstico e sem código.
+
+**Por que nenhum teste viu.** Todo bloco repetido do acervo lê o elemento por um **campo
+do sujeito** — `{nome}`, `{cpf}` —, que resolve pela outra porta (`:subject_field`) e
+desce no sujeito da instância, que é o elemento. O caminho iterado escrito por extenso só
+tem razão de existir quando o elemento **não tem campos**: uma lista de `texto`. E sujeito
+sem campos era `K2007` até a D-040, três dias antes — o modelo nº 4 destravou a construção
+e o nº 6 foi o primeiro a repetir um bloco sobre ela.
+
+**Decisão.** A resolução ganha um terceiro tipo, `:element`, ao lado de `:field` e
+`:subject_field`. Não é um refinamento de `:field`: é **outra origem de valor** — a
+coleção está nos dados validados e o elemento está na instância do bloco, e sem a marca o
+render não teria como saber qual dos dois o caminho pede. Quem decide continua sendo a
+análise, e o render obedece à tabela lateral, que é a divisão de trabalho do projeto
+inteiro.
+
+O elemento corrente é o **sujeito da instância**, e é por isso que o render não precisa de
+mais nada: a §8.3 obriga o cabeçalho a declarar `<- C` com o mesmo caminho do
+`one for each`, e `check_foreach!` recusa o modelo que não o faça.
+
+**O que veio junto.** A razão da nulabilidade (`K2012`) não pode mais culpar a
+cardinalidade que a iteração consumiu: numa repetição, lista opcional não torna o elemento
+opcional — lista ausente é iteração nenhuma —, e a causa está adiante, num campo do
+elemento.
+
+**Alternativa descartada.** Carregar o caminho iterado no `RenderCtx`, como o `RuleScope`
+faz. Funcionaria, e poria a mesma substituição em três cópias — a quarta viria com o
+próximo consumidor da árvore.
+
+---
+
+## D-044 — O rótulo é a única coisa que o motor calcula, e a única que o formato não protegia
+
+*2026-09-07 · aceita · surgida ao escrever o modelo real nº 6*
+
+**A observação.** A F8 protege uma frase: *o valor interpolado nunca altera a estrutura do
+documento*. O edital mostrou a metade que faltava. Emitido em Markdown, o item `1.` de
+cada cláusula vira `<ol><li>`, e o `1.1.` vira outra lista dentro dele: o número que o
+motor apurou passa a ser um número que o **renderizador** redefine — quatro listas de um
+item, cada uma renumerando do seu jeito —, enquanto a remissão da prosa continua texto
+literal apontando para o número antigo. Um documento que se contradiz.
+
+No Typst dá no mesmo por outro caminho: *"starting a line with a number followed by a dot
+creates an explicitly numbered enumeration item"*.
+
+**Por que passava.** A suíte da F8 tinha o caso, e afirmava o contrário: *"o rótulo do
+bloco é do estilo, e não é escapado — ele é estrutura, e vem da camada, não dos dados"*. A
+**proveniência** é a razão certa para a pergunta errada. O risco de um valor é injeção, e
+por isso ele é escapado; o risco do rótulo não é injeção nenhuma — é que o formato
+reinterprete como marcação o único pedaço do documento que o motor calculou. Nenhum modelo
+real tinha sido emitido em formato de marcação **com numeração numérica**: a do
+`KanonLegal` é `CLÁUSULA PRIMEIRA`, a do `KanonScience` é `Theorem 1`, e nenhuma das duas
+começa por dígito.
+
+**Decisão.** O rótulo sai por um gancho de formato, `label(fmt, texto)`, irmão de
+`heading`. O padrão é identidade — em texto puro não há marcação a desarmar —, e os dois
+formatos de marcação escapam.
+
+Rótulo e separador vão **juntos** para o gancho: o `1` é do rótulo e o `. ` que faz dele um
+marcador é do separador do estilo, e escapar só o rótulo não protegeria nada. Foi o
+primeiro remendo, e ele não funcionou.
+
+E as duas linguagens escapam em lugares diferentes, o que é a razão de o escape ser método
+de formato e não uma função só:
+
+| | forma | por quê |
+|---|---|---|
+| Markdown | `1\. Texto` | o marcador é dígitos **seguidos** de `.`; quebrada a sequência, a linha deixa de ser candidata |
+| Typst | `\1. Texto` | a barra vai antes do dígito — é a forma que a documentação da linguagem indica |
+
+**O que veio junto.** O escape de valor do Typst passou a olhar o **início de linha**, que
+ele recebia e ignorava — o método do Markdown já o usava. Sem isso, um valor com
+`"\n\n1. Cláusula falsa"` abria no Typst a estrutura que a F8 existe para impedir, e o
+buraco estava aberto desde que o formato entrou.
+

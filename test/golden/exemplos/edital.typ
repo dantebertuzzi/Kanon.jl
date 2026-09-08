@@ -1,0 +1,35 @@
+EDITAL DE PREGÃO ELETRÔNICO Nº 037/2026
+
+O Município de Petrolina torna público que fará realizar licitação na modalidade pregão, na forma eletrônica, do tipo menor preço, nos autos do processo administrativo nº 23.456/2026, cuja sessão pública se abrirá em 6 de outubro de 2026. Os pedidos de esclarecimento serão dirigidos a licitacao\@petrolina.pe.gov.br.
+
+\1. Constitui objeto deste pregão o registro de preços para aquisição de material de expediente, pelo valor máximo estimado de R\$ 250.000,00 (duzentos e cinquenta mil reais).
+
+\1.1. Compõe o objeto o lote papelaria, julgado isoladamente e para o qual se exige proposta em separado.
+
+\1.2. Compõe o objeto o lote suprimentos de informática, julgado isoladamente e para o qual se exige proposta em separado.
+
+\1.3. Compõe o objeto o lote mobiliário de escritório, julgado isoladamente e para o qual se exige proposta em separado.
+
+\1.4. O julgamento far-se-á pelo critério de menor preço por lote, e será desclassificada a proposta que exceder o valor máximo estimado.
+
+\2. A habilitação será apreciada depois de encerrada a fase de lances, e somente quanto ao licitante provisoriamente classificado em primeiro lugar.
+
+\2.1. A habilitação jurídica far-se-á pelo ato constitutivo em vigor, acompanhado da prova de investidura de quem o representa.
+
+\2.1.1. As certidões apresentadas sem prazo de validade expresso reputam-se válidas por noventa dias contados da emissão.
+
+\2.2. A regularidade fiscal e trabalhista far-se-á pelas certidões negativas, ou positivas com efeito de negativa, das fazendas federal, estadual e municipal, do Fundo de Garantia e da Justiça do Trabalho.
+
+\2.3. Será exigida amostra do objeto, na forma seguinte: uma unidade de cada item, entregue no protocolo em até dois dias úteis.
+
+\3. A execução observará as condições deste edital, do termo de referência e da proposta vencedora, naquilo em que esta for mais vantajosa para a Administração.
+
+\3.1. O objeto será entregue no prazo de quinze dias, contados do recebimento da ordem de fornecimento.
+
+\3.2. Será exigida garantia de execução no valor de R\$ 12.500,00 (doze mil e quinhentos reais), prestada em qualquer das modalidades admitidas em lei.
+
+\4. A intenção de recorrer será manifestada ao fim da sessão, sob pena de preclusão, e as razões serão apresentadas no prazo de três dias úteis.
+
+O critério do item 1.4, as certidões do item 2.1.1 e o prazo do item 3.1 são condições de eficácia da proposta, e a sua inobservância importa desclassificação.
+
+Petrolina, 5 de setembro de 2026.

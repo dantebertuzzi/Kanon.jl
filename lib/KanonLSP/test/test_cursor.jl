@@ -57,6 +57,32 @@ end
         @test occursin("**não** está dentro de nenhum grupo", h2)
     end
 
+    @testset "o caminho iterado diz que é o elemento, e não a coleção (D-043)" begin
+        # É a distinção que o redator não vê no arquivo: `{lots}` está escrito igual
+        # dentro e fora do bloco repetido, e vale coisas diferentes nos dois lugares.
+        modelo = """
+kanon 1
+
+data
+  lots : text[1..] !
+
+text
+
+: all
+Os lotes: {lots}.
+
+:: one <- lots
+Lote {lots}.
+
+rules
+  one  one for each lots
+"""
+        h = hover_em(modelo, 12, 8)          # dentro de `{lots}`, no bloco repetido
+        @test occursin("**elemento corrente**", h)
+        h2 = hover_em(modelo, 9, 13)         # e o mesmo `{lots}` fora dele
+        @test !occursin("**elemento corrente**", h2)
+    end
+
     @testset "o formatador nomeado aparece na resposta" begin
         h = hover_em(MODELO_CURSOR, 11, 41)          # dentro de `{price:code}`
         @test occursin("`{price:code}`", h)

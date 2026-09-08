@@ -16,7 +16,7 @@ segmento do caminho for opcional — a opcionalidade atravessa o tipo composto, 
 teorema valeria só no primeiro nível, que é o mesmo que não valer.
 """
 struct ResolvedPath
-    kind::Symbol                 # :field | :subject_field | :constant
+    kind::Symbol                 # :field | :element | :subject_field | :constant
     typename::Symbol
     nullable::Bool
     card::Cardinality

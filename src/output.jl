@@ -101,11 +101,30 @@ end
 "No Typst, o que abre construção é `#`, `\$`, `@`, `<`, `[`, `*`, `_` e a contrabarra."
 const TYPST_ESPECIAIS = raw"\#$@<>[]*_`"
 
-function escape_value(::Typst, s::AbstractString, ::Bool)
+"""
+O que só abre construção no **começo de uma linha**: os itens de lista (`-`, `+`), a
+lista de termos (`/`) e o título (`=`). A enumeração explícita entra por outro caminho,
+porque ela começa por dígito.
+"""
+const TYPST_INICIO = raw"-+/="
+
+"""
+Escapa um valor para Typst.
+
+A contrabarra vai **antes do dígito**, e não antes do ponto: `1. x` no começo de uma
+linha é item de enumeração explícita, e a forma de escrever o parágrafo é `\\1. x` — o
+inverso do Markdown, onde o ponto é que leva a barra. Duas linguagens de marcação, duas
+regras, e é por isso que o escape é método de formato e não uma função só.
+"""
+function escape_value(::Typst, s::AbstractString, inicio_de_linha::Bool)
     io = IOBuffer()
+    inicio = inicio_de_linha
     for c in s
-        c in TYPST_ESPECIAIS && print(io, '\\')
+        if c in TYPST_ESPECIAIS || (inicio && (isdigit(c) || c in TYPST_INICIO))
+            print(io, '\\')
+        end
         print(io, c)
+        inicio = c == '\n' ? true : (inicio && (c == ' ' || c == '\t'))
     end
     String(take!(io))
 end
@@ -120,6 +139,25 @@ o nível vem da profundidade da numeração.
 heading(::OutputFormat, ::Int, texto::AbstractString) = String(texto)
 heading(::Markdown, nivel::Int, texto::AbstractString) = repeat('#', min(nivel, 6)) * " " * texto
 heading(::Typst, nivel::Int, texto::AbstractString) = repeat('=', min(nivel, 6)) * " " * texto
+
+"""
+    label(fmt, texto) -> String
+
+O rótulo de um bloco `layout = :prefix` **com o separador do estilo**, que prefixa o
+primeiro parágrafo (§6.4). Os dois vêm juntos porque a estrutura que eles abrem por
+acidente é a soma deles: o `1` é do rótulo e o `. ` que faz dele um marcador de lista é
+do separador.
+
+Ele não é prosa do autor nem valor dos dados: é a **única parte do documento que o motor
+calcula**, e por isso a única que precisa sair intacta em todo formato. Num documento
+numerado por `1.`, `1.1.`, `2.` — o estilo do núcleo —, o rótulo cai no começo da linha
+exatamente na forma que o Markdown lê como marcador de lista, e o número que o motor
+apurou passa a ser um número que o renderizador redefine, enquanto as remissões da prosa
+continuam texto literal apontando para o número antigo (D-044).
+"""
+label(::OutputFormat, texto::AbstractString) = String(texto)
+label(f::Markdown, texto::AbstractString) = escape_value(f, texto, true)
+label(f::Typst, texto::AbstractString) = escape_value(f, texto, true)
 
 """
     document(fmt, paragrafos) -> String

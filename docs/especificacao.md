@@ -569,6 +569,14 @@ estilo declara:
 `KanonLegal` usa `:prefix` com `". "` e número `CLÁUSULA PRIMEIRA`, produzindo
 `CLÁUSULA PRIMEIRA. Constitui objeto…`.
 
+**[acrescentado na F10 — D-044]** O rótulo é a única parte do documento que o **motor**
+calcula, e por isso a única que todo formato de saída tem de preservar. Num estilo que
+numera por dígitos — o do núcleo —, `1. ` no começo da linha é marcador de lista ordenada
+em Markdown e enumeração explícita em Typst, e o número apurado viraria um número que o
+renderizador redefine, enquanto a remissão da prosa continua apontando para o antigo. O
+rótulo sai por `label(fmt, texto)`, junto com o separador do estilo, e cada formato escapa
+o que leria como marcação.
+
 ---
 
 ## 7. Pontos de flexão
@@ -694,6 +702,12 @@ rules
 
 lê-se "um bloco `grantor` para cada vendedor, exceto os menores", e o `when` é avaliado
 por iteração. O bloco não tem acesso à coleção inteira; se precisar, use outro bloco.
+
+**[precisão da F10 — D-043]** *Em toda parte*: a análise marca o caminho iterado como
+`:element`, e o render lê o elemento na instância do bloco — nunca a coleção nos dados
+validados. A regra vale igual para o elemento (`{sellers}`) e para um campo dele
+(`{sellers.name}`), e o elemento é o sujeito da instância, que é o que a exigência de
+declarar `<- C` no cabeçalho garante.
 
 ### 8.4 Invariante anti-XSLT
 

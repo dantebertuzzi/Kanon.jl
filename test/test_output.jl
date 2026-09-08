@@ -49,6 +49,20 @@ O **importante** é que {nome} assine[, com a nota {nota}].
         @test occursin("Ana \\#1 \\\$x\\\$ \\<a\\>", s)
     end
 
+    @testset "no typst a barra vai antes do dígito, e só no começo da linha" begin
+        # `1. x` no começo de uma linha é enumeração explícita no Typst, e a forma de
+        # escrever o parágrafo é `\1. x` — o inverso do Markdown, onde é o ponto que
+        # leva a barra. No meio da frase não há marcação nenhuma a desarmar.
+        hostil = Dict("nome" => "X\n\n1. Cláusula falsa\n\n- e um item")
+        s = render(M_OUT, hostil; to = :typst)
+        @test occursin("\\1. Cláusula falsa", s)
+        @test occursin("\\- e um item", s)
+        @test occursin("é que X", s)
+        # e um número no meio da frase sai limpo
+        @test occursin("assine, com a nota 12.500,00.",
+                       render(M_OUT, Dict("nome" => "A", "nota" => "12.500,00"); to = :typst))
+    end
+
     @testset "um valor não consegue abrir marcação nenhuma" begin
         hostil = Dict("nome" => "X\n\n# Cláusula falsa\n\nAssinado por outro")
         s = render(M_OUT, hostil; to = :markdown)
@@ -97,13 +111,53 @@ end
         @test occursin("assine, com a nota \\*urgente\\*.", s)
         # e sem a nota, o grupo sai inteiro, sem vírgula órfã
         @test render(M_OUT, Dict("nome" => "Ana"); to = :markdown) ==
-              "1. O **importante** é que Ana assine."
+              "1\\. O **importante** é que Ana assine."
     end
 
-    @testset "o rótulo do bloco é do estilo, e não é escapado" begin
-        # ele é estrutura, e vem da camada — não dos dados
+    @testset "o rótulo do bloco sai com o número que o motor apurou (D-044)" begin
+        # Este teste afirmava o contrário até o modelo real nº 6: o rótulo é estrutura,
+        # vem da camada e não dos dados, e por isso não era escapado. A proveniência é a
+        # razão certa para a pergunta errada. O risco aqui não é injeção — é que `1. `
+        # no começo da linha **é** marcador de lista ordenada em Markdown, e o número
+        # que o motor apurou passa a ser um número que o renderizador redefine, enquanto
+        # a remissão da prosa continua texto literal apontando para o antigo.
+        #
+        # O rótulo é a única parte do documento que o motor calcula, e por isso a única
+        # que precisa sair intacta em todo formato.
         s = render(M_OUT, Dict("nome" => "A"); to = :markdown)
-        @test startswith(s, "1. ")
+        @test startswith(s, "1\\. ")
+        @test render(M_OUT, Dict("nome" => "A")) |> x -> startswith(x, "1. ")  # texto puro, intacto
+    end
+
+    @testset "e no typst o mesmo rótulo leva a barra antes do dígito" begin
+        s = render(M_OUT, Dict("nome" => "A"); to = :typst)
+        @test startswith(s, "\\1. ")
+    end
+
+    @testset "e o escape é do par rótulo+separador, não de cada um" begin
+        # O `1` é do rótulo e o `. ` que faz dele um marcador é do separador do estilo:
+        # escapar só o rótulo não protegeria nada.
+        m = load_string(Environment(), """
+kanon 1
+
+data
+  a : text !
+
+text
+
+:: um
+Primeiro.
+
+::: um_um
+Aninhado com {a}.
+"""; name = "r.kanon")
+        s = render(m, Dict("a" => "x"); to = :markdown)
+        @test occursin("1\\. Primeiro.", s)
+        # Uma contrabarra basta, e ela vai no primeiro ponto: o marcador de lista é
+        # dígitos **seguidos** de `.`, e quebrada a sequência a linha inteira deixa de
+        # ser candidata. O segundo ponto sai limpo, e é o que o leitor quer ver.
+        @test occursin("1\\.1. Aninhado com x.", s)
+        @test !startswith(s, "1. ")
     end
 end
 

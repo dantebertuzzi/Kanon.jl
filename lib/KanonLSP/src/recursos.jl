@@ -235,6 +235,8 @@ function descrever_interp(m::Kanon.Model, n::Kanon.Interp)
     println(io)
     println(io, "- tipo: `", rp.typename, "`")
     rp.kind === :subject_field && println(io, "- lido pelo **sujeito do bloco**")
+    rp.kind === :element &&
+        println(io, "- o **elemento corrente** da repetição, e não a coleção inteira")
     rp.kind === :constant && println(io, "- constante de ambiente")
     if rp.nullable
         println(io, "- **pode faltar** — ",

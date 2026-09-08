@@ -89,6 +89,11 @@ function path_value(ctx::RenderCtx, n::Interp)
     segs = n.path.segments
     v = if rp.kind === :subject_field
         ctx.subject === nothing ? nothing : descend_value(ctx.subject, segs, 1)
+    elseif rp.kind === :element
+        # O caminho iterado denota o elemento corrente (§8.3), e o elemento corrente é o
+        # sujeito da instância — o cabeçalho é obrigado a declarar `<- C` justamente por
+        # isso. Ler a coleção aqui repetiria a lista inteira em cada iteração (D-043).
+        ctx.subject === nothing ? nothing : descend_value(ctx.subject, segs, 2)
     else
         w = value(ctx.bound, segs[1])
         w === nothing ? nothing : descend_value(w, segs, 2)
@@ -224,9 +229,11 @@ function render_block(ctx::RenderCtx, b::Block, inst::BlockInstance)
     if estilo.layout === :heading
         pushfirst!(paras, heading(ctx.format, length(inst.number), rotulo))
     elseif isempty(paras)
-        push!(paras, rotulo)
+        push!(paras, label(ctx.format, rotulo))
     else
-        paras[1] = rotulo * estilo.separator * paras[1]
+        # rótulo e separador saem juntos: o `.` que abre lista no Markdown é do
+        # separador, e escapar só o rótulo deixaria `1` seguido de `. ` (D-044).
+        paras[1] = label(ctx.format, rotulo * estilo.separator) * paras[1]
     end
     return paras
 end

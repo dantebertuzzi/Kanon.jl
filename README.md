@@ -186,6 +186,12 @@ stays bold. A value carrying `*Maria*` comes out as five characters and two aste
 name containing `# Clause` cannot open a heading. It is the concern behind HTML escaping,
 for the same reason — with the added weight that the document may be signed.
 
+And its converse, which the block label makes necessary: **the number the engine computed
+is the number that appears.** A label like `1.` at the start of a line is an ordered-list
+marker in Markdown and an explicitly numbered item in Typst, so it is escaped — otherwise
+the numbering would become the renderer's to redefine, while the cross-reference in the
+prose still pointed at the old one.
+
 For `.docx`, `.odt` or PDF the answer is pandoc. Kanon guarantees the content; page
 composition belongs to something that knows how to do it:
 

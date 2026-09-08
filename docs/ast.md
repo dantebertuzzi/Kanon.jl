@@ -210,7 +210,7 @@ neutralidade precisa fazer (rodar o mesmo modelo com e sem camadas).
 
 ```julia
 struct ResolvedPath
-    kind::Symbol                 # :field | :subject_field | :constant
+    kind::Symbol                 # :field | :element | :subject_field | :constant
     typename::Symbol             # tipo resolvido
     nullable::Bool
     card::Cardinality
