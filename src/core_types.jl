@@ -202,8 +202,11 @@ function kanon_decode(::Type{Money}, raw, ctx)
     if raw isa NamedTuple && haskey(raw, :amount) && haskey(raw, :currency)
         return Money(decode_amount(raw.amount), Symbol(raw.currency))
     end
-    raw isa NumberValue && throw(UndecodableValue(Money, raw,
-        "falta a moeda; escreva `{\"amount\": $raw, \"currency\": \"...\"}`."))
+    # A quantia sozinha — número ou cadeia — é o erro que quem escreve o JSON comete, e
+    # a mensagem tem de dar a forma inteira. `"480000.00"` recebia só "esperava uma
+    # quantia com moeda", que diz o que falta e não o que escrever.
+    (raw isa NumberValue || raw isa AbstractString) && throw(UndecodableValue(Money, raw,
+        "falta a moeda; escreva `{\"amount\": $(repr(raw)), \"currency\": \"...\"}`."))
     throw(UndecodableValue(Money, raw, "esperava uma quantia com moeda."))
 end
 

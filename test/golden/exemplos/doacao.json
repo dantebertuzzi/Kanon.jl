@@ -1,0 +1,40 @@
+{
+  "doador": {
+    "nome": "Raimundo Nonato de Alencar",
+    "genero": "m",
+    "estado_civil": "casado",
+    "cpf": "222.333.444-55",
+    "endereco": "Rua Cardeal, 220, Petrolina/PE",
+    "regime": "comunhão parcial de bens",
+    "nascimento": "1958-04-19"
+  },
+  "donatarios": [
+    {
+      "nome": "Ana Beatriz de Alencar",
+      "genero": "f",
+      "estado_civil": "solteira",
+      "cpf": "777.888.999-00",
+      "endereco": "Rua Cardeal, 220, Petrolina/PE",
+      "nascimento": "1996-11-03"
+    },
+    {
+      "nome": "Tomás de Alencar",
+      "genero": "m",
+      "estado_civil": "solteiro",
+      "cpf": "333.222.111-00",
+      "endereco": "Rua Cardeal, 220, Petrolina/PE",
+      "nascimento": "2012-02-29"
+    }
+  ],
+  "imovel": {
+    "matricula": "54.321",
+    "tipo": "urbano",
+    "descricao": "casa residencial situada na Rua Cardeal, nº 220",
+    "area": 360
+  },
+  "valor": { "amount": "480000.00", "currency": "BRL" },
+  "usufruto": true,
+  "cartorio": "Cartório do 2º Ofício de Notas de Petrolina",
+  "livro": 118,
+  "folha": 43
+}

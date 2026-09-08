@@ -58,6 +58,12 @@ end
 `{seller.spouse.name}` verificável sem dados e o que estende o teorema da lacuna aos
 tipos compostos (ver `especificacao.md`, seções 3.1 e 14).
 
+**`kanon_decode` não é opcional para um tipo composto [D-046].** O padrão do núcleo aceita
+só o que já é do tipo, e um tipo que não o implemente existe apenas se alguém o construir
+em Julia: nenhum JSON, planilha ou `DataFrame` o alcança. Um objeto aninhado chega como
+`AbstractDict` de cadeias, e cabe ao tipo lê-lo — estritamente, com o decodificador do
+núcleo em cada campo, e nomeando a chave que falta.
+
 **[acrescentada na F2.6 — D-023]** `kanon_getfield` é como o motor lê o campo que o
 esquema promete. O padrão é `getproperty(v, name)`; um tipo cujo esquema não espelha a
 `struct` define os métodos dele. Sem essa separação, `kanon_schema` viraria uma promessa

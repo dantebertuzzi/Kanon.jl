@@ -1376,6 +1376,7 @@ provável quando há uma, e havia.
 
 **O que não muda.** Com um nome próximo, o *"Você quis dizer `X`?"* continua vindo antes
 de tudo: para um erro de digitação, a camada é ruído.
+
 ---
 
 ## D-043 — O caminho iterado é o elemento em toda parte, e não só nas regras
@@ -1475,3 +1476,101 @@ ele recebia e ignorava — o método do Markdown já o usava. Sem isso, um valor
 `"\n\n1. Cláusula falsa"` abria no Typst a estrutura que a F8 existe para impedir, e o
 buraco estava aberto desde que o formato entrou.
 
+---
+
+## D-045 — A garantia da regra vale nas duas grafias, e a comparação também garante
+
+*2026-09-07 · aceita · surgida ao escrever o modelo real nº 7*
+
+**A observação.** A escritura de doação separa os donatários maiores dos menores
+comparando a data de nascimento — que é a forma que a docstring de `KanonLegal.maior`
+prescreve desde a F6, porque a maioridade depende de uma data de referência e um atributo
+de tipo recebe o valor e mais nada. O bloco dos menores escreve `{nascimento}`, e o motor
+exigiu um grupo opcional em volta:
+
+```
+K2012: `nascimento` pode faltar, porque `nascimento` é opcional em `pessoa`,
+       e está fora de qualquer grupo opcional.
+```
+
+O grupo pedido é um trecho de reserva **para um caso que o plano das regras já eliminou**:
+o bloco só existe quando `donatarios.nascimento > 2008-09-07`, e `eval_comparison`
+devolve `false` quando um dos lados falta — *ausência não se compara* está escrito no
+código desde a F5. Escrevê-lo seria documentar uma falsidade.
+
+Isolado, o defeito era **dois**, e um deles não tem nada a ver com comparação:
+
+| sonda | regra | texto | antes |
+|---|---|---|---|
+| A | `quando p.nascimento é presente` | `{nascimento}` | **K2012** |
+| B | `quando p.nascimento é presente` | `{p.nascimento}` | passa |
+| C | `quando p.nascimento > 2008-09-07` | `{p.nascimento}` | **K2012** |
+
+A diferença entre A e B é só a **grafia**: a regra fala pelo caminho do contrato e o texto
+pela do sujeito, que é o que a §4.2 convida a fazer — e a garantia era colhida numa e
+consultada na outra, comparando vetores de símbolos que nunca seriam iguais.
+
+**Decisão, em duas partes.**
+
+1. **A grafia.** Toda garantia que comece pelo caminho do sujeito do bloco entra também na
+   grafia de dentro dele, e `resolve_in_subject` passa a consultá-la — antes não consultava
+   garantia nenhuma.
+2. **A comparação.** Os seis operadores da §8.1 afirmam a presença dos dois lados, na
+   mesma posição em que `is present` já afirmava: **afirmativa e sob `and`**. Sob `not` a
+   comparação é verdadeira *porque* o valor falta, e sob `or` o bloco existe sem ela — e é
+   por isso que `collect_present!` nunca desceu por esses dois.
+
+A soundness não é opinião: ela é o `return false` de `eval_comparison`. O teorema da
+lacuna continua valendo — o que mudou é que o motor passou a enxergar uma garantia que ele
+mesmo dava.
+
+**Alternativa descartada.** Manter a exigência "por explicitude". O grupo que ela obriga a
+escrever diz ao leitor *"quando este valor faltar, este trecho sai"*, e a verdade é
+*"quando este valor faltar, o bloco inteiro não existe"*. Uma linguagem que obriga o autor
+a escrever a explicação errada é pior que uma que não obriga nada.
+
+---
+
+## D-046 — Um tipo de domínio que não decodifica é inalcançável pelos dados
+
+*2026-09-07 · aceita · surgida ao escrever o modelo real nº 7*
+
+**A observação.** Os dados do modelo nº 7 vêm de um arquivo JSON, que é como eles chegam
+na prática. `check` recusou quatro dos cinco campos que importam:
+
+```
+K3010: `doador` é do tipo `pessoa`, e o valor recebido não serve —
+       esperava um valor de `pessoa`.
+```
+
+E não havia nada que o autor do JSON pudesse escrever para satisfazê-lo. **Nenhuma das
+camadas implementava `kanon_decode`**, e o padrão do núcleo aceita só o que já é do tipo:
+`pessoa`, `imovel` e `parte` só existiam se alguém os construísse em Julia. Um documento
+jurídico gerado a partir de um sistema — o caso normal — estava fora do alcance do motor,
+e a extensão de JSON prometia o contrário na própria docstring: *"objetos aninhados viram
+`Dict` … que é exatamente o que `kanon_decode` de um tipo composto recebe"*.
+
+**Por que passava.** A suíte de ingestão testa a leitura com os **tipos do núcleo**, que
+decodificam; a suíte das camadas constrói os valores em Julia, porque é o que um teste de
+unidade faz. Entre as duas, a pergunta "um JSON alcança `pessoa`?" não era feita por
+ninguém — e o certificado, o único modelo alimentado de fora até aqui, lê uma planilha de
+`texto` e `numero`.
+
+**Decisão.** `pessoa`, `imovel` e `parte` implementam `decode`, e a decodificação é
+**estrita como o resto do motor**: chave que falta é erro que nomeia a chave, valor de tipo
+errado é erro do decodificador do núcleo — a mensagem é a dele —, e conjunto fechado
+(`genero`, `tipo` de imóvel) recusa **nomeando o conjunto**, porque quem escreve o JSON não
+tem como adivinhar que `"masculino"` não vale.
+
+`null` e chave ausente valem o mesmo: o campo não veio. Distingui-los faria a origem dos
+dados mudar o significado do contrato.
+
+**O que veio junto.** `money` já decodificava de `{"amount", "currency"}`, e a mensagem de
+quem escrevia a quantia sozinha só dizia a forma completa quando ela era **número**:
+`"480000.00"` — que é como um JSON gerado por sistema escreve quantia — caía no ramo
+genérico *"esperava uma quantia com moeda"*, que diz o que falta e não o que escrever.
+
+**O que não muda.** O núcleo não ganhou decodificação genérica por esquema. Ela seria
+derivável dos `FieldSpec`, mas construir o valor exige o construtor do tipo, que é da
+camada — e uma inferência que acerta na maioria dos casos é exatamente o que a §3.4 chama
+de coerção implícita.

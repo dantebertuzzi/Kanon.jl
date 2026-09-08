@@ -67,6 +67,7 @@ jobs:
             using Pkg
             Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso"),
                          PackageSpec(path="lib/KanonScience")])
+            Pkg.add("JSON3")           # só a suíte: é a doação que lê os dados de um JSON
             Pkg.instantiate()'
           julia --project=lib/KanonLegal lib/KanonLegal/test/runtests.jl
         shell: bash

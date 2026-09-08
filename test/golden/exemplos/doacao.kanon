@@ -1,0 +1,79 @@
+kanon 1 pt
+
+# Escritura de doação com reserva de usufruto — **modelo real nº 7** do portão da 1.0.
+#
+# Escolhido pelo que o **plano das regras** ainda não tinha sofrido. Os seis modelos
+# anteriores condicionam bloco por presença e por atributo, e repetem bloco sem
+# condicioná-lo. Nenhum tinha comparado coisa nenhuma: os seis operadores da §8.1 existiam
+# só em teste de unidade, e o `and`/`or` da §8.2 também.
+#
+# Cinco coisas só aparecem aqui:
+#
+#   1. **`um para cada` e `quando` no mesmo bloco** — o exemplo da própria §8.3, "um bloco
+#      para cada vendedor, exceto os menores", que nenhum documento tinha escrito. A
+#      condição é avaliada por iteração, e é o que separa os dois blocos de donatário.
+#   2. **Comparação com literal de data, sobre um campo do elemento corrente.** É a forma
+#      que a docstring de `KanonLegal.maior` prescreve desde a F6: a maioridade não é
+#      atributo do tipo, porque depende de uma data de referência, e se pergunta
+#      comparando.
+#   3. **Comparação de `dinheiro` com número** — o `price > 0` da §8.1, num documento.
+#   4. **`ou` numa condição**, e um **caminho booleano isolado** (`quando usufruto`), que
+#      é a única forma de um `booleano` entrar numa regra (§8.1: não há veracidade
+#      implícita).
+#   5. **Os dados vêm de um arquivo JSON**, com tipos de domínio dentro — a via pela qual
+#      os dados chegam na prática, e que nenhum modelo real tinha percorrido.
+#
+# Uma armadilha que o documento tem de resolver, e não esconder: `nascimento` é opcional
+# em `pessoa`, e ausência nunca satisfaz comparação. Sem o `é ausente` explícito no
+# primeiro bloco, um donatário sem data de nascimento não cairia em nenhum dos dois — e
+# sumiria da escritura em silêncio.
+
+dados
+  doador     : pessoa      !
+  donatarios : pessoa[1..] !
+  imovel     : imovel      !
+  valor      : dinheiro    !
+  usufruto   : booleano    !
+  encargo    : texto
+  cartorio   : texto       !
+  livro      : numero      !
+  folha      : numero      !
+  data       : data        = hoje
+
+texto
+
+: preambulo <- doador
+Saibam quantos este público instrumento virem que, em {data:corrente}, no {cartorio}, perante mim, escrevente, compareceu como DOADOR(A) {nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}[, casado(a) sob o regime de {regime}].
+
+§§ objeto
+O DOADOR doa aos donatários adiante nomeados o imóvel {imovel:descricao}, matriculado sob o nº {imovel.matricula}[, com área de {imovel.area} metros quadrados], avaliado em {valor} ({valor:extenso}).
+
+§§ donatario <- donatarios
+É donatário(a) {donatarios}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}, que aceita a doação neste ato.
+
+§§ donatario_menor <- donatarios
+É donatário(a) {donatarios}, menor nascido(a) em {nascimento:corrente}, que aceita a doação por seu representante legal, na forma da {::aceitacao}.
+
+§§ usufruto
+O DOADOR reserva para si o usufruto vitalício do imóvel doado, que se extinguirá com o seu falecimento, independentemente de qualquer formalidade.
+
+§§ imposto
+Por exceder o valor de referência da isenção, a doação fica sujeita ao recolhimento prévio do imposto de transmissão, cuja guia quitada integra este instrumento.
+
+§§ encargo
+A doação é feita com o seguinte encargo, que os donatários expressamente aceitam: {encargo}.
+
+§§ aceitacao
+Os donatários aceitam a doação nos termos em que é feita, e os que ainda não atingiram a maioridade o fazem por seus representantes legais.
+
+: fecho
+Lavrada nesta data e lançada no livro nº {livro:ordinal}, folha {folha:ordinal_f}, do cartório acima nomeado.
+
+regras
+  donatario        um para cada donatarios
+  donatario        quando donatarios.nascimento é ausente ou donatarios.nascimento < 2008-09-07
+  donatario_menor  um para cada donatarios
+  donatario_menor  quando donatarios.nascimento > 2008-09-07
+  usufruto         quando usufruto
+  imposto          quando valor > 100000 ou encargo é presente
+  encargo          quando encargo é presente

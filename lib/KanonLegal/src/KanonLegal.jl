@@ -70,6 +70,7 @@ end
                   cpf = (v, ctx) -> v.cpf)
     attributes = (casado = v -> startswith(v.estado_civil, "casad"),
                   solteiro = v -> startswith(v.estado_civil, "solteir"))
+    decode     = (raw, ctx) -> pessoa_de(raw, ctx)
 end
 
 """
@@ -106,6 +107,7 @@ Imovel(matricula, tipo, descricao; area = nothing) =
                   matricula = (v, ctx) -> v.matricula)
     attributes = (rural = v -> v.tipo === :rural,
                   urbano = v -> v.tipo === :urbano)
+    decode     = (raw, ctx) -> imovel_de(raw, ctx)
 end
 
 # --- parte: o teste de D-006 -------------------------------------------------
@@ -145,6 +147,93 @@ Extenso.genero(p::Parte) = p.genero
     formats    = (maiusculo = (v, ctx) -> uppercase(v.nome),)
     attributes = (empresa = v -> v.empresa,
                   fisica = v -> !v.empresa)
+    decode     = (raw, ctx) -> parte_de(raw, ctx)
+end
+
+# --- leitura de dados externos -----------------------------------------------
+#
+# Um JSON — ou uma linha de tabela, ou um `Dict` montado à mão — não chega como `Pessoa`:
+# chega como um dicionário de chaves e cadeias, e `kanon_decode` é o **único** ponto em
+# que ele vira valor do tipo (§3.4). Sem estes métodos, a via pela qual os dados chegam na
+# prática não alcançava documento jurídico nenhum: `check` recusava com "esperava um valor
+# de `pessoa`", e não havia nada que o autor pudesse escrever para satisfazê-lo (D-046).
+#
+# A decodificação é **estrita**, como todo o resto: chave que falta é erro, valor de tipo
+# errado é erro, e nenhum campo vira `nothing` por conveniência. O que é opcional no
+# esquema é opcional aqui, e só isso.
+
+"""
+O valor de uma chave, ou `nothing` quando ela falta e o campo é opcional.
+
+`null` no JSON e chave ausente valem o mesmo: o campo não veio. Distingui-los faria a
+origem dos dados mudar o significado do contrato.
+"""
+function chave(T::Type, raw::AbstractDict, nome::AbstractString; opcional::Bool = false)
+    v = get(raw, nome, nothing)
+    v === nothing || return v
+    opcional && return nothing
+    throw(UndecodableValue(T, raw, "falta a chave `$nome`."))
+end
+
+"Uma cadeia obrigatória, pelo decodificador do núcleo — a mensagem de tipo é a dele."
+texto_de(T, raw, nome, ctx; opcional = false) =
+    (v = chave(T, raw, nome; opcional); v === nothing ? nothing :
+     kanon_decode(AbstractString, v, ctx))
+
+data_de(T, raw, nome, ctx; opcional = false) =
+    (v = chave(T, raw, nome; opcional); v === nothing ? nothing :
+     kanon_decode(Date, v, ctx))
+
+"""
+Um símbolo de um conjunto fechado — `genero`, `tipo` de imóvel.
+
+Recusa o que não está no conjunto **nomeando o conjunto**: quem escreve o JSON não tem
+como saber que `"masculino"` não vale se a mensagem não disser que vale `m` ou `f`.
+"""
+function simbolo_de(T::Type, raw::AbstractDict, nome::AbstractString, admitidos::Tuple)
+    s = Symbol(chave(T, raw, nome))
+    s in admitidos && return s
+    throw(UndecodableValue(T, raw,
+        "`$nome` vale `$s`, e só admite " * join(("`$a`" for a in admitidos), " ou ") * "."))
+end
+
+function pessoa_de(raw, ctx)
+    raw isa Pessoa && return raw
+    raw isa AbstractDict ||
+        throw(UndecodableValue(Pessoa, raw, "esperava um objeto com as chaves de `pessoa`."))
+    Pessoa(texto_de(Pessoa, raw, "nome", ctx),
+           simbolo_de(Pessoa, raw, "genero", (:m, :f)),
+           texto_de(Pessoa, raw, "estado_civil", ctx),
+           texto_de(Pessoa, raw, "cpf", ctx),
+           texto_de(Pessoa, raw, "endereco", ctx);
+           regime = texto_de(Pessoa, raw, "regime", ctx; opcional = true),
+           nascimento = data_de(Pessoa, raw, "nascimento", ctx; opcional = true))
+end
+
+function imovel_de(raw, ctx)
+    raw isa Imovel && return raw
+    raw isa AbstractDict ||
+        throw(UndecodableValue(Imovel, raw, "esperava um objeto com as chaves de `imovel`."))
+    area = chave(Imovel, raw, "area"; opcional = true)
+    Imovel(texto_de(Imovel, raw, "matricula", ctx),
+           simbolo_de(Imovel, raw, "tipo", (:urbano, :rural)),
+           texto_de(Imovel, raw, "descricao", ctx);
+           area = area === nothing ? nothing :
+                  Float64(kanon_decode(Kanon.NumberValue, area, ctx)))
+end
+
+function parte_de(raw, ctx)
+    raw isa Parte && return raw
+    raw isa AbstractDict ||
+        throw(UndecodableValue(Parte, raw, "esperava um objeto com as chaves de `parte`."))
+    rep = chave(Parte, raw, "representante"; opcional = true)
+    Parte(texto_de(Parte, raw, "nome", ctx),
+          simbolo_de(Parte, raw, "genero", (:m, :f)),
+          texto_de(Parte, raw, "documento", ctx),
+          texto_de(Parte, raw, "endereco", ctx);
+          empresa = (e = chave(Parte, raw, "empresa"; opcional = true);
+                     e === nothing ? false : kanon_decode(Bool, e, ctx)),
+          representante = rep === nothing ? nothing : pessoa_de(rep, ctx))
 end
 
 # --- o estilo de cláusula ----------------------------------------------------

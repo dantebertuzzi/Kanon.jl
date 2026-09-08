@@ -328,6 +328,11 @@ verbatim; a camada de saída (F8) decide se são quebras rígidas.
 O sujeito é também o argumento passado à camada de idioma nos pontos de flexão
 (seção 7).
 
+**[precisão da F10 — D-045]** As duas grafias são **o mesmo valor**: `{name}` dentro de
+`: b <- seller` e `{seller.name}` denotam a mesma coisa, e o que a regra do bloco afirma
+presente por uma vale pela outra. A regra é escrita pelo caminho do contrato — ela vive no
+plano das regras, onde não há sujeito —, e o texto, pela do sujeito.
+
 **[precisão da F10 — D-040]** São **dois ofícios**, e só o primeiro precisa de campos.
 Um sujeito de tipo sem campos — uma lista de `text`, um escalar de camada — é legítimo
 **quando o bloco tem alguma marca que o ambiente registra**: ele serve à flexão, e todo
@@ -673,6 +678,12 @@ validação (`K2043`).
 - `is present` sobre um campo que o contrato garante é **aviso** (`K2047`): a condição é
   uma tautologia e a regra que depende dela nunca remove nada. Aviso, e não erro, porque
   um modelo em edição passa legitimamente por esse estado.
+
+**[precisão da F10 — D-045]** Em execução, **ausência não satisfaz comparação**: se um dos
+lados falta, a comparação é falsa. Disso decorre que uma comparação **afirma a presença**
+dos dois lados, do mesmo modo que `is present`, e na mesma posição — afirmativa e sob
+`and`. Sob `not` ela é verdadeira *porque* o valor falta, e sob `or` o bloco existe sem
+ela; nesses dois a garantia não vale, e a exigência de grupo da §14 permanece.
 
 ### 8.2 Uma regra de cada espécie por bloco **[resposta à questão 15.2]**
 

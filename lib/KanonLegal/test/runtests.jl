@@ -1,5 +1,6 @@
 using Test
 using Dates
+using JSON3   # só a suíte: a doação lê os dados de um arquivo JSON
 using Kanon
 using Extenso
 using KanonLegal
@@ -14,3 +15,4 @@ include("test_tipos.jl")
 include("test_escritura.jl")
 include("test_locacao.jl")
 include("test_laudo.jl")
+include("test_doacao.jl")

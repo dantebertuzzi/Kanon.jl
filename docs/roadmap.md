@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.133 testes** ao todo — 1.471 no núcleo (~50 s com Aqua), 260 em `Extenso`,
-150 em `KanonLegal`, 98 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.177 testes** ao todo — 1.487 no núcleo (~50 s com Aqua), 260 em `Extenso`,
+178 em `KanonLegal`, 98 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -35,16 +35,17 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existem **seis** modelos reais no repositório, em `test/golden/exemplos/`:
+Existem **sete** modelos reais no repositório, em `test/golden/exemplos/`:
 `escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
 `certificado.kanon` (um por linha de planilha), `laudo.kanon` (dois domínios ao mesmo
-tempo) e `edital.kanon` (três níveis de numeração, e a primeira saída Typst). O portão
-para a 1.0 pede quinze.
+tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst) e
+`doacao.kanon` (comparações nas regras, e os dados vindos de um JSON). O portão para a 1.0
+pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos nove que faltam vai cobrar alguma coisa — como os seis primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os cinco últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **dez defeitos e uma
+dos oito que faltam vai cobrar alguma coisa — como os sete primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os seis últimos mediram
+isso: escritos com o motor pronto e a suíte verde, produziram **doze defeitos e uma
 questão aberta de versão**.
 
 | | O que apareceu | Modelo |
@@ -60,6 +61,8 @@ questão aberta de versão**.
 | **D-042** | tipo desconhecido despejava quinze nomes e não dizia que a causa provável é uma camada não carregada | laudo |
 | **D-043** | dentro de um bloco repetido, `{lotes}` rendia a **coleção inteira** em cada iteração, contra a §8.3 que a F0 escreveu; e o campo do elemento escrito pelo caminho iterado estourava um `FieldError` de Julia sobre `Array`, sem diagnóstico nenhum | edital |
 | **D-044** | o **rótulo** — a única parte do documento que o motor calcula — era a única que o formato de saída não protegia: em Markdown as cláusulas viravam quatro listas renumeradas pelo renderizador, com as remissões da prosa apontando para os números antigos | edital |
+| **D-045** | a garantia de presença que a regra do bloco dá era colhida na grafia do contrato e consultada na do sujeito — duas escritas do mesmo valor —, e comparação nenhuma a produzia; o autor era obrigado a escrever um grupo opcional para um caso que o plano das regras já tinha eliminado | doação |
+| **D-046** | **nenhum JSON alcançava documento jurídico nenhum**: as camadas não implementavam `kanon_decode`, e `pessoa` só existia se alguém a construísse em Julia | doação |
 
 **O padrão nos seis vale mais que os seis: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
@@ -165,7 +168,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios) e `edital` (três níveis, com a saída também em Typst), cada um com a saída exigida ao lado |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst) e `doacao` (regras com comparação, dados em JSON ao lado), cada um com a saída exigida |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída, o escape do valor interpolado e o do rótulo |
@@ -451,6 +454,16 @@ a escritura com `um para cada vendedor` sai com um bloco por vendedor.
 
 ---
 
+**[D-045, ao escrever o modelo real nº 7]** A garantia de presença que uma regra dá ao seu
+bloco (D-020) tinha dois furos, e o primeiro não é sobre regras: ela era colhida na grafia
+do contrato — `quando p.nascimento é presente` — e consultada na do sujeito —
+`{nascimento}` —, que são duas escritas do mesmo valor (§4.2). O segundo é que **comparação
+também afirma presença**: ausência não se compara, e o `return false` de `eval_comparison`
+prova a implicação. Sob `not` e sob `or` a garantia não vale, pela mesma razão que já valia
+para `is present`.
+
+---
+
 ## F6 — Domínios (concluída em 5 de setembro de 2026)
 
 `KanonLegal` e `KanonScience`, ambos escritos **só com a API pública**, e os dois
@@ -509,6 +522,14 @@ O link simbólico foi o caso que exigiu cuidado: um link **dentro** da raiz apon
 fora dela é a forma mais simples de escapar, e `normpath` sozinho não a vê. O carregador
 resolve `realpath` depois de confirmar que o arquivo existe, e compara por componente de
 caminho — nunca por prefixo de cadeia, que `"/raiz"` e `"/raizoutra"` enganariam.
+
+---
+
+**[D-046, ao escrever o modelo real nº 7]** A ingestão lia o arquivo e parava na porta do
+domínio: nenhuma camada implementava `kanon_decode`, e por isso **nenhum JSON alcançava um
+documento jurídico** — `pessoa` só existia se alguém a construísse em Julia. A suíte de
+ingestão testava os tipos do núcleo, que decodificam; a das camadas construía os valores em
+Julia, que é o que um teste de unidade faz; e a pergunta do meio não era de ninguém.
 
 ---
 
@@ -671,6 +692,7 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | O orçamento não é configurável pela CLI | `cli.jl` | um documento legítimo estourar o padrão |
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
+| **`measure` não decodifica de dados externos** — a D-046 fechou `pessoa`, `imovel` e `parte`, e `KanonScience` ficou de fora | `lib/KanonScience/` | um laudo alimentado por JSON ou planilha. É o mesmo trabalho da D-046, com um campo a mais: a incerteza. Ficou de fora porque o modelo nº 7 não o exigiu, e corrigir o que nenhum documento pediu é adivinhar |
 | **O motor cita a palavra-chave em inglês num modelo escrito em português** — o `K2034` do edital diz "o bloco `lote` se repete (`one for each`, linha 93)" apontando uma linha onde está escrito `um para cada`, e o `outline` imprime "quando amostra is present", que não é nenhuma das duas línguas | `analyze.jl`, `outline.jl` | **puxado pelo modelo nº 6.** É o mesmo mapa reverso da linha acima, agora com dois sítios que citam o que o autor não escreveu — a mesma forma da D-035 |
 | Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
 | A cobertura mede só o núcleo; as quatro camadas não sobem `lcov` | `CI.yml` | quando uma camada crescer a ponto de a leitura do número dela dizer algo. Hoje diria pouco: o sinal deste projeto está nas invariantes, não no percentual |
@@ -699,15 +721,16 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **6 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **7 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
-contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo e o
-edital, escritos com o motor já pronto e a suíte verde, cobraram mais dez (D-031 a D-035
-e D-040 a D-044) — **a taxa de descoberta não caiu quando o código ficou bom.**
+contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo, o
+edital e a doação, escritos com o motor já pronto e a suíte verde, cobraram mais doze
+(D-031 a D-035 e D-040 a D-046) — **a taxa de descoberta não caiu quando o código ficou
+bom.**
 
 ### O que a implementação já mudou na especificação
 
-Vinte e seis decisões saíram de escrever o código, e treze delas fecharam buracos que
+Vinte e oito decisões saíram de escrever o código, e quinze delas fecharam buracos que
 nenhuma releitura teria encontrado — o texto era internamente coerente em todos os casos:
 
 | | O que estava errado |
@@ -725,6 +748,8 @@ nenhuma releitura teria encontrado — o texto era internamente coerente em todo
 | **D-040** | a §4.2 e a §7.1 davam dois ofícios ao sujeito, e a checagem foi escrita para um só |
 | **D-041** | a §3.3 mandava a camada obter os separadores do contexto, e a API não dava função para aplicá-los |
 | **D-044** | a §6.4 dizia onde o rótulo aparece e a §11 dizia que o valor não altera a estrutura; nenhuma das duas percebeu que o **rótulo** alcança o começo da linha num formato de marcação |
+| **D-045** | a §4.2 diz que o sujeito e o contrato são duas resoluções do mesmo escopo, e a garantia da D-020 foi escrita como se fossem dois escopos diferentes |
+| **D-046** | a `api-extensao.md` listava `kanon_decode` entre oito funções sem dizer que, para um tipo composto, ela é a diferença entre existir e não existir |
 
 E uma na direção contrária, que é a primeira: a **D-043** não mudou a especificação —
 a §8.3 dizia desde a F0 que o caminho iterado denota o elemento corrente *"tanto no texto

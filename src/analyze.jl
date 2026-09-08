@@ -256,8 +256,9 @@ function resolve_in_subject(ctx::AnalysisCtx, p::Path)
 
     spec = schema[i]
     # A nulabilidade do próprio sujeito atravessa: um bloco preso a um campo opcional
-    # torna nulável tudo que se lê dentro dele.
-    nullable = subj.nullable || spec.optional
+    # torna nulável tudo que se lê dentro dele. O que a regra do bloco afirma presente
+    # não conta — aqui pela grafia do sujeito, que `subject_spellings!` acrescentou.
+    nullable = subj.nullable || (spec.optional && !guaranteed_prefix(ctx, p.segments, 1))
 
     length(p.segments) == 1 &&
         return ResolvedPath(:subject_field, spec.type, nullable, spec.card, subj.decl), nothing
@@ -943,6 +944,33 @@ function collect_present!(out::Vector{Vector{Symbol}}, e::Union{Nothing,RuleExpr
     elseif e isa BinExpr && e.op === :and
         collect_present!(out, e.lhs)
         collect_present!(out, e.rhs)
+    elseif e isa BinExpr && e.op in COMPARISON_OPS
+        # Ausência não se compara: `eval_comparison` devolve `false` quando um dos lados
+        # falta, e por isso o bloco condicionado a uma comparação só existe com os dois
+        # lados presentes. É a mesma garantia da D-020, pelo outro modo de perguntar
+        # (D-045) — e ela vale só aqui, na posição afirmativa: sob `not` a comparação é
+        # verdadeira **porque** o valor falta, e sob `or` o bloco existe sem ela.
+        e.lhs isa PathExpr && push!(out, e.lhs.path.segments)
+        e.rhs isa PathExpr && push!(out, e.rhs.path.segments)
+    end
+    out
+end
+
+"Os seis operadores de comparação da §8.1, tirados da tabela do parser para não haver duas listas."
+const COMPARISON_OPS = map(last, COMPARISONS)
+
+"""
+A mesma garantia, na grafia de dentro do bloco.
+
+A regra fala pelo caminho do contrato — `quando doador.nascimento é presente` — e o texto
+fala pela do sujeito — `{nascimento}`. São o mesmo valor escritos de dois modos, e a
+garantia era colhida num e consultada no outro: quem escrevesse a regra pelo contrato e o
+texto pelo sujeito, que é o que a §4.2 convida a fazer, ficava sem ela (D-045).
+"""
+function subject_spellings!(out::Vector{Vector{Symbol}}, subject::Vector{Symbol})
+    n = length(subject)
+    for g in copy(out)
+        length(g) > n && g[1:n] == subject && push!(out, g[(n + 1):end])
     end
     out
 end
@@ -954,6 +982,7 @@ function analyze_subject!(ctx::AnalysisCtx, b::Block, pos::Int)
     ctx.iterating = nothing
 
     ctx.guaranteed = present_paths(ctx, pos)
+    b.subject === nothing || subject_spellings!(ctx.guaranteed, b.subject.segments)
 
     k = isempty(ctx.out.block_foreach) ? Int32(0) : ctx.out.block_foreach[pos]
     k == 0 || (ctx.iterating = ctx.tmpl.rules.rules[k].foreach)

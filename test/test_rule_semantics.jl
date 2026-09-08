@@ -234,6 +234,60 @@ end
     end
 end
 
+@testset "D-045: a comparação também afirma a presença" begin
+    # `eval_comparison` devolve `false` quando um dos lados falta — ausência não se
+    # compara —, e por isso o bloco condicionado a uma comparação só existe com os dois
+    # lados presentes. Sem isto, o autor era obrigado a escrever um grupo opcional para
+    # um caso que o plano das regras já tinha eliminado.
+    corpo_n = "\n: b\n{notes}\n"
+
+    @testset "sem regra, o campo opcional exige grupo" begin
+        @test scodes("b when signed"; corpo = corpo_n) == ["K2012"]
+    end
+
+    @testset "os seis operadores contam, e `==` não é caso à parte" begin
+        for op in (">", ">=", "<", "<=", "==", "!=")
+            @test scodes("b when notes $op \"x\""; corpo = corpo_n) == []
+        end
+        # e a ordem dos operandos não importa, como na validação
+        @test scodes("b when \"x\" < notes"; corpo = corpo_n) == []
+    end
+
+    @testset "só na posição afirmativa: sob `not` e sob `or` a exigência fica" begin
+        # sob `not`, a comparação é verdadeira **porque** o valor falta
+        @test scodes("b when not (notes > \"x\")"; corpo = corpo_n) == ["K2012"]
+        @test scodes("b when signed or notes > \"x\""; corpo = corpo_n) == ["K2012"]
+        # numa conjunção, basta um termo afirmar
+        @test scodes("b when signed and notes > \"x\""; corpo = corpo_n) == []
+    end
+
+    @testset "a garantia é do campo comparado, e não de outro" begin
+        @test scodes("b when price > 0"; corpo = corpo_n) == ["K2012"]
+    end
+end
+
+@testset "D-045: a garantia vale nas duas grafias do mesmo valor" begin
+    # A regra fala pelo caminho do contrato e o texto pela grafia do sujeito (§4.2). São
+    # o mesmo valor, e a garantia era colhida num e consultada no outro.
+    corpo_s = "\n: b <- seller\n{spouse.name}\n"
+
+    @testset "sem regra, o campo opcional de dentro do composto exige grupo" begin
+        @test scodes("b when signed"; corpo = corpo_s) == ["K2012"]
+    end
+
+    @testset "com a regra, a grafia do sujeito também é dispensada" begin
+        @test scodes("b when seller.spouse is present"; corpo = corpo_s) == []
+        # e escrito por extenso no texto, que já valia antes
+        @test scodes("b when seller.spouse is present";
+                     corpo = "\n: b <- seller\n{seller.spouse.name}\n") == []
+    end
+
+    @testset "a garantia não se estende ao que a regra não afirmou" begin
+        @test scodes("b when seller.spouse is present";
+                     corpo = "\n: b <- buyer\n{spouse.name}\n") == ["K2012"]
+    end
+end
+
 # --- K2039: a §6.2 vista com as regras na mão --------------------------------
 #
 # `index_blocks!` verifica a sequência de níveis sobre o texto como está escrito. As
