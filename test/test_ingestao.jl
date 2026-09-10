@@ -51,8 +51,38 @@ text
         e = try; render_each(M_ING, ruim); catch err; err; end
         @test e isa KanonContractError
         d = first(collect(e.diagnostics))
-        @test occursin("linha 2 da tabela", d.message)
+        @test occursin("2º registro da tabela", d.message)
         @test d.code == "K3001"
+    end
+
+    @testset "coluna com ponto é o campo do composto (D-052)" begin
+        # Uma planilha é plana, e um tipo composto não cabe numa célula. Sem esta regra,
+        # nenhuma planilha alcançava tipo composto — e todo tipo de domínio é composto.
+        # O ponto é o mesmo separador que o modelo usa em `{preco.amount}`.
+        cols = (:nome, Symbol("preco.amount"), Symbol("preco.currency"), :nota)
+        plana = [NamedTuple{cols}(("Ana", "10.00", "BRL", missing)),
+                 NamedTuple{cols}(("Bo", "20.00", "BRL", "urgente"))]
+        @test first(rows(plana))["preco"] == Dict("amount" => "10.00", "currency" => "BRL")
+        @test render_each(M_ING, plana) ==
+              ["Ana paga BRL 10.00.", "Bo paga BRL 20.00, com a nota urgente."]
+        # célula vazia é chave ausente, e não um `missing` que o decodificador recusaria
+        @test !haskey(first(rows(plana)), "nota")
+    end
+
+    @testset "o grupo todo vazio é o campo ausente; pela metade, a chave que falta" begin
+        cols = (:nome, Symbol("preco.amount"), Symbol("preco.currency"))
+        vazio = [NamedTuple{cols}(("Ana", missing, missing))]
+        e = try; render_each(M_ING, vazio); catch err; err; end
+        @test only(collect(e.diagnostics)).code == "K3001"     # `preco` não veio
+
+        metade = [NamedTuple{cols}(("Ana", "10.00", missing))]
+        e = try; render_each(M_ING, metade); catch err; err; end
+        @test only(collect(e.diagnostics)).code == "K3010"     # veio, e sem moeda
+    end
+
+    @testset "a tabela plana passa intacta" begin
+        # sem coluna com ponto não há o que aninhar, e a linha segue sendo a da tabela
+        @test first(rows(tabela)) === first(tabela)
     end
 
     @testset "e não devolve metade dos documentos" begin

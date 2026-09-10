@@ -64,6 +64,11 @@ em Julia: nenhum JSON, planilha ou `DataFrame` o alcança. Um objeto aninhado ch
 `AbstractDict` de cadeias, e cabe ao tipo lê-lo — estritamente, com o decodificador do
 núcleo em cada campo, e nomeando a chave que falta.
 
+De uma planilha ele chega **na mesma forma** [D-052]: as colunas `carga.value`,
+`carga.uncertainty` e `carga.unit` são aninhadas pela extensão de tabelas no objeto
+`carga`, com a célula vazia fora dele. O tipo implementa `kanon_decode` uma vez, e serve
+ao JSON e ao CSV — não há decodificador por formato.
+
 E a recusa é parte do tipo, não formalidade: `measure` recusa um número solto **dizendo
 por quê** — um número sem incerteza não é uma medição, e aceitá-lo com incerteza zero
 imprimiria casas decimais que ninguém mediu [D-047].

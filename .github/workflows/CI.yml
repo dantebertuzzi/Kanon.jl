@@ -80,6 +80,7 @@ jobs:
             using Pkg
             Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso")])
             Pkg.add("JSON3")           # só a suíte: é o certificado que lê as medições de um JSON
+            Pkg.add(["CSV", "Tables"]) # só a suíte: é a verificação que lê uma planilha de verdade
             Pkg.instantiate()'
           julia --project=lib/KanonScience lib/KanonScience/test/runtests.jl
         shell: bash

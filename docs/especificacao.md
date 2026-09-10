@@ -288,6 +288,13 @@ diferença entre existir e não existir: sem ela, o tipo da camada só é alcan�
 escreve Julia, e nenhum arquivo de dados chega a documento nenhum. A camada que registra
 um tipo composto e não a implementa registrou um tipo que os dados não alcançam.
 
+**[precisão da F10 — D-052]** Numa entrada **tabular**, que é plana, a coluna cujo nome
+tem ponto é campo de composto: `carga.value` e `carga.uncertainty` compõem o objeto
+`carga`, que chega a `decodificar` na mesma forma que viria de um JSON. Célula vazia é
+chave ausente; um grupo de células todo vazio é o campo ausente; a coluna inteira junto
+com as partes dela é recusada. A convenção é da extensão de tabelas, e não do núcleo —
+quem conhece o formato é o adaptador dele.
+
 ### 3.5 Resolução de formatador
 
 `{price}` usa o formatador padrão de `money`. `{price:written}` procura `written` entre

@@ -1,0 +1,4 @@
+numero,cliente,instrumento,serie,capacidade,carga.value,carga.uncertainty,carga.unit,indicacao.value,indicacao.uncertainty,indicacao.unit,temperatura.value,temperatura.uncertainty,temperatura.unit,verificacao,observacao
+V-2026/0311,Frigorífico Vale do Pajeú Ltda.,balança rodoviária,BR-80-0147,80000,20000.0,1.2,kg,20003.5,5.0,kg,27.0,1.0,°C,2026-09-08,
+V-2026/0312,Mercado Central de Petrolina,balança de plataforma,BP-300-2210,300,100.0,0.005,kg,100.02,0.02,kg,,,,2026-09-08,
+V-2026/0313,Laboratório de Análise de Solos do Sertão,balança analítica,BA-0.2-0088,0.2,0.0100,0.0001,kg,0.0102,0.0002,kg,22.5,0.5,°C,2026-09-09,"o prato apresentava resíduo de amostra, removido antes da verificação"

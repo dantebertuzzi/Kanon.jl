@@ -1,0 +1,42 @@
+kanon 1 pt
+
+# Certificado de verificação de balança — **modelo real nº 9** do portão da 1.0, emitido
+# **um por linha de um arquivo CSV** exportado pelo sistema do laboratório.
+
+dados
+  numero      : texto   !
+  laboratorio : texto   = "Laboratório de Metrologia de Massa do Vale"
+  cliente     : texto   !
+  instrumento : texto   !
+  serie       : texto   !
+  capacidade  : numero  !
+  carga       : measure !
+  indicacao   : measure !
+  temperatura : measure
+  verificacao : data    !
+  observacao  : texto
+  emissao     : data    = hoje
+
+texto
+
+: titulo
+CERTIFICADO DE VERIFICAÇÃO Nº {numero}
+
+: corpo
+O {laboratorio} certifica que verificou em {verificacao:corrente}, a pedido de {cliente}, a {instrumento} de número de série {serie} e capacidade máxima de {capacidade} kg[, à temperatura ambiente de {temperatura}].
+
+:: ensaio
+Aplicada a carga de referência de {carga}, o instrumento indicou {indicacao}, com incerteza relativa de {indicacao:relative}.
+
+:: ressalva
+A incerteza da indicação excede um centésimo do valor indicado, e o instrumento não deve ser usado, nesta faixa, em pesagem sujeita a controle metrológico.
+
+:: observacao
+Registra-se a seguinte observação: {observacao}.
+
+: fecho
+Emitido em {emissao:corrente}.
+
+regras
+  ressalva    quando não (indicacao é precise)
+  observacao  quando observacao é presente

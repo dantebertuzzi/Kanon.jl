@@ -1760,3 +1760,85 @@ continua na tabela de dívidas.
 **O que veio junto.** O `não` de uma condição passou a mostrar os parênteses da árvore:
 `não (pontos é precise)`. Sem eles a frase se lê das duas maneiras, e o esqueleto existe
 para responder essa pergunta, não para devolvê-la.
+
+---
+
+## D-052 — Numa planilha, a coluna com ponto é o campo do composto
+
+*2026-09-10 · aceita · surgida ao escrever o modelo real nº 9*
+
+**A observação.** O certificado de verificação é emitido um por linha do CSV que o sistema
+do laboratório exporta, e cada balança tem duas medições — a carga aplicada e a indicação —,
+cada uma com valor, incerteza e unidade. `render_each` recusou todas as linhas:
+
+```
+K3001: linha 1 da tabela: `carga` é exigido pelo modelo (linha 13) e não foi informado.
+       Informe o valor, ou declare o campo opcional …
+```
+
+A planilha **trazia** `carga`, em três colunas. `input_field` lê só o nome declarado do
+campo, e uma célula não guarda um composto. Como todo tipo de domínio do projeto é
+composto — `pessoa`, `imovel`, `parte`, `measure` —, **`render_each`, que existe para
+planilhas, não alcançava camada de domínio nenhuma**. E a mensagem mandava o autor fazer a
+coisa errada: ele tinha o valor, e não tinha como escrevê-lo.
+
+**Por que passava.** O certificado nº 4 lê "planilha", mas é um `NamedTuple` montado em
+Julia, com listas dentro das células — coisa que nenhum CSV tem — e só tipos do núcleo. A
+suíte de ingestão testa tabelas de `text` e `money` já construídos. A pergunta "um CSV
+alcança um tipo de domínio?" não era de ninguém, pela mesma forma da D-046.
+
+**Decisão.** A extensão de tabelas aninha as colunas cujo nome tem ponto: `carga.value`,
+`carga.uncertainty` e `carga.unit` viram o objeto `carga`, que `kanon_decode` recebe na
+mesma forma em que o receberia de um JSON. O ponto é o separador que o modelo já usa em
+`{carga.value}`, e por isso quem escreve o cabeçalho da planilha não aprende convenção nova.
+
+- **Célula vazia é chave ausente**, pela razão da D-046: a origem dos dados não pode mudar
+  o significado do contrato.
+- **Um grupo com todas as células vazias é campo ausente.** É a única forma de uma linha
+  dizer que a medição opcional não foi feita, e sem ela todo campo opcional composto seria
+  obrigatório numa planilha.
+- **A coluna inteira e as partes dela, juntas, são recusadas** — `carga` e `carga.value`
+  diriam o valor duas vezes, e escolher uma é adivinhar.
+- **Tabela sem coluna com ponto passa intacta**, e segue sem conversão no caminho.
+
+**Alternativas descartadas.** Ler os nomes com ponto direto em `input_field`, no núcleo:
+serviria a qualquer entrada, e poria no núcleo uma convenção de **formato** — quem conhece
+o formato é a extensão, como a de JSON conhece o objeto aninhado. Uma sintaxe no plano de
+dados para mapear colunas (`carga : measure <- carga_valor, carga_incerteza`): mistura o
+contrato com o arranjo de um arquivo que o modelo não deveria conhecer, e é vocabulário
+novo para o que o ponto já diz.
+
+**O que veio junto.** O diagnóstico de um registro dizia `linha 1 da tabela` logo depois de
+`linha 13, coluna 3`, que é a do modelo — duas linhas de dois arquivos na mesma frase. E a
+linha 1 de um CSV aberto no editor é o **cabeçalho**. Agora diz `no 1º registro da tabela`.
+
+---
+
+## D-053 — A incerteza relativa tem os algarismos de uma incerteza
+
+*2026-09-10 · aceita · surgida ao escrever o modelo real nº 9*
+
+**A observação.** Conferindo à mão o certificado da balança rodoviária — carga de
+20.000 kg, indicação de 20.003,5 ± 5 kg —, a incerteza relativa esperada é 0,025 %. O
+certificado dizia **`0,0%`**: incerteza nula, que é o que a frase afirma de um instrumento
+cuja incerteza é de cinco quilos. A balança de plataforma, com 0,020 %, também saía `0,0%`.
+
+E o defeito já estava publicado. O certificado nº 8, dois dias antes, dizia do padrão de
+`100,00 ± 0,05 °C` que a incerteza relativa era `0,1%` — o **dobro** dos 0,05 % que ele
+tem. Passou porque o golden dele foi conferido na incerteza absoluta, que a D-034 já
+tinha acertado, e não na relativa.
+
+**Por que acontecia.** `relative` formatava com uma casa decimal fixa. É a D-034 do outro
+lado da mesma medição: a regra do PDG estava certa para a incerteza absoluta e nunca tinha
+sido aplicada à relativa, que também é uma incerteza.
+
+**Decisão.** A incerteza relativa segue a mesma regra — um algarismo significativo, dois
+quando o primeiro é 1 ou 2 —, pela mesma `decimals_for`. O relatório nº 3 passa de `0.2%`
+a `0.19%`, e o certificado nº 8 de `0,1%` a `0,05%` no padrão e a `0,15%` e `0,30%` em dois
+pontos. **Três goldens mudaram**, e a mudança é o conserto: eles fixavam algarismos que a
+medição não sustenta, ou a falta dos que ela sustenta.
+
+**A lição de método.** O golden do nº 9 foi escrito à mão antes de a saída ser lida, como o
+roadmap manda desde o nº 3. Os do nº 3 e do nº 8 também foram — mas a conta à mão da
+relativa foi feita com a mesma casa fixa que o motor usava. Conferir à mão protege contra o
+motor, e não contra a convenção errada que o autor do golden compartilha com ele.

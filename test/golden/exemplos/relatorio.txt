@@ -2,7 +2,7 @@
 
 Across 12 independent runs on the Zygo interferometer, the estimated effect was 4.237 ± 0.008 mm, against a baseline of 1.102 ± 0.015 mm, at 21.4 ± 0.3 °C.
 
-Theorem 1. The reported effect is 4.237 ± 0.008 mm, whose relative uncertainty is 0.2%. Its central value is 4.237, stated to the precision the uncertainty supports and not one digit beyond it.
+Theorem 1. The reported effect is 4.237 ± 0.008 mm, whose relative uncertainty is 0.19%. Its central value is 4.237, stated to the precision the uncertainty supports and not one digit beyond it.
 
 Theorem 1.1. The effect is resolved to better than one percent of its own value. The digits shown are the digits the measurement earned.
 

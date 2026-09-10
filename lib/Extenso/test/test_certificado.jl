@@ -108,6 +108,7 @@ const TURMA = (
         @test e isa KanonContractError
         d = collect(e.diagnostics)[1]
         @test d.code == "K3001"
-        @test occursin("linha 2", d.message) || occursin("linha 2", something(d.hint, ""))
+        # "registro", e não "linha": a linha 1 de um CSV é o cabeçalho (D-052)
+        @test occursin("2º registro da tabela", d.message)
     end
 end

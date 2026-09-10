@@ -1,0 +1,31 @@
+CERTIFICADO DE VERIFICAÇÃO Nº V-2026/0311
+
+O Laboratório de Metrologia de Massa do Vale certifica que verificou em 8 de setembro de 2026, a pedido de Frigorífico Vale do Pajeú Ltda., a balança rodoviária de número de série BR-80-0147 e capacidade máxima de 80.000 kg, à temperatura ambiente de 27,0 ± 1,0 °C.
+
+1. Aplicada a carga de referência de 20.000,0 ± 1,2 kg, o instrumento indicou 20.004 ± 5 kg, com incerteza relativa de 0,025%.
+
+Emitido em 10 de setembro de 2026.
+
+=====
+
+CERTIFICADO DE VERIFICAÇÃO Nº V-2026/0312
+
+O Laboratório de Metrologia de Massa do Vale certifica que verificou em 8 de setembro de 2026, a pedido de Mercado Central de Petrolina, a balança de plataforma de número de série BP-300-2210 e capacidade máxima de 300 kg.
+
+1. Aplicada a carga de referência de 100,000 ± 0,005 kg, o instrumento indicou 100,020 ± 0,020 kg, com incerteza relativa de 0,020%.
+
+Emitido em 10 de setembro de 2026.
+
+=====
+
+CERTIFICADO DE VERIFICAÇÃO Nº V-2026/0313
+
+O Laboratório de Metrologia de Massa do Vale certifica que verificou em 9 de setembro de 2026, a pedido de Laboratório de Análise de Solos do Sertão, a balança analítica de número de série BA-0.2-0088 e capacidade máxima de 0,2 kg, à temperatura ambiente de 22,5 ± 0,5 °C.
+
+1. Aplicada a carga de referência de 0,01000 ± 0,00010 kg, o instrumento indicou 0,01020 ± 0,00020 kg, com incerteza relativa de 2,0%.
+
+2. A incerteza da indicação excede um centésimo do valor indicado, e o instrumento não deve ser usado, nesta faixa, em pesagem sujeita a controle metrológico.
+
+3. Registra-se a seguinte observação: o prato apresentava resíduo de amostra, removido antes da verificação.
+
+Emitido em 10 de setembro de 2026.

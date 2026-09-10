@@ -94,7 +94,7 @@ const DADOS_MEDICAO = Dict{String,Any}(
         @test occursin("1.102 ± 0.015 mm", saida)     # com 1: dois significativos
         @test occursin("21.4 ± 0.3 °C", saida)        # com 3: um significativo
         @test !occursin("21.40", saida)
-        @test occursin("relative uncertainty is 0.2%", saida)
+        @test occursin("relative uncertainty is 0.19%", saida)   # D-053: PDG, e não uma casa fixa
         @test occursin("central value is 4.237,", saida)
     end
 
