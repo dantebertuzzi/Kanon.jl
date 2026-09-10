@@ -278,3 +278,60 @@ Começo {a}[, com {b}] e fim.
         @test render(m, Dict("a" => "A", "b" => "   ")) == "Começo A e fim."
     end
 end
+
+"""
+Um tipo cujo campo opcional é `String`, e que por isso guarda a ausência como **cadeia
+vazia**: a `struct` não tem `nothing` para pôr no lugar. É a forma da maioria dos tipos
+de camada — `measure` guarda assim a falta de unidade —, e é o que a D-049 fechou.
+"""
+struct Rotulo
+    nome::String
+    sufixo::String
+end
+
+Kanon.kanon_typename(::Type{Rotulo}) = :label
+Kanon.kanon_schema(::Type{Rotulo}) = (FieldSpec(:name, :text),
+                                      FieldSpec(:suffix, :text; optional = true))
+Kanon.kanon_getfield(v::Rotulo, ::Val{:name}) = v.nome
+Kanon.kanon_getfield(v::Rotulo, ::Val{:suffix}) = v.sufixo
+Kanon.format(v::Rotulo, ::Val{:default}, ctx) = v.nome
+
+module CamadaRotulo
+    using Kanon
+    using ..Main: Rotulo
+    configure!(b) = register_type!(b, Rotulo)
+end
+
+@testset "o branco de um campo de composto elide igual (D-049)" begin
+    m = load_string(Environment(domains = [CamadaRotulo]), """
+kanon 1
+
+data
+  r : label !
+
+text
+
+: p
+Assina {r}[, dito {r.suffix}], por si.
+"""; name = "t")
+
+    @testset "com o valor, o grupo fica" begin
+        @test render(m, Dict("r" => Rotulo("Ana", "Jr."))) == "Assina Ana, dito Jr., por si."
+    end
+
+    @testset "vazio, o grupo sai — e `check` concorda que o campo não veio" begin
+        # As duas portas do mesmo valor tinham regras diferentes: `check_composite!` lia
+        # o branco como ausente desde a F2 e seguia adiante, e o render o lia como
+        # presente e vazio. Saía `Assina Ana, dito , por si.` — o buraco que o grupo
+        # existe para fechar, aberto pela outra porta.
+        d = Dict("r" => Rotulo("Ana", ""))
+        @test isempty(check(m, d))
+        s = render(m, d)
+        @test s == "Assina Ana, por si."
+        @test !occursin(", ,", s) && !occursin("  ", s)
+    end
+
+    @testset "e o espaço em branco vale o mesmo que o vazio, um nível abaixo" begin
+        @test render(m, Dict("r" => Rotulo("Ana", "  "))) == "Assina Ana, por si."
+    end
+end

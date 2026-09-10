@@ -363,3 +363,63 @@ ncodes(regras) = [d.code for d in anl(niveis(regras)).diagnostics]
         @test render(m, Dict("flag" => false)) == "0.1. Do filho.\n\n1. De outro."
     end
 end
+
+# --- K2048: o nível de dentro de um bloco que se repete ----------------------
+#
+# A vizinha da K2039, e mais grave que ela: lá o pai pode sumir e o filho fica órfão de
+# um número que não existe; aqui o pai existe N vezes e o filho se pendura numa delas —
+# **sempre a última**, e sem diagnóstico nenhum até agora. A numeração é mecanicamente
+# correta e só o sentido é falso, que é a espécie de erro que nenhuma releitura pega.
+#
+# Descoberto ao escrever o certificado de calibração (modelo real nº 8), onde a ressalva
+# do primeiro ponto medido saía numerada `3.4.1`, pendurada no quarto (D-048).
+
+"""
+Um modelo de dois níveis com uma lista para repetir. Sem recuo no literal: o texto dos
+blocos entra interpolado, e um bloco recuado não é um bloco.
+"""
+repetidos(texto, regras) =
+    "kanon 1\n\ndata\n  itens : text[1..] !\n  flag  : boolean !\n\n" *
+    "text\n\n" * texto * "\n\nrules\n" * regras * "\n"
+
+const PAI_FILHO = ":: pai <- itens\nDo pai: {itens}.\n\n::: filho\nDo filho."
+
+rcodes(texto, regras) = [d.code for d in anl(repetidos(texto, regras)).diagnostics]
+
+@testset "bloco aninhado em bloco repetido (K2048)" begin
+    @testset "o pai que se repete não pode ter nível de dentro" begin
+        d = anl(repetidos(PAI_FILHO, "  pai one for each itens")).diagnostics
+        @test [x.code for x in d] == ["K2048"]
+        @test d[1].severity === :error          # não há leitura em que o número esteja certo
+        @test occursin("pai", d[1].message)     # nomeia o bloco que se repete
+        @test occursin("último número dele", d[1].message)
+        @test occursin("não emparelha repetições", something(d[1].hint, ""))
+    end
+
+    @testset "e nem quando o filho se repete pela mesma coleção" begin
+        # é a forma que o autor escreve querendo emparelhar as duas repetições, e é a
+        # que mente mais: N cópias do filho, todas no mesmo lugar
+        texto = replace(PAI_FILHO, "::: filho" => "::: filho <- itens")
+        d = anl(repetidos(texto,
+                "  pai one for each itens\n  filho one for each itens")).diagnostics
+        @test [x.code for x in d] == ["K2048"]
+        @test occursin("uma vez por elemento de `itens`", d[1].message)
+    end
+
+    @testset "o pai que só é condicional continua sendo aviso, e não erro" begin
+        # K2039: o pai pode sumir. É outra coisa, e a fronteira entre as duas importa.
+        sem_lista = replace(PAI_FILHO, ":: pai <- itens\nDo pai: {itens}." => ":: pai\nDo pai.")
+        @test rcodes(sem_lista, "  pai when flag") == ["K2039"]
+    end
+
+    @testset "irmãos que se repetem não têm problema nenhum" begin
+        texto = replace(PAI_FILHO, "::: filho" => ":: irmao <- itens")
+        @test rcodes(texto, "  pai one for each itens\n  irmao one for each itens") == []
+    end
+
+    @testset "o nível de dentro de outro pai, depois do repetido, é limpo" begin
+        texto = replace(PAI_FILHO, "\n\n::: filho\nDo filho." => "") *
+                "\n\n:: outro\nDe outro.\n\n::: neto\nDo neto."
+        @test rcodes(texto, "  pai one for each itens") == []
+    end
+end

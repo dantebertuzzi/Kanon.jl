@@ -144,7 +144,8 @@ function descend(ctx::AnalysisCtx, segs::Vector{Symbol}, from::Int,
         if islist(card)
             return nothing, Failure("K2008",
                 "`$owner` é uma lista, e a versão 1 não tem como escolher um item dela.",
-                "Repita o bloco com `one for each $owner` e escreva `{$seg}` dentro dele.",
+                "Repita o bloco com `$(written_foreach(ctx.env.keywords)) $owner` e escreva " *
+                "`{$seg}` dentro dele.",
                 i - 1)
         end
 
@@ -703,6 +704,7 @@ function check_level_rules!(ctx::AnalysisCtx)
 
         if n > 1 && length(abertos) >= n - 1
             pai = abertos[n - 1]
+            check_nested_foreach!(ctx, b, pos, pai, n)
             regra_pai = ctx.out.block_rule[pai]
             regra_filho = ctx.out.block_rule[pos]
             if regra_pai != 0 && !same_condition(ctx, regra_pai, regra_filho)
@@ -721,6 +723,45 @@ function check_level_rules!(ctx::AnalysisCtx)
         resize!(abertos, n)
         abertos[n] = pos
     end
+    return nothing
+end
+
+"""
+Um bloco aninhado em bloco **repetido** não pertence a nenhuma cópia determinada dele.
+
+A versão 1 não emparelha repetições. Cada bloco se expande no seu lugar, na ordem do
+arquivo (§8.4), e duas repetições sobre a mesma coleção são duas varreduras
+independentes: o bloco de nível *n* sai `N` vezes, e o de nível *n*+1 que o segue sai sob
+o **último** número que o pai consumiu.
+
+Num certificado de calibração com quatro pontos medidos, a ressalva do primeiro ponto
+saía numerada `3.4.1` — pendurada no quarto —, e o documento afirmava do ponto de melhor
+incerteza o que era verdade do de pior. **Sem diagnóstico nenhum**: a numeração é
+mecanicamente correta, e só o sentido é falso (D-048).
+
+Erro, e não aviso: não há leitura em que o número esteja certo. E a mensagem diz o que
+fazer, porque há duas saídas — escrever o filho como irmão do pai, nomeando o elemento no
+próprio texto, ou trazer o texto para dentro do bloco repetido.
+"""
+function check_nested_foreach!(ctx::AnalysisCtx, b::Block, pos::Int, pai::Int, n::Int)
+    isempty(ctx.out.block_foreach) && return nothing
+    k = ctx.out.block_foreach[pai]
+    k == 0 && return nothing
+
+    bloco_pai = ctx.tmpl.text.blocks[pai]
+    rep = ctx.tmpl.rules.rules[k]
+    kw = written_foreach(ctx.env.keywords)
+    proprio = ctx.out.block_foreach[pos]
+    err!(ctx, "K2048", b.span,
+         "o bloco `$(bloco_pai.name)`, que abre o nível $(n - 1) deste, se repete " *
+         "(`$kw`, linha $(rep.span.line)), e este bloco de nível $n sairia sob o " *
+         "último número dele" *
+         (proprio == 0 ? "." :
+          ", uma vez por elemento de `$(string(ctx.tmpl.rules.rules[proprio].foreach))` " *
+          "e todas no mesmo lugar.");
+         hint = "A versão 1 não emparelha repetições. Escreva este bloco no nível " *
+                "$(n - 1), repetido pela mesma coleção e nomeando o elemento no texto, " *
+                "ou traga o texto para dentro de `$(bloco_pai.name)`.")
     return nothing
 end
 
@@ -836,7 +877,8 @@ function check_blockref!(ctx::AnalysisCtx, n::BlockRef)
     if !isempty(ctx.out.block_foreach) && ctx.out.block_foreach[pos] != 0
         regra = ctx.tmpl.rules.rules[ctx.out.block_foreach[pos]]
         err!(ctx, "K2034", n.span,
-             "o bloco `$(n.target)` se repete (`one for each`, linha $(regra.span.line)), " *
+             "o bloco `$(n.target)` se repete " *
+             "(`$(written_foreach(ctx.env.keywords))`, linha $(regra.span.line)), " *
              "e não há como nomear uma das cópias.";
              hint = "Remeta a um bloco que ocorre uma vez só.")
         return nothing
@@ -1230,7 +1272,7 @@ function check_foreach!(ctx::AnalysisCtx, r::Rule, pos::Int)
     if !islist(rp.card)
         err!(ctx, "K2045", r.span,
              "`$(string(r.foreach))` é um valor único, do tipo `$(rp.typename)`, e " *
-             "`one for each` repete sobre uma coleção.";
+             "`$(written_foreach(ctx.env.keywords))` repete sobre uma coleção.";
              hint = "Declare o campo com cardinalidade — `$(string(r.foreach)) : " *
                     "$(rp.typename)[]` — ou remova a regra.",
              path = string(r.foreach))

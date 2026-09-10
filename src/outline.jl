@@ -83,7 +83,7 @@ function outline(m::Model)
         push!(out, BlockOutline(
             b.name, b.span.line, length(numero), numero, rotulo,
             b.subject === nothing ? nothing : string(b.subject),
-            regra === nothing ? nothing : rule_text(regra.when),
+            regra === nothing ? nothing : rule_text(m.env.keywords, regra.when),
             rep === nothing ? nothing : string(rep.foreach),
             regra === nothing ? (rep === nothing ? Int32(0) : rep.span.line) : regra.span.line,
             field_uses(m, b), length(b.children)))
@@ -115,24 +115,42 @@ function collect_uses!(out, m::Model, nodes)
 end
 
 """
-O texto de uma condição, reconstruído da árvore.
+O texto de uma condição, reconstruído da árvore, **na língua do arquivo**.
 
 Reconstruído, e não copiado do arquivo: o editor precisa mostrar a condição **como o
 motor a entendeu**, com a precedência explícita. `a and b or c` aparece como
 `(a and b) or c`, que é o que ele vai fazer — e é a pergunta que o leitor não deveria
 ter de fazer.
+
+Na língua do arquivo porque a condição é **citação do modelo**, e não prosa da
+ferramenta: num modelo `pt` ela sai `não (pontos é precise)`, e não `not pontos is
+precise`, que o autor não escreveu e não pode procurar (D-051). O que emoldura a citação
+— `sempre`, `pode faltar` — continua em português, que é a língua dos diagnósticos
+(D-027).
 """
-function rule_text(e::Union{Nothing,RuleExpr})
+function rule_text(kt::KeywordTable, e::Union{Nothing,RuleExpr})
     e === nothing && return nothing
     e isa PathExpr && return string(e.path)
-    e isa LitExpr && return literal_text(e.lit)
-    e isa NotExpr && return "not " * parenthesize(e.operand)
+    e isa LitExpr && return literal_text(kt, e.lit)
+    # `não` prende a expressão inteira, e mostrá-la sem parênteses devolve ao leitor a
+    # pergunta que este texto existe para responder: `não pontos é precise` pode ser lido
+    # das duas maneiras, e `não (pontos é precise)` só de uma.
+    e isa NotExpr && return written(kt, :not) * " " *
+        (e.operand isa PathExpr ? rule_text(kt, e.operand) :
+         "(" * rule_text(kt, e.operand) * ")")
     if e isa AttrExpr
-        return string(e.subject) * " is " * (e.negated ? "not " : "") * String(e.attr)
+        # `present` e `absent` são palavras-chave da linguagem, e saem na língua do
+        # arquivo; o nome de um atributo de tipo é do domínio que o registrou, e sai como
+        # está — um domínio nacional traz o vocabulário dele (§9).
+        attr = e.attr === :present || e.attr === :absent ?
+               written(kt, e.attr) : String(e.attr)
+        return string(e.subject) * " " * written(kt, :is) * " " *
+               (e.negated ? written(kt, :not) * " " : "") * attr
     end
     if e isa BinExpr
-        op = get(RULE_OPS, e.op, String(e.op))
-        return parenthesize(e.lhs) * " " * op * " " * parenthesize(e.rhs)
+        op = e.op === :and ? written(kt, :and) :
+             e.op === :or ? written(kt, :or) : get(RULE_OPS, e.op, String(e.op))
+        return parenthesize(kt, e.lhs) * " " * op * " " * parenthesize(kt, e.rhs)
     end
     return "?"
 end
@@ -141,14 +159,15 @@ const RULE_OPS = Dict(:and => "and", :or => "or", :eq => "==", :ne => "!=",
                       :lt => "<", :le => "<=", :gt => ">", :ge => ">=")
 
 "Parênteses só onde a precedência os exige — mostrar `((a))` seria ruído."
-parenthesize(e::RuleExpr) =
-    e isa BinExpr && (e.op === :and || e.op === :or) ? "(" * rule_text(e) * ")" :
-    rule_text(e)
+parenthesize(kt::KeywordTable, e::RuleExpr) =
+    e isa BinExpr && (e.op === :and || e.op === :or) ? "(" * rule_text(kt, e) * ")" :
+    rule_text(kt, e)
 
-function literal_text(l::Literal)
+function literal_text(kt::KeywordTable, l::Literal)
     l.kind === :text && return "\"" * l.value * "\""
-    l.kind === :constant && return String(l.value)
-    l.kind === :null && return "null"
+    l.kind === :constant && return written(kt, Symbol(l.value))
+    l.kind === :null && return written(kt, :null)
+    l.kind === :boolean && return written(kt, Symbol(l.value))
     string(l.value)
 end
 
@@ -169,17 +188,21 @@ function format_outline(io::IO, m::Model)
         return nothing
     end
 
+    kt = m.env.keywords
     largura = maximum(length(rotulo_bloco(b)) for b in blocos)
     for b in blocos
         print(io, rpad(rotulo_bloco(b), largura + 2))
         marca = repeated(b) ? "* " : (conditional(b) ? "? " : "  ")
         print(io, marca)
-        cond = condicao_texto(b)
+        cond = condicao_texto(kt, b)
         println(io, cond === nothing ? "sempre" : cond)
 
         for f in b.fields
             aviso = (f.nullable && !f.guarded) ? "  <- pode faltar, e não está em grupo" : ""
-            println(io, " " ^ (largura + 4), "{", f.path, "} : ", f.typename,
+            # O tipo de um campo de composto vem do esquema da camada, em nome canônico:
+            # `text` num modelo `pt` é `texto`, e é assim que o autor o escreveria.
+            tipo = written_typename(m.env, canonical_typename(m.env, f.typename))
+            println(io, " " ^ (largura + 4), "{", f.path, "} : ", tipo,
                     f.nullable ? " opcional" : "", aviso)
         end
     end
@@ -194,10 +217,10 @@ function rotulo_bloco(b::BlockOutline)
     string(prefixo, b.name, sujeito, "  (linha ", b.line, ")")
 end
 
-function condicao_texto(b::BlockOutline)
+function condicao_texto(kt::KeywordTable, b::BlockOutline)
     partes = String[]
-    b.foreach === nothing || push!(partes, "um por " * b.foreach)
-    b.rule === nothing || push!(partes, "quando " * b.rule)
+    b.foreach === nothing || push!(partes, written_foreach(kt) * " " * b.foreach)
+    b.rule === nothing || push!(partes, written(kt, :when) * " " * b.rule)
     isempty(partes) ? nothing : join(partes, ", ")
 end
 

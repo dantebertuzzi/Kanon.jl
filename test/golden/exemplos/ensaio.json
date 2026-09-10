@@ -1,0 +1,20 @@
+{
+  "laboratorio": "Laboratório de Metrologia Térmica do Vale",
+  "acreditacao": "CAL 0472",
+  "cliente": "Usina Termelétrica do Salitre S.A.",
+  "instrumento": "termômetro digital com termopar tipo K",
+  "fabricante": "Fluke",
+  "serie": "AH-2291-K",
+  "norma": "ABNT NBR ISO/IEC 17025:2017",
+  "padrao": { "value": 100.0, "uncertainty": 0.05, "unit": "°C" },
+  "temperatura": { "value": 23.0, "uncertainty": 1.0, "unit": "°C" },
+  "umidade": { "value": 47.0, "uncertainty": 5.0, "unit": "%" },
+  "pontos": [
+    { "value": 20.1, "uncertainty": 0.3, "unit": "°C" },
+    { "value": 100.2, "uncertainty": 0.4, "unit": "°C" },
+    { "value": 200.5, "uncertainty": 0.6, "unit": "°C" },
+    { "value": 1000.4, "uncertainty": 1.5, "unit": "°C" }
+  ],
+  "ciclos": 5,
+  "observacao": "o instrumento foi recebido com a bainha do termopar deformada, e a deformação não foi corrigida antes da calibração"
+}

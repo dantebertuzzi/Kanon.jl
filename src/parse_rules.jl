@@ -172,7 +172,8 @@ function parse_rule!(ctx::ParseCtx, s::AbstractString, lineno::Integer)
     block = read_ident!(c)
     if block === nothing
         err!(ctx, "K1301", start, "esperava o nome de um bloco no início da regra.";
-             hint = "Uma regra tem a forma `bloco when <condição>` ou `bloco one for each <lista>`.")
+             hint = "Uma regra tem a forma `bloco $(written(ctx.kw, :when)) <condição>` " *
+                    "ou `bloco $(written_foreach(ctx.kw)) <lista>`.")
         return nothing
     end
 
@@ -180,7 +181,8 @@ function parse_rule!(ctx::ParseCtx, s::AbstractString, lineno::Integer)
     kwpos = here(c, ctx.fileidx)
     word = read_ident!(c)
     if word === nothing
-        err!(ctx, "K1301", kwpos, "esperava `when` ou `one for each` depois de `$block`.";
+        err!(ctx, "K1301", kwpos, "esperava `$(written(ctx.kw, :when))` ou " *
+             "`$(written_foreach(ctx.kw))` depois de `$block`.";
              hint = "Bloco sem regra é sempre incluído; não escreva o nome sozinho.")
         return nothing
     end
@@ -203,14 +205,14 @@ function parse_rule!(ctx::ParseCtx, s::AbstractString, lineno::Integer)
     elseif canon === :one
         if !take_keyword!(ctx, c, :for) || !take_keyword!(ctx, c, :each)
             err!(ctx, "K1301", kwpos, "depois de `one` vem `for each`.";
-                 hint = "A forma completa é `bloco one for each lista`.")
+                 hint = "A forma completa é `bloco $(written_foreach(ctx.kw)) lista`.")
             return nothing
         end
         skip_blanks!(c)
         p = read_path!(ctx, c)
         if p === nothing
             err!(ctx, "K1301", here(c, ctx.fileidx),
-                 "esperava o caminho da lista depois de `one for each`.")
+                 "esperava o caminho da lista depois de `$(written_foreach(ctx.kw))`.")
             return nothing
         end
         skip_blanks!(c)
@@ -224,7 +226,8 @@ function parse_rule!(ctx::ParseCtx, s::AbstractString, lineno::Integer)
     end
 
     err!(ctx, "K1301", kwpos, "`$word` não abre uma regra.";
-         hint = "As duas espécies de regra são `when <condição>` e `one for each <lista>`.")
+         hint = "As duas espécies de regra são `$(written(ctx.kw, :when)) <condição>` " *
+                "e `$(written_foreach(ctx.kw)) <lista>`.")
     return nothing
 end
 

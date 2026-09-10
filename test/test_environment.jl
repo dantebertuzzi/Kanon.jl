@@ -157,6 +157,28 @@ end
         @test Kanon.keyword(kt, "absent") === :absent
     end
 
+    @testset "e a tabela sabe voltar: a forma que este arquivo escreve (D-051)" begin
+        # O motor não pode citar o que o autor não escreveu. `written` é o inverso de
+        # `keyword`, e mora na tabela porque `parse` também precisa dela e não consulta o
+        # ambiente (invariante 8).
+        kt = Environment(locale = :xx).keywords
+        @test Kanon.written(kt, :when) == "quando"
+        @test Kanon.written(kt, :present) == "presente"
+        # o que a camada não traduziu volta na forma canônica, e não em branco
+        @test Kanon.written(kt, :absent) == "absent"
+        @test Kanon.written_foreach(kt) == "one for each"
+
+        # e no inglês canônico ela é a identidade
+        en = canonical_keywords()
+        @test Kanon.written(en, :when) == "when"
+        @test Kanon.written_foreach(en) == "one for each"
+
+        # duas formas para a mesma palavra: vale a menor, e a escolha é determinística
+        # porque chega a mensagem de erro (I4)
+        dupla = Kanon.KeywordTable(:zz, Dict("se" => :when, "quando" => :when))
+        @test Kanon.written(dupla, :when) == "se"
+    end
+
     @testset "apelido para algo que não é palavra-chave é erro" begin
         b = EnvironmentBuilder(:xx)
         b.domain = :Teste

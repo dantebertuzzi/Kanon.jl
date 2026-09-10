@@ -1,0 +1,82 @@
+kanon 1 pt
+
+# Certificado de calibração — **modelo real nº 8** do portão da 1.0.
+#
+# Escolhido pela via que os dados percorrem na prática. A D-046 abriu o JSON para o
+# domínio jurídico e parou ali: `KanonScience` ficou sem `kanon_decode`, e por isso a
+# camada científica — a única cujo tipo é um **número medido** — era a única que não
+# podia ser alimentada por um arquivo. Um laboratório não digita medição em Julia: ele
+# exporta o que o instrumento registrou.
+#
+# Quatro coisas só aparecem aqui:
+#
+#   1. **`measure` vindo de um arquivo JSON**, sozinho e dentro de lista.
+#   2. **A camada científica num modelo em português.** Os separadores são do idioma e o
+#      tipo é da camada, e é neste documento que os dois se encontram vindos de fora:
+#      `1000.4` no arquivo é `1.000,4` no certificado, com a incerteza na mesma casa.
+#   3. **Um campo opcional de um tipo de camada dentro de um grupo**: `{padrao.unit}`
+#      elide quando a medição não traz unidade — e `measure` guarda a ausência de
+#      unidade como cadeia vazia, que é o que o `struct` tem para pôr no lugar.
+#   4. **A incerteza relativa decide o texto** — o ponto cuja incerteza excede um
+#      centésimo do valor indicado recebe a ressalva, e os outros não.
+#
+# A ressalva **nomeia a medição de que fala**, e não diz "neste ponto": ela é irmã do
+# bloco repetido, não filha dele, e sai depois de todos. Escrevê-la como filha era a
+# forma óbvia, e produzia um documento falso sem um único diagnóstico — a ressalva do
+# primeiro ponto numerada `3.4.1`, pendurada no quarto. A versão 1 não emparelha
+# repetições, e agora recusa a construção que fingia emparelhá-las (D-048, `K2048`).
+#
+# A armadilha deste documento é a mesma de toda medição: o número de casas não é escolha
+# de quem escreve o modelo, é consequência da incerteza. `20.1 ± 0.3` sai com uma casa e
+# `100.00 ± 0.05` com duas, do mesmo campo e no mesmo parágrafo.
+
+dados
+  laboratorio : texto        !
+  acreditacao : texto
+  cliente     : texto        !
+  instrumento : texto        !
+  fabricante  : texto        !
+  serie       : texto        !
+  norma       : texto        !
+  padrao      : measure      !
+  temperatura : measure      !
+  umidade     : measure
+  pontos      : measure[1..] !
+  ciclos      : numero       !
+  observacao  : texto
+  emissao     : data         = hoje
+
+texto
+
+: cabecalho
+O {laboratorio}[, acreditado sob o nº {acreditacao},] certifica que o instrumento adiante identificado foi calibrado em suas dependências, conforme a {norma}, e emite o presente certificado em {emissao:corrente}.
+
+:: identificacao
+O instrumento calibrado, apresentado a este laboratório por {cliente}, é o {instrumento} fabricado por {fabricante}, número de série {serie}.
+
+:: condicoes
+A calibração compreendeu {ciclos} ciclos de medição em cada ponto, à temperatura ambiente de {temperatura}[ e umidade relativa de {umidade}].
+
+::: padrao
+As indicações do instrumento foram comparadas com as do padrão de referência, de {padrao}, cuja incerteza relativa é de {padrao:relative}.
+
+:: resultados
+Mediram-se os pontos adiante relacionados[, todos expressos em {padrao.unit}], e a incerteza de cada um é a incerteza expandida da média dos ciclos.
+
+::: ponto <- pontos
+Indicação média de {pontos}, com incerteza relativa de {pontos:relative}.
+
+::: ponto_impreciso <- pontos
+A indicação de {pontos} tem incerteza superior a um centésimo do valor indicado, e não sustenta ajuste do instrumento por comparação.
+
+:: observacao
+Registra-se a seguinte observação: {observacao}.
+
+: fecho
+Os resultados do item {::resultados} referem-se exclusivamente ao instrumento identificado no item {::identificacao}, no estado em que foi recebido.
+
+regras
+  ponto            um para cada pontos
+  ponto_impreciso  um para cada pontos
+  ponto_impreciso  quando não (pontos é precise)
+  observacao       quando observacao é presente

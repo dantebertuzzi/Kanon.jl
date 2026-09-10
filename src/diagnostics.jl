@@ -125,6 +125,7 @@ const CODE_TITLES = Dict{String,String}(
     "K2045" => "one for each sobre um valor único",
     "K2046" => "o cabeçalho do bloco não declara o sujeito repetido",
     "K2047" => "condição sempre verdadeira ou sempre falsa",
+    "K2048" => "bloco aninhado em bloco repetido",
     # --- referência: inclusão ---
     "K2050" => "arquivo de inclusão fora da raiz",
     "K2051" => "inclusão cíclica",

@@ -189,14 +189,24 @@ function card_ok(c::Cardinality, n::Integer)
     return true
 end
 
-"Decodifica um valor pelo tipo declarado, virando o erro do protocolo em diagnóstico."
-function decode_value(ctx::CheckCtx, T::Type, raw, f::FieldDecl, path::AbstractString)
+"""
+Decodifica um valor pelo tipo declarado, virando o erro do protocolo em diagnóstico.
+
+`index` é a posição na coleção, quando é um elemento. Sem ela, um JSON com quatro
+medições e uma chave faltando numa delas produzia quatro vezes a mesma frase — ou uma
+frase que dizia `pontos` e não dizia **qual** ponto —, e o autor tinha de descobrir
+sozinho onde olhar. A linha citada é a do modelo, e não a do arquivo de dados: é o
+contrato que está sendo violado, e é ele que tem posição (D-050).
+"""
+function decode_value(ctx::CheckCtx, T::Type, raw, f::FieldDecl, path::AbstractString;
+                      index::Union{Nothing,Int} = nothing)
     try
         return kanon_decode(T, raw, ctx.fctx), true
     catch e
         e isa KanonProtocolError || rethrow()
+        sujeito = index === nothing ? "`$(f.name)`" : "o $(index)º valor de `$(f.name)`"
         cerr!(ctx, "K3010", f.span,
-              "`$(f.name)` é do tipo `$(f.type)`, e " * decode_reason(e);
+              "$sujeito é do tipo `$(f.type)`, e " * decode_reason(e);
               hint = "Não há conversão implícita: o valor entra como o tipo declarado, " *
                      "ou não entra (§3.4).",
               path)
@@ -295,7 +305,7 @@ function decode_list!(ctx::CheckCtx, f::FieldDecl, T::Type, raw, path::AbstractS
                   path = p)
             continue
         end
-        v, ok = decode_value(ctx, T, x, f, p)
+        v, ok = decode_value(ctx, T, x, f, p; index = i)
         ok || continue
         validate_value!(ctx, v, f, p)
         check_composite!(ctx, v, f.type, f.span, p, 1)

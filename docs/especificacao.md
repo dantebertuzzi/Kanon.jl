@@ -168,6 +168,7 @@ Existe **um** conceito de ausência. Na entrada:
 | `nothing` / `missing` em Julia | nulo |
 | `""` ou só espaços em campo `text` **obrigatório** | **erro de contrato** |
 | `""` ou só espaços em campo `text` **opcional** | normalizado para nulo, com aviso listado por `check` |
+| `""` ou só espaços em campo **opcional de um tipo composto** | normalizado para nulo, **sem** aviso (D-049) |
 | `[]` em campo de lista | lista vazia (não é nulo) |
 | chave nos dados que o contrato não declara | **aviso**, e o campo é ignorado (D-022) |
 
@@ -178,6 +179,12 @@ silenciosa voltaria: `[, sob o regime da {regime}]` com `regime = ""` renderiza
 `", sob o regime da "` e nenhum princípio teria sido violado formalmente. Tratar branco
 como ausência fecha o buraco; tratá-lo como erro quando o campo é obrigatório o fecha
 alto. O aviso no caso opcional existe para que a normalização nunca seja silenciosa.
+
+**[precisão da F10 — D-049]** A regra vale em **qualquer profundidade**, e nas duas
+portas: um campo opcional de tipo composto que vem em branco é ausente tanto para `check`
+quanto para o render, e o grupo que o protege elide. Um nível abaixo não há aviso, porque
+`""` é a representação normal da ausência num `struct` — um `String` não tem `nothing` a
+pôr no lugar —, e avisar seria ruído em todo documento correto.
 
 ### 2.4 Checklist derivado
 
@@ -275,6 +282,11 @@ Não há coerção implícita entre tipos, em lugar nenhum. A conversão da entr
 (JSON, DataFrame, planilha) para o tipo declarado é feita por `decodificar`, é
 explícita, e falha alto. Valor já do tipo correto atravessa a fronteira intacto — um
 `Measure` construído em Julia entra no documento como `Measure`, nunca como string.
+
+**[precisão da F10 — D-046, D-047]** Para um tipo **composto**, `decodificar` é a
+diferença entre existir e não existir: sem ela, o tipo da camada só é alcançável por quem
+escreve Julia, e nenhum arquivo de dados chega a documento nenhum. A camada que registra
+um tipo composto e não a implementa registrou um tipo que os dados não alcançam.
 
 ### 3.5 Resolução de formatador
 
@@ -559,6 +571,17 @@ não existe. É **aviso** (`K2039`), pela mesma razão do `K2035`: as duas condi
 coincidir de propósito. O reconhecimento é conservador — só a igualdade estrutural das
 duas condições dispensa o aviso.
 
+**[acrescentado na F10 — D-048]** Um bloco de nível *n* cujo nível *n*−1 é aberto por um
+bloco **repetido** é **erro** (`K2048`), repita ele próprio ou não. A versão 1 não
+emparelha repetições: cada bloco se expande no seu lugar (§8.4), e o nível de baixo
+pertence sempre ao **último** número que o de cima consumiu. O bloco filho sairia
+pendurado na última cópia do pai, falando do elemento errado — mecanicamente numerado e
+falso no sentido, que é o que nenhuma releitura pega. Erro, e não aviso, porque não há
+leitura em que aquele número esteja certo.
+
+As duas formas que exprimem a intenção: o bloco como **irmão** do repetido, nomeando o
+elemento no próprio texto, ou o texto dentro do bloco repetido.
+
 Formato do número e da remissão vêm das camadas (`register_block_style!`). O núcleo,
 sozinho, numera `1`, `2`, `3.1` e remete como `3.1`.
 
@@ -757,6 +780,14 @@ modelo em inglês.
 inglês se omitido; qualquer palavra-chave fora desse conjunto é erro de sintaxe com a
 sugestão do termo correto. Marcadores de bloco registrados (`§§`) e o operador `<-` são
 símbolos, não palavras-chave, e não participam da restrição.
+
+**[precisão da F10 — D-051]** A tradução vale nos dois sentidos: **o motor cita a palavra
+que o autor escreveu**. Um diagnóstico, uma dica ou o esqueleto de um modelo `pt` dizem
+`um para cada` e `é presente`, e nunca a forma canônica correspondente. A regra que
+separa as duas línguas: o que é **citação do modelo** sai na língua do modelo; o que é
+**prosa da ferramenta** — a moldura da mensagem, o título do diagnóstico — sai em
+português (D-027). O nome de um **atributo de tipo** não é palavra-chave, e sai como o
+domínio o registrou.
 
 ---
 

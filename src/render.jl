@@ -109,10 +109,23 @@ function placeholder(ctx::RenderCtx, rp::ResolvedPath, n::Interp)
     (ctx.preview && !rp.nullable) ? PreviewMarker(string(n.path)) : nothing
 end
 
+"""
+Desce pelos campos de um composto. **Em branco vale como ausente**, um nível abaixo pelo
+mesmo motivo que no primeiro (D-008): quem não veio não pode abrir buraco no texto.
+
+Não é preciosismo de espaço em branco — é o que faz `check` e `render` concordarem. O
+esquema de um tipo de camada declara um campo opcional, e o `struct` que o guarda muitas
+vezes não tem `nothing` para pôr no lugar: `measure` guarda a ausência de unidade como
+`""`, porque `unit` é `String`. `check_composite!` já lia isso como ausente desde a F2 e
+seguia adiante; aqui o grupo `[, na unidade {unit}]` não elidia, e o certificado saía com
+`na unidade ,` — o buraco que o grupo existe para fechar, aberto pela outra porta
+(D-049).
+"""
 function descend_value(v, segs::Vector{Symbol}, from::Int)
     for i in from:length(segs)
         v === nothing && return nothing
         v = kanon_getfield(v, Val(segs[i]))
+        isblank(v) && return nothing
     end
     return v
 end

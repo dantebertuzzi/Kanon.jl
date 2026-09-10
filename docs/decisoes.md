@@ -1574,3 +1574,189 @@ genérico *"esperava uma quantia com moeda"*, que diz o que falta e não o que e
 derivável dos `FieldSpec`, mas construir o valor exige o construtor do tipo, que é da
 camada — e uma inferência que acerta na maioria dos casos é exatamente o que a §3.4 chama
 de coerção implícita.
+
+---
+
+## D-047 — A camada científica também precisava de `kanon_decode`, e por uma razão a mais
+
+*2026-09-10 · aceita · surgida ao escrever o modelo real nº 8*
+
+**A observação.** A D-046 fechou a porta do JSON para `pessoa`, `imovel` e `parte`, e parou
+ali. `KanonScience` ficou de fora — e é a camada cujo tipo é um **número medido**, isto é,
+a única cujos valores um instrumento produz sozinho. Um laboratório não digita medição em
+Julia; ele exporta o que o equipamento registrou. O certificado de calibração levou sete
+`K3010` de uma vez, quatro deles do mesmo campo, porque `pontos` é uma lista de quatro.
+
+**Por que passava.** Pelo mesmo buraco da D-046, e com uma agravante: a dívida estava
+**escrita no roadmap**, com o gatilho anotado — *"um laudo alimentado por JSON ou
+planilha"*. Corrigi-la antes de um documento pedir teria sido adivinhar a forma da
+correção; foi o documento que disse qual é.
+
+**Decisão.** `measure` implementa `decode`, estrito como o do domínio jurídico, com uma
+recusa que o outro não tinha por que ter: **um número solto não é uma medição**. Aceitar
+`21.4` como `measure` daria incerteza zero a um número que ninguém mediu com incerteza
+zero — e a incerteza é justamente quem decide quantos algarismos o valor mostra. O erro
+sairia impresso, com casas que a medição não sustenta, que é o oposto do que esta camada
+existe para garantir. A mensagem diz isso, e não só que o tipo não bate.
+
+A unidade é opcional e **falta como cadeia vazia**, que é como o `struct` a guarda — e é
+essa a porta pela qual a D-049 entrou.
+
+**O que não muda.** Continua sem decodificação genérica por esquema, pela razão da D-046:
+construir o valor exige o construtor do tipo, que é da camada.
+
+---
+
+## D-048 — A versão 1 não emparelha repetições, e recusa quem finge que sim
+
+*2026-09-10 · aceita · surgida ao escrever o modelo real nº 8*
+
+**A observação.** O certificado mede quatro pontos e precisa de uma ressalva **no ponto**
+cuja incerteza excede um centésimo do valor. A forma óbvia é escrever a ressalva como
+bloco filho do bloco repetido:
+
+```kanon
+::: ponto <- pontos
+Indicação média de {pontos}, com incerteza relativa de {pontos:relative}.
+
+:::: ponto_impreciso <- pontos
+Neste ponto a incerteza excede um centésimo do valor indicado.
+```
+
+O modelo carrega **sem um único diagnóstico**, e o documento sai assim:
+
+```
+3.4. Indicação média de 1.000,4 ± 1,5 °C, com incerteza relativa de 0,1%.
+
+3.4.1. Neste ponto a incerteza excede um centésimo do valor indicado.
+```
+
+A ressalva é do ponto **3.1** — o de 20,1 ± 0,3 °C, cuja incerteza relativa é 1,5%. Ela
+saiu pendurada no ponto de **melhor** incerteza do lote, afirmando dele o contrário do que
+é verdade. Um certificado de calibração assinado com essa frase é um documento falso.
+
+**Por que acontece.** É consequência mecânica da §8.4: cada bloco se expande no seu lugar,
+na ordem do arquivo, e duas repetições sobre a mesma coleção são **duas varreduras
+independentes**. O pai consome quatro números; o filho, que vem depois, consome o número
+seguinte do nível de baixo — e o nível de baixo pertence, por construção, ao último número
+consumido pelo de cima. A numeração está mecanicamente correta. Só o sentido é falso, que
+é a espécie de erro que nenhuma releitura pega.
+
+O modelo nº 7 já tinha dois blocos repetidos sobre a mesma lista, e não sofreu: eram
+**irmãos**, e cada donatário caía em exatamente um deles. Nem por isso a doação escapa da
+consequência mais fraca — os donatários saem agrupados por bloco, e não na ordem da lista.
+A ordem dos **blocos** é a do arquivo (§8.4); a ordem dos **elementos** não é promessa
+nenhuma, e é bom que esteja escrito.
+
+**Decisão.** Erro `K2048`: um bloco de nível *n* cujo nível *n*−1 é aberto por um bloco
+repetido é recusado, repita ele próprio ou não. Erro, e não aviso, porque não há leitura em
+que aquele número esteja certo — é a diferença para o `K2039`, onde as duas condições podem
+coincidir de propósito e só o motor não sabe.
+
+A mensagem diz as duas saídas que existem: escrever o bloco como **irmão** do repetido,
+nomeando o elemento no próprio texto — que é o que o certificado faz, e por isso a ressalva
+diz *"a indicação de 20,1 ± 0,3 °C"* e não *"neste ponto"* —, ou trazer o texto para dentro
+do bloco repetido.
+
+**O que fica em aberto.** Emparelhar repetições — o filho iterando em passo com o pai — é
+uma construção que a linguagem não tem, e que a versão 1 não vai ter: a instância do filho
+precisaria pertencer à instância do pai, e hoje o plano não tem onde guardar isso. É
+candidata a versão maior, e o `K2048` existe para que, até lá, ninguém acredite tê-la
+escrito.
+
+---
+
+## D-049 — O branco de um campo de composto vale como ausente, nas duas portas
+
+*2026-09-10 · aceita · surgida ao escrever o modelo real nº 8*
+
+**A observação.** O certificado diz *"todos expressos em {padrao.unit}"* dentro de um grupo,
+porque a unidade é opcional em `measure`. Com uma medição sem unidade, o grupo não elidia:
+
+```
+3. Mediram-se os pontos adiante relacionados, todos expressos em , e a incerteza …
+```
+
+**Por que acontece.** `measure` guarda a unidade num `String`, e a ausência é `""` — não há
+`nothing` a pôr no lugar sem transformar o campo num `Union`, que é pior para a camada e
+não muda nada para o motor. `check_composite!` lê isso como ausente desde a F2 e segue
+adiante; `descend_value`, no render, lia `""` como um valor presente e vazio. **Duas portas
+do mesmo valor, com regras diferentes** — a mesma forma da D-041.
+
+A D-008 já tinha decidido a regra: texto em branco não é um valor. Ela só nunca tinha
+descido um nível, porque nenhum documento até aqui lera um campo opcional de tipo composto
+dentro de um grupo — a dívida estava anotada desde a F2 e o gatilho era exatamente este.
+
+**Decisão.** `descend_value` devolve ausente para campo de composto em branco. A regra da
+D-008 vale em qualquer profundidade, e vale nas duas portas.
+
+**O que não muda.** No primeiro nível, o branco continua **avisando** (`K3004`): lá ele é
+acidente de quem forneceu os dados. Dentro do composto não há aviso, porque `""` é a
+representação normal da ausência num `struct`, e avisar seria ruído em todo documento
+correto.
+
+---
+
+## D-050 — O diagnóstico de um elemento diz qual elemento
+
+*2026-09-10 · aceita · surgida ao escrever o modelo real nº 8*
+
+**A observação.** Com `pontos : measure[1..]` e quatro medições no JSON, uma chave faltando
+numa delas produzia:
+
+```
+K3010: `pontos` é do tipo `measure`, e o valor recebido não serve — falta a chave
+       `uncertainty`.
+```
+
+E, antes da D-047, a mesma frase **quatro vezes**, uma por elemento. A linha citada é a do
+modelo, que está certa: é o contrato que está sendo violado. O que faltava era dizer qual
+elemento o viola — o autor do JSON tinha de descobrir sozinho.
+
+**Por que passava.** O caminho já carregava o índice (`pontos[3]`), e o `K3001` de um
+elemento nulo já dizia *"o 3º valor"*. Só o `K3010` não dizia, porque `decode_value` monta a
+frase com o nome do campo, e é chamada tanto para o valor único quanto para o elemento.
+
+**Decisão.** `decode_value` recebe a posição quando há uma, e escreve *"o 3º valor de
+`pontos`"* — a mesma forma que o `K3001` já usava. O valor único continua sem posição,
+porque não tem uma.
+
+---
+
+## D-051 — O motor cita a palavra-chave que o autor escreveu
+
+*2026-09-10 · aceita · dívida puxada pelo modelo nº 6, cobrada pelo nº 8*
+
+**A observação.** Num modelo `pt`, o motor falava a outra língua em pelo menos cinco
+lugares:
+
+```
+K2034: o bloco `lote` se repete (`one for each`, linha 93) …     ← escrito `um para cada`
+outline: * um por pontos, quando observacao is present           ← nem inglês nem português
+K1301: esperava `when` ou `one for each` depois de `ponto`        ← palavras que não existem
+       naquele arquivo
+{unit} : text opcional                                            ← o tipo é `texto` ali
+```
+
+A §9 promete que a camada de idioma renomeia as palavras-chave, e a `KeywordTable` fazia
+metade do trabalho: sabia ler `um para cada` e não sabia escrevê-lo. É a mesma forma da
+D-035 — posição certa e nome errado valem menos que nada, porque mandam o autor procurar no
+arquivo o que não está lá.
+
+**Decisão.** A `KeywordTable` ganha o mapa reverso, montado junto com ela (duas listas
+divergem), e `written(kt, canon)` é o inverso de `keyword`. Mora na tabela, e não no
+`Environment`, porque `parse` também precisa dela e não consulta o ambiente (invariante 8).
+
+A regra que ela estabelece: **o que é citação do modelo sai na língua do modelo; o que é
+prosa da ferramenta sai em português** (D-027). No esqueleto de um modelo `pt` lê-se
+`um para cada pontos, quando não (pontos é precise)`; num modelo em inglês, `one for each
+witnesses, when notes is present` — com `sempre` e `bloco condicional` em português nos
+dois, porque isso é a ferramenta falando.
+
+`present` e `absent` são palavras-chave e saem traduzidas; o nome de um **atributo de tipo**
+(`precise`) não é, e sai como o domínio o registrou. Traduzir atributo é outro assunto, e
+continua na tabela de dívidas.
+
+**O que veio junto.** O `não` de uma condição passou a mostrar os parênteses da árvore:
+`não (pontos é precise)`. Sem eles a frase se lê das duas maneiras, e o esqueleto existe
+para responder essa pergunta, não para devolvê-la.
