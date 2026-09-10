@@ -106,7 +106,7 @@ const DADOS_ENSAIO = Dict{String,Any}(
         @test occursin("3.1. Indicação média de 20,1 ± 0,3 °C, com incerteza relativa " *
                        "de 1,5%.", saida)
         @test occursin("3.4. Indicação média de 1.000,4 ± 1,5 °C, com incerteza " *
-                       "relativa de 0,1%.", saida)
+                       "relativa de 0,15%.", saida)
     end
 
     @testset "a unidade que falta elide o grupo (D-049)" begin

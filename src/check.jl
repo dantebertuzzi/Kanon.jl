@@ -438,10 +438,17 @@ Como [`read_json`](@ref), a partir do texto. Precisa de `JSON3.jl` carregado.
 """
 function parse_json end
 
-"Acrescenta o número da linha ao diagnóstico, para a ingestão dizer qual falhou."
+"""
+Acrescenta a posição do registro ao diagnóstico, para a ingestão dizer qual falhou.
+
+**Registro**, e não linha: o diagnóstico já começa por `linha 13, coluna 3`, que é a do
+modelo, e dizia em seguida `linha 1 da tabela` — duas linhas de dois arquivos na mesma
+frase. E a linha 1 de um CSV aberto no editor é o cabeçalho, não o primeiro registro
+(D-052).
+"""
 with_row(d::Diagnostic, i::Integer) =
     Diagnostic(d.code, d.severity, d.category, d.file, d.line, d.col, d.endline, d.endcol,
-               d.path, "linha $i da tabela: " * d.message, d.hint)
+               d.path, "no $(i)º registro da tabela, " * d.message, d.hint)
 
 """
     bind(model, data; today = nothing) -> Bound

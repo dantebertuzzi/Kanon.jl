@@ -54,8 +54,22 @@
     @testset "os formatadores nomeados" begin
         m = Measure(0.42, 0.07, "mm")
         @test Kanon.format(m, Val(:bare), ctx) == "0.42"
-        @test Kanon.format(m, Val(:relative), ctx) == "16.7%"
+        # 16,67 %: primeiro algarismo 1, dois significativos (D-053)
+        @test Kanon.format(m, Val(:relative), ctx) == "17%"
         @test kanon_formats(Measure) == (:bare, :relative)
+    end
+
+    @testset "a incerteza relativa tem os algarismos de uma incerteza (D-053)" begin
+        rel(v, u) = Kanon.format(Measure(v, u), Val(:relative), ctx)
+        # uma casa fixa dizia `0.0%` — incerteza nula, que é o que a frase afirma
+        @test rel(20003.5, 5.0) == "0.025%"
+        @test rel(100.02, 0.02) == "0.020%"
+        # e dizia `0.1%` do que é `0.05%`: o dobro
+        @test rel(100.0, 0.05) == "0.05%"
+        @test rel(1000.4, 1.5) == "0.15%"          # primeiro algarismo 1: dois
+        @test rel(100.2, 0.4) == "0.4%"            # primeiro algarismo 3: um
+        # o sinal do valor não faz a incerteza negativa
+        @test rel(-20.1, 0.3) == "1.5%"
     end
 
     @testset "os atributos" begin

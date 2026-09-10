@@ -4,7 +4,7 @@ O Laboratório de Metrologia Térmica do Vale, acreditado sob o nº CAL 0472, ce
 
 2. A calibração compreendeu 5 ciclos de medição em cada ponto, à temperatura ambiente de 23,0 ± 1,0 °C e umidade relativa de 47 ± 5 %.
 
-2.1. As indicações do instrumento foram comparadas com as do padrão de referência, de 100,00 ± 0,05 °C, cuja incerteza relativa é de 0,1%.
+2.1. As indicações do instrumento foram comparadas com as do padrão de referência, de 100,00 ± 0,05 °C, cuja incerteza relativa é de 0,05%.
 
 3. Mediram-se os pontos adiante relacionados, todos expressos em °C, e a incerteza de cada um é a incerteza expandida da média dos ciclos.
 
@@ -12,9 +12,9 @@ O Laboratório de Metrologia Térmica do Vale, acreditado sob o nº CAL 0472, ce
 
 3.2. Indicação média de 100,2 ± 0,4 °C, com incerteza relativa de 0,4%.
 
-3.3. Indicação média de 200,5 ± 0,6 °C, com incerteza relativa de 0,3%.
+3.3. Indicação média de 200,5 ± 0,6 °C, com incerteza relativa de 0,30%.
 
-3.4. Indicação média de 1.000,4 ± 1,5 °C, com incerteza relativa de 0,1%.
+3.4. Indicação média de 1.000,4 ± 1,5 °C, com incerteza relativa de 0,15%.
 
 3.5. A indicação de 20,1 ± 0,3 °C tem incerteza superior a um centésimo do valor indicado, e não sustenta ajuste do instrumento por comparação.
 

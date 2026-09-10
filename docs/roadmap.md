@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.252 testes** ao todo — 1.513 no núcleo (~50 s com Aqua), 260 em `Extenso`,
-178 em `KanonLegal`, 147 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.292 testes** ao todo — 1.519 no núcleo (~50 s com Aqua), 260 em `Extenso`,
+178 em `KanonLegal`, 181 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -39,14 +39,15 @@ Existem **oito** modelos reais no repositório, em `test/golden/exemplos/`:
 `escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
 `certificado.kanon` (um por linha de planilha), `laudo.kanon` (dois domínios ao mesmo
 tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst),
-`doacao.kanon` (comparações nas regras, e os dados vindos de um JSON) e `ensaio.kanon`
-(a camada científica em português, com as medições vindas de um JSON). O portão para a
-1.0 pede quinze.
+`doacao.kanon` (comparações nas regras, e os dados vindos de um JSON), `ensaio.kanon`
+(a camada científica em português, com as medições vindas de um JSON) e
+`verificacao.kanon` (um certificado por registro de um CSV de verdade, com as medições em
+colunas). O portão para a 1.0 pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos sete que faltam vai cobrar alguma coisa — como os oito primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os sete últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **dezessete defeitos e uma
+dos seis que faltam vai cobrar alguma coisa — como os nove primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os oito últimos mediram
+isso: escritos com o motor pronto e a suíte verde, produziram **dezenove defeitos e uma
 questão aberta de versão**.
 
 | | O que apareceu | Modelo |
@@ -68,8 +69,10 @@ questão aberta de versão**.
 | **D-048** | a ressalva de um ponto medido, escrita como bloco **filho** do bloco repetido, saía numerada `3.4.1` — pendurada no quarto ponto, falando do primeiro. **Sem um único diagnóstico**: a numeração é mecanicamente correta e só o sentido é falso | ensaio |
 | **D-049** | `{padrao.unit}` não elidia quando a medição não traz unidade: `check` lia o campo em branco como ausente desde a F2 e o render o lia como presente e vazio — a mesma forma da D-041, com o grupo aberto pela outra porta | ensaio |
 | **D-050** | o diagnóstico de um elemento defeituoso não dizia **qual** elemento: quatro medições, uma chave faltando numa delas, e a mesma frase quatro vezes | ensaio |
+| **D-052** | **nenhuma planilha alcançava tipo composto**, e todo tipo de domínio é composto: `render_each`, que existe para planilhas, não alcançava camada de domínio nenhuma. A mensagem dizia que `carga` "não foi informado" de um CSV que o trazia em três colunas | verificação |
+| **D-053** | a incerteza relativa tinha uma casa fixa: uma balança com incerteza de 5 kg saía com `0,0%` — incerteza nula —, e o padrão do certificado nº 8, já publicado, saía com o dobro da dele | verificação |
 
-**O padrão nos sete vale mais que os sete: o buraco estava sempre na interseção de duas
+**O padrão nos oito vale mais que os oito: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
 nomes já são canônicos; toda a suíte de regras, contrato e `ask` estava em inglês. O tipo
 `list` era testado chamando `format` sobre um vetor, nunca declarando um campo. A regra do
@@ -86,7 +89,10 @@ formato de marcação: a numeração do `KanonLegal` é `CLÁUSULA PRIMEIRA`, a 
 constrói `Measure` em Julia, e a da ingestão lê arquivos com os tipos do núcleo, que
 decodificam. E todo bloco repetido do acervo, sem exceção, era o **último nível** do
 estilo dele — o nível de baixo de um bloco que se repete nunca tinha sido escrito, e é a
-única construção que o motor aceitava produzindo um documento falso.
+única construção que o motor aceitava produzindo um documento falso. E a única
+"planilha" do acervo era um `NamedTuple` montado em Julia, com listas dentro das células:
+nenhum teste tinha lido um CSV, e por isso ninguém tinha perguntado como uma célula guarda
+um composto.
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -94,7 +100,7 @@ modelo nº 3 foi escolhido justamente por atravessar três interseções vazias 
 um modelo em arquivo, com fragmento incluído, na camada científica, emitido também em
 Markdown.
 
-O que procurar em cada um dos sete que faltam:
+O que procurar em cada um dos seis que faltam:
 
 - Uma construção que a gramática não expressa, ou expressa mal.
 - Uma mensagem de erro que não diz o que fazer.
@@ -142,7 +148,7 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.513, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.519, ~50 s
 for p in Extenso KanonLegal KanonScience KanonLSP; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -179,7 +185,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado) e `ensaio` (a camada científica em português, medições vindas de JSON), cada um com a saída exigida |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado), `ensaio` (a camada científica em português, medições vindas de JSON) e `verificacao` (um por registro de um CSV, medições em colunas com ponto), cada um com a saída exigida |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída, o escape do valor interpolado e o do rótulo |
@@ -626,7 +632,7 @@ rende com «marcadores» e nunca exporta —, e o que falta é o caminho até a 
 referência da API a partir das docstrings — publicada pelo próprio CI — e cobertura no
 Codecov.
 
-**Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos dezessete defeitos que
+**Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos dezenove defeitos que
 os modelos reais acharam, nem dos quatro que o servidor de linguagem achou, era linha
 descoberta: todos estavam na **interseção de duas coisas cobertas separadamente**, que é
 uma coisa que percentual de linha não mede e não pode medir. O `codecov.yml` põe as duas
@@ -694,7 +700,7 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | Dívida | Onde | Gatilho |
 |---|---|---|
 | **O tipo `list` não é declarável no plano de dados** (D-033) | `core_types.jl`, `check.jl` | o fim do portão. A mensagem já não mente; falta decidir entre remover o tipo (versão maior) e torná-lo alcançável |
-| Os nomes de atributo não têm apelido de idioma: num modelo `pt` escreve-se `quando x é empty` | `environment.jl` | **puxado pelo modelo nº 8**, que escreve `quando não (pontos é precise)` num certificado em português. A §9 promete que o idioma renomeia palavras-chave, e atributo não é palavra-chave — mas o autor não sabe disso, e agora que o motor cita a regra de volta na língua certa (D-051) o `precise` no meio dela é a única palavra fora do lugar. Um `register_attribute_alias!` é aditivo |
+| Os nomes de atributo não têm apelido de idioma: num modelo `pt` escreve-se `quando x é empty` | `environment.jl` | **puxado pelos modelos nº 8 e nº 9**, que escrevem `quando não (pontos é precise)` e `quando não (indicacao é precise)` em certificados em português. A §9 promete que o idioma renomeia palavras-chave, e atributo não é palavra-chave — mas o autor não sabe disso, e agora que o motor cita a regra de volta na língua certa (D-051) o `precise` no meio dela é a única palavra fora do lugar. Um `register_attribute_alias!` é aditivo |
 | As mensagens listam os atributos em inglês mesmo num modelo `pt`: `Atributos de \`texto\`: absent, present` | `analyze.jl` | um redator reclamar. Traduzir diagnóstico é projeto próprio, e a D-027 diz por que ele não é urgente |
 | `is not` em português vira `é não`, que é agramatical | `parse_rules.jl` | escrever `não (x é y)` resolve hoje; mudar a **ordem** da gramática por idioma seria versão maior |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | um `pessoa` com `nome = " "` passa pelo D-008. Fecha o mesmo buraco um nível abaixo |
@@ -732,17 +738,17 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **8 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **9 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
 contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo, o
-edital, a doação e o ensaio, escritos com o motor já pronto e a suíte verde, cobraram mais
-dezessete (D-031 a D-035 e D-040 a D-051) — **a taxa de descoberta não caiu quando o
+edital, a doação, o ensaio e a verificação, escritos com o motor já pronto e a suíte
+verde, cobraram mais dezenove (D-031 a D-035 e D-040 a D-053) — **a taxa de descoberta não caiu quando o
 código ficou bom, e o oitavo achou o primeiro caso de documento falso sem diagnóstico
 nenhum.**
 
 ### O que a implementação já mudou na especificação
 
-Trinta e três decisões saíram de escrever o código, e dezoito delas fecharam buracos que
+Trinta e cinco decisões saíram de escrever o código, e dezenove delas fecharam buracos que
 nenhuma releitura teria encontrado — o texto era internamente coerente em todos os casos:
 
 | | O que estava errado |
@@ -765,13 +771,14 @@ nenhuma releitura teria encontrado — o texto era internamente coerente em todo
 | **D-048** | a §8.4 promete que a ordem dos **blocos** é a do arquivo, e o autor lê nela uma promessa sobre a ordem dos **elementos**, que ninguém fez — e nada impedia o nível de baixo de se pendurar na cópia errada |
 | **D-049** | a §2.3 normalizava o branco no primeiro nível e a §3.1 estendia a nulabilidade ao composto; nenhuma das duas percebeu que a normalização também tinha de descer |
 | **D-051** | a §9 dizia que a camada de idioma renomeia as palavras-chave, e a tabela sabia lê-las sem saber escrevê-las de volta |
+| **D-052** | a F7 prometeu `Tables.jl` como a via das planilhas, e a §3.1 fez todo tipo de domínio composto; nenhuma das duas percebeu que uma célula não guarda um composto |
 
 E uma na direção contrária, que é a primeira: a **D-043** não mudou a especificação —
 a §8.3 dizia desde a F0 que o caminho iterado denota o elemento corrente *"tanto no texto
 quanto no `when`"*, e era o render que não obedecia. O texto normativo achou o defeito no
 código, que é o que ele existe para fazer.
 
-Se sete modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
+Se seis modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.
 
 **O método, fixado pelo segundo modelo e confirmado pelo terceiro.** Escreva o modelo

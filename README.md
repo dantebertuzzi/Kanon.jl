@@ -230,6 +230,11 @@ composite type that does not implement it exists only for whoever writes Julia. 
 is strict, and a refusal says what to write — a bare number is not a `measure`, because it
 does not carry the uncertainty that decides how many digits the value may show.
 
+A spreadsheet is flat and a domain type is not, so in a table **a dotted column name is a
+field of a composite**: `load.value`, `load.uncertainty` and `load.unit` become the object
+`load` — the same path separator the template writes as `{load.value}`. An empty cell is
+an absent key, and a group of cells that are all empty is an absent field.
+
 ## Status
 
 Phases 1 through 8 are done, and F9 in part. The language is usable end to end: parse, validate, render,

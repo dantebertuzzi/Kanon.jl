@@ -107,6 +107,22 @@ function format_measure(v::Measure, ctx)
     isempty(v.unit) ? corpo : corpo * " " * v.unit
 end
 
+"""
+A incerteza relativa, em porcento — **com os algarismos da regra do PDG**, e não com uma
+casa fixa.
+
+É uma incerteza, e a regra que decide os algarismos de uma incerteza é uma só. A primeira
+versão fixava uma casa decimal, e com isso uma balança de 20 t com incerteza de 5 kg saía
+com incerteza relativa de `0,0%` — nula, que é o que a frase afirma —, e um padrão de
+`100,00 ± 0,05 °C` saía com `0,1%`, o **dobro** dos `0,05%` que ele tem (D-053). É a
+D-034 do outro lado da mesma medição: algarismos que a medição não sustenta, ou a falta
+dos que ela sustenta.
+"""
+function format_relative(v::Measure, ctx)
+    r = 100 * v.uncertainty / abs(v.value)
+    localized(r, decimals_for(r), ctx) * "%"
+end
+
 @kanon_type measure Measure begin
     schema = (FieldSpec(:value, :number),
               FieldSpec(:uncertainty, :number),
@@ -114,7 +130,7 @@ end
     getfield   = (value = :value, uncertainty = :uncertainty, unit = :unit)
     default    = (v, ctx) -> format_measure(v, ctx)
     formats    = (bare = (v, ctx) -> localized(v.value, decimals_for(v.uncertainty), ctx),
-                  relative = (v, ctx) -> localized(100 * v.uncertainty / v.value, 1, ctx) * "%")
+                  relative = (v, ctx) -> format_relative(v, ctx))
     attributes = (precise = v -> v.uncertainty / abs(v.value) < 0.01,
                   dimensionless = v -> isempty(v.unit))
     compare    = (a, b) -> b isa Measure ? cmp(a.value, b.value) : cmp(a.value, b)
