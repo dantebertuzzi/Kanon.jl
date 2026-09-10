@@ -45,7 +45,49 @@ Mistura é erro (D-003): a tabela é uma só por arquivo, escolhida pelo pragma.
 struct KeywordTable
     lang::Union{Nothing,Symbol}
     forms::Dict{String,Symbol}
+    written::Dict{Symbol,String}
 end
+
+"""
+Monta o mapa reverso junto com a tabela: a forma que **este** arquivo escreve para cada
+palavra canônica.
+
+Reverso, e não uma segunda lista: duas listas divergem. Quando duas formas apelidam a
+mesma palavra, vale a menor — e, no empate, a primeira em ordem alfabética. A escolha em
+si importa pouco; que ela seja **determinística** importa, porque ela chega a mensagem de
+erro (I4).
+"""
+function KeywordTable(lang::Union{Nothing,Symbol}, forms::Dict{String,Symbol})
+    written = Dict{Symbol,String}()
+    for f in sort!(collect(keys(forms)))
+        canon = forms[f]
+        atual = get(written, canon, nothing)
+        (atual === nothing || length(f) < length(atual)) && (written[canon] = f)
+    end
+    KeywordTable(lang, forms, written)
+end
+
+"""
+    written(kt, canon) -> String
+
+A forma que este arquivo escreve para a palavra canônica `canon`: `:when` num modelo `pt`
+é `quando`. O inverso de [`keyword`](@ref).
+
+Existe porque **o motor não pode citar o que o autor não escreveu**. Um modelo em
+português levava `o bloco `lote` se repete (`one for each`, linha 93)` apontando uma
+linha onde está escrito `um para cada`, e o esqueleto imprimia `quando amostra is
+present`, que não é nenhuma das duas línguas (D-051). É a mesma forma da D-035: a posição
+certa e o nome errado valem menos que nada, porque mandam o autor procurar o que não
+existe.
+
+Mora na tabela, e não no `Environment`, porque `parse` também precisa dela e não consulta
+o ambiente (invariante 8).
+"""
+written(kt::KeywordTable, canon::Symbol) = get(kt.written, canon, String(canon))
+
+"As três palavras de `one for each`, na forma deste arquivo — `um para cada` em `pt`."
+written_foreach(kt::KeywordTable) =
+    written(kt, :one) * " " * written(kt, Symbol("for")) * " " * written(kt, :each)
 
 const CANONICAL_KEYWORDS = ("data", "text", "rules", "when", "one", "for", "each",
                             "and", "or", "not", "is", "present", "absent",

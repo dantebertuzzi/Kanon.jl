@@ -64,6 +64,16 @@ em Julia: nenhum JSON, planilha ou `DataFrame` o alcança. Um objeto aninhado ch
 `AbstractDict` de cadeias, e cabe ao tipo lê-lo — estritamente, com o decodificador do
 núcleo em cada campo, e nomeando a chave que falta.
 
+E a recusa é parte do tipo, não formalidade: `measure` recusa um número solto **dizendo
+por quê** — um número sem incerteza não é uma medição, e aceitá-lo com incerteza zero
+imprimiria casas decimais que ninguém mediu [D-047].
+
+**Ausência num campo opcional [D-049].** Um `struct` raramente tem `nothing` a pôr no
+lugar de um `String`, e guarda a falta como `""`. O motor lê **em branco como ausente** em
+qualquer profundidade, tanto em `check` quanto no render: o grupo que protege
+`{padrao.unit}` elide, e a camada não precisa transformar o campo num `Union` para dizer
+que ele pode faltar.
+
 **[acrescentada na F2.6 — D-023]** `kanon_getfield` é como o motor lê o campo que o
 esquema promete. O padrão é `getproperty(v, name)`; um tipo cujo esquema não espelha a
 `struct` define os métodos dele. Sem essa separação, `kanon_schema` viraria uma promessa

@@ -79,6 +79,7 @@ jobs:
           julia --project=lib/KanonScience -e '
             using Pkg
             Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso")])
+            Pkg.add("JSON3")           # só a suíte: é o certificado que lê as medições de um JSON
             Pkg.instantiate()'
           julia --project=lib/KanonScience lib/KanonScience/test/runtests.jl
         shell: bash

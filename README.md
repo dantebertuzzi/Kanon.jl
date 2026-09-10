@@ -97,6 +97,11 @@ The **anti-XSLT invariant**: rules never insert, never substitute, never reorder
 the text plane is therefore a reliable upper bound on the generated document — which is
 exactly what XSLT lost by making control flow implicit.
 
+The invariant is about **blocks**, and version 1 does not pair repetitions: a block nested
+under a repeated one would attach to its last copy and speak of the wrong element. That is
+a document which is mechanically numbered and false in meaning, so it is refused at load
+time rather than rendered — the error names the two forms that do express the intent.
+
 ## Getting started
 
 ```julia
@@ -219,6 +224,11 @@ symlinks pointing outside — a template is untrusted data.
 using Tables, Kanon
 render_each(tmpl, table)     # one document per row
 ```
+
+Data from a file reaches a domain type through `kanon_decode`, and only through it: a
+composite type that does not implement it exists only for whoever writes Julia. Decoding
+is strict, and a refusal says what to write — a bare number is not a `measure`, because it
+does not carry the uncertainty that decides how many digits the value may show.
 
 ## Status
 

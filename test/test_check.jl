@@ -220,6 +220,23 @@ end
         @test occursin("2º valor", s[1].message)
         @test s[1].path == "witnesses[2]"
     end
+
+    @testset "o elemento que não decodifica é nomeado pela posição (D-050)" begin
+        # A linha citada é a do modelo — é o contrato que está sendo violado, e é ele
+        # que tem posição. O que faltava era dizer QUAL elemento a viola: com uma
+        # coleção de quatro medições e uma chave faltando numa delas, a mesma frase
+        # aparecia quatro vezes, e nenhuma dizia onde olhar.
+        d = completos(); d["witnesses"] = [pessoa("Bia"), "Caio"]
+        s = check(MODELO, d; today = Date(2026, 9, 4))
+        @test [x.code for x in s] == ["K3010"]
+        @test occursin("o 2º valor de `witnesses`", s[1].message)
+        @test s[1].path == "witnesses[2]"
+
+        # e o valor único continua sem posição, porque não tem uma
+        d2 = completos(); d2["seller"] = "Ana"
+        s2 = check(MODELO, d2; today = Date(2026, 9, 4))
+        @test occursin("`seller` é do tipo", s2[1].message)
+    end
 end
 
 @testset "o esquema do tipo composto é exigido (D-023)" begin

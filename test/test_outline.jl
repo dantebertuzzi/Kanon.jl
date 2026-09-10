@@ -103,9 +103,12 @@ end
     s = format_outline(M_OUT_L)
 
     @testset "cada bloco com a condição ao lado" begin
+        # A condição é **citação do modelo**, e sai na língua dele — este é inglês
+        # canônico, e por isso `when` e `one for each` (D-051). A moldura em volta
+        # (`sempre`, `bloco condicional`) é prosa da ferramenta, e continua em português.
         @test occursin("preambulo", s) && occursin("sempre", s)
-        @test occursin("quando price > 0 and notes is present", s)
-        @test occursin("um por witnesses", s)
+        @test occursin("when price > 0 and notes is present", s)
+        @test occursin("one for each witnesses", s)
     end
 
     @testset "os marcadores dizem o que o bloco faz" begin
@@ -231,6 +234,6 @@ rules
     r = cli("outline", modelo)
     @test r.codigo == Kanon.EXIT_OK
     @test occursin("um", r.out) && occursin("dois", r.out)
-    @test occursin("quando n is present", r.out)
+    @test occursin("when n is present", r.out)
     @test occursin("{n} : text", r.out)
 end

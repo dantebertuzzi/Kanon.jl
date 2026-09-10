@@ -118,6 +118,54 @@ end
     attributes = (precise = v -> v.uncertainty / abs(v.value) < 0.01,
                   dimensionless = v -> isempty(v.unit))
     compare    = (a, b) -> b isa Measure ? cmp(a.value, b.value) : cmp(a.value, b)
+    decode     = (raw, ctx) -> measure_de(raw, ctx)
+end
+
+# --- leitura de dados externos -----------------------------------------------
+#
+# Um laboratório não digita medição em Julia: ele exporta o que o instrumento registrou.
+# `kanon_decode` é o **único** ponto em que o objeto lido vira `Measure` (§3.4), e sem
+# ele esta camada era a única que um arquivo não alcançava — a D-046 abriu essa porta
+# para o domínio jurídico e parou ali (D-047).
+#
+# A leitura é estrita, como a do outro domínio: chave que falta é erro, e o que é
+# opcional no esquema é opcional aqui. O que esta camada acrescenta é uma recusa que o
+# domínio jurídico não tinha por que ter — **um número solto não é uma medição**.
+
+"""
+A incerteza não é opcional, e a mensagem diz por quê.
+
+Aceitar `21.4` como `measure` daria incerteza zero a um número que ninguém mediu com
+incerteza zero — e a incerteza é justamente quem decide quantos algarismos o valor
+mostra. O erro seria silencioso e sairia impresso: `21.400000` no lugar de `21.4 ± 0.3`.
+"""
+function measure_de(raw, ctx)
+    raw isa Measure && return raw
+    raw isa AbstractDict || throw(UndecodableValue(Measure, raw,
+        "esperava um objeto com as chaves `value` e `uncertainty`" *
+        (raw isa Union{Real,AbstractString} ?
+         "; um número solto não é uma medição, porque não diz a incerteza." : ".")))
+    Measure(numero_de(raw, "value", ctx),
+            numero_de(raw, "uncertainty", ctx),
+            unidade_de(raw, ctx))
+end
+
+"Um número obrigatório, pelo decodificador do núcleo — a mensagem de tipo é a dele."
+function numero_de(raw::AbstractDict, nome::AbstractString, ctx)
+    v = get(raw, nome, nothing)
+    v === nothing && throw(UndecodableValue(Measure, raw, "falta a chave `$nome`."))
+    Float64(kanon_decode(Kanon.NumberValue, v, ctx))
+end
+
+"""
+A unidade, que pode faltar — e falta como cadeia vazia, que é como o tipo a guarda.
+
+`null` e chave ausente valem o mesmo aqui, pela razão da D-046: distingui-los faria a
+origem dos dados mudar o significado do contrato.
+"""
+function unidade_de(raw::AbstractDict, ctx)
+    v = get(raw, "unit", nothing)
+    v === nothing ? "" : String(kanon_decode(AbstractString, v, ctx))
 end
 
 "`Theorem 1`, `Theorem 3.1` — inglês canônico, porque este domínio não tem idioma."
