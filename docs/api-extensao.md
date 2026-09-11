@@ -175,7 +175,10 @@ register_aliases!(b, :pt, (
     data = "dados", text = "texto", rules = "regras",
     when = "quando", and = "e", or = "ou", not = "não",
     is = "é", present = "presente", absent = "ausente", today = "hoje",
+    include = "incluir",
 ))
+
+register_term!(b, :pt, :theorem, "Teorema")
 
 register_repair_hook!(b, :pt, (text, seams, ctx) -> recapitalize_after_elision(text, seams))
 
@@ -191,6 +194,21 @@ núcleo registra sem apelido nenhum porque é neutro.
 
 Os dois são registro no ambiente, e não método: um método sobre `AbstractVector` seria
 global, e carregar a camada mudaria a saída de um ambiente que não a declarou.
+
+**[acrescentado na F10 — D-054]** `register_aliases!` recebe a lista **inteira** das
+palavras-chave da linguagem, e `include` é uma delas. Uma que falte não dá erro nenhum: a
+linha que a usa deixa de ser diretiva e vira prosa, e o que ela dizia sai impresso no
+documento.
+
+**[acrescentado na F10 — D-056]** `register_term!` é o **glossário**: a palavra que a
+camada de idioma empresta a uma camada de domínio que não tem idioma. Quem escreve texto
+no documento por conta própria — o rótulo `Theorem 1` do estilo `@` — declara uma chave e
+a palavra de que se contenta, e pergunta com `term(ctx, chave, padrão)`. O padrão é
+obrigatório: quem pergunta tem de saber escrever a própria resposta, e é isso que mantém
+a camada funcionando em ambiente neutro.
+
+Não é tradução de diagnóstico (D-027) nem palavra-chave: é o texto que a camada põe
+**dentro** do documento.
 
 O protocolo de sujeito que a camada de idioma usa é ela mesma quem define
 (`gender(v)`, `number(v)` despachados sobre os tipos do domínio). **O núcleo não conhece
@@ -219,6 +237,10 @@ lacuna encontrada ao escrever os exemplos (`docs/exemplos.md`, seção 3.1).
 `path` é o vetor de contadores (`[3]`, `[3,1]`), o que dá à camada liberdade para
 renderizar `3.1`, `Parágrafo Primeiro da Cláusula Terceira` ou `Teorema 3.1` sem
 nenhuma mudança no núcleo.
+
+**[acrescentado na F10 — D-056]** `number` e `ref` recebem o `ctx`, e é por ele que o
+rótulo alcança o idioma: `term(ctx, :theorem, "Theorem")` escreve `Teorema 1` num modelo
+`pt` e `Theorem 1` onde ninguém registrou a palavra.
 
 ## 5. Ambiente
 
@@ -327,6 +349,7 @@ alcançar uma mensagem de erro é ordenada, por I4:
 | apelido de tipo de outrem | `register_type_alias!` | dois apelidos iguais |
 | separadores decimal e de milhar | `register_separators!` | último vence (é do idioma) |
 | padrão de `date:numeric` | `register_date_pattern!` | último vence (é do idioma) |
+| palavra de glossário | `register_term!` | último vence (é do idioma) |
 
 O contexto que os formatadores recebem é `FormatContext(env, today)`, e nada mais.
 `today` é injetado, nunca lido do relógio.

@@ -1,0 +1,17 @@
+Universidade Federal do Vale do São Francisco — Inferência Estatística (EST0417), turma 2026.2. Roteiro preparado por Aurélio Tavares, com a monitoria de Bianca Nogueira, em 11 de setembro de 2026.
+
+Este roteiro cobre dezesseis encontros e usa, em todos os exemplos, a mesma amostra de 1.200 observações de tempo de atendimento, em minutos.
+
+Teorema 1. A média amostral, calculada sobre as 1.200 observações da amostra, é um estimador não viesado da média populacional. O valor observado nesta turma é de 14,20 ± 0,08 min, contra a referência de 15,0 ± 0,5 min apurada no semestre anterior.
+
+Teorema 1.1. A estimativa é precisa a menos de um centésimo do próprio valor, com incerteza relativa de 0,6%, e o valor central de 14,20 está escrito com os algarismos que a medição sustenta e nenhum além deles.
+
+Teorema 2. O intervalo de confiança de noventa e cinco por cento para a média populacional cobre a média amostral com a margem que a incerteza acima exprime, e a interpretação dele é sobre o procedimento, nunca sobre o intervalo já calculado.
+
+1. O aproveitamento será apurado por duas provas escritas, um trabalho computacional e as listas semanais, e a nota final é a média aritmética simples das notas obtidas.
+
+1.1. Haverá prova de reposição para quem faltar a uma avaliação por motivo justificado, aplicada no último encontro e abrangendo todo o conteúdo do período.
+
+2. Os conjuntos de dados usados nos exemplos estão depositados em repositorio.univasf.edu.br/est0417, sob a licença CC BY 4.0, e nenhum resultado apresentado em aula depende de material que não esteja nesse depósito.
+
+O Teorema 1 será demonstrado no primeiro encontro, e os critérios do item 1 valem para toda a turma.

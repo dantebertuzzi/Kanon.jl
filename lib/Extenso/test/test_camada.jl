@@ -67,6 +67,58 @@ regras
         @test e isa KanonSyntaxError
     end
 
+    @testset "`incluir` é a palavra da inclusão, e `include` some (D-054)" begin
+        # A §9 promete que o idioma renomeia as palavras-chave, e `include`, que entrou
+        # na F7, era a única que tinha ficado de fora. O modelo real nº 10 a pediu — e o
+        # defeito não era a falta do apelido, era o silêncio: a linha virava prosa, e o
+        # caminho do fragmento saía impresso no documento.
+        raiz = mktempdir()
+        write(joinpath(raiz, "criterios.kanon"), """
+kanon 1 pt
+
+dados
+  prazo : numero !
+
+texto
+
+:: pagamento
+O prazo é de {prazo} dias.
+""")
+        fonte(palavra) = """
+kanon 1 pt
+
+dados
+  nome : texto !
+
+texto
+
+: abertura
+Contrato de {nome}.
+$palavra "criterios.kanon"
+"""
+        m = load_string(ENV_PT, fonte("incluir"); name = "h.kanon", root = raiz)
+        @test isempty(m.analysis.diagnostics)
+        s = render(m, Dict("nome" => "locação", "prazo" => 5))
+        @test occursin("1. O prazo é de 5 dias.", s)
+        @test !occursin("criterios.kanon", s)
+
+        # e a forma inglesa some do arquivo que declara um idioma (D-003) — sem virar
+        # erro de sintaxe, porque a linha é prosa bem-formada. Daí o aviso (D-055)
+        m2 = load_string(ENV_PT, fonte("include"); name = "h.kanon", root = raiz)
+        d = only(filter(x -> x.code == "K1215", collect(m2.analysis.diagnostics)))
+        @test occursin("incluir \"criterios.kanon\"", something(d.hint, ""))
+        @test occursin("include \"criterios.kanon\"",
+                       render(m2, Dict("nome" => "locação")))
+    end
+
+    @testset "o glossário empresta a palavra a quem não tem idioma (D-056)" begin
+        # `Extenso` não conhece o `KanonScience`, não o carrega e não sabe se ele está
+        # presente: `teorema` é uma palavra portuguesa, e é só isso que está registrado.
+        @test Kanon.term(ENV_PT, :theorem, "Theorem") == "Teorema"
+        @test Kanon.term(ENV_PT, :lemma, "Lemma") == "Lemma"
+        @test Kanon.term(Environment(), :theorem, "Theorem") == "Theorem"
+    end
+
     @testset "os tipos do núcleo têm nome em português (D-025)" begin
         for (apelido, canonico) in Extenso.TIPOS
             @test typefor(ENV_PT, apelido) === typefor(ENV_PT, canonico)

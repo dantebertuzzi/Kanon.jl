@@ -22,7 +22,10 @@ function parse_include(ctx::ParseCtx, s::AbstractString, lineno::Integer)
     (isempty(s) || s[1] == ' ' || s[1] == '\t') && return nothing
     c = Cursor(s, lineno, 1)
     w = read_ident!(c)
-    (w !== nothing && keyword(ctx.kw, w) === :include) || return nothing
+    if w === nothing || keyword(ctx.kw, w) !== :include
+        w === nothing || warn_quase_inclusao!(ctx, s, lineno, w)
+        return nothing
+    end
 
     sp = Span(ctx.fileidx, Int32(lineno), Int32(1), Int32(lineno), Int32(max(1, length(s))))
     skip_blanks!(c)
@@ -54,6 +57,35 @@ function parse_include(ctx::ParseCtx, s::AbstractString, lineno::Integer)
         return nothing
     end
     return caminho
+end
+
+"""
+A linha que **quis** ser uma inclusão e não é.
+
+Uma linha cuja forma inteira é uma palavra e um caminho `.kanon` entre aspas não é prosa
+de documento nenhum: é uma inclusão escrita com a palavra errada, e tratá-la como prosa
+imprime o caminho do fragmento no meio do texto — documento falso, sem um único
+diagnóstico, que é o defeito mais caro que este projeto conhece (D-048).
+
+É o mesmo princípio que o cabeçalho de bloco já aplicava ao `<-`: a presença da forma
+denuncia a **intenção**, e a intenção denunciada não pode virar prosa em silêncio.
+
+**Aviso, e não erro**, por uma razão estreita e real: um documento pode falar da própria
+linguagem, e a linha citada em prosa é legítima — não há escape para ela, e recusar
+fecharia a porta a um texto que ninguém tem como escrever de outro jeito. O aviso
+escreve a palavra na língua do arquivo (D-051): num modelo `pt` ele diz `incluir`.
+"""
+function warn_quase_inclusao!(ctx::ParseCtx, s::AbstractString, lineno::Integer,
+                              w::AbstractString)
+    keyword(ctx.kw, w) === nothing || return nothing       # palavra-chave de outra coisa
+    m = match(r"^[^\s\"]+[ \t]+\"([^\"]+\.kanon)\"[ \t]*$", s)
+    m === nothing && return nothing
+    err!(ctx, "K1215", linespan(ctx, lineno),
+         "esta linha tem a forma de uma inclusão, e `$w` não é a palavra que a escreve: " *
+         "ela está sendo lida como prosa, e o caminho vai sair impresso no documento.";
+         hint = "Escreva `$(written(ctx.kw, :include)) \"$(m.captures[1])\"`.",
+         severity = :warning)
+    return nothing
 end
 
 """

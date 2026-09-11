@@ -95,12 +95,14 @@ mutable struct EnvironmentBuilder
     group_separator::String
     date_pattern::String
     currency::Vector{Pair{Symbol,String}}
+    terms::Vector{Pair{Symbol,String}}
 end
 
 EnvironmentBuilder(locale::Union{Nothing,Symbol} = nothing) =
     EnvironmentBuilder(locale, :kanon, TypeEntry[], TypeAlias[], KeywordAlias[],
                        BlockStyle[], String[], nothing, :none, nothing, :none,
-                       nothing, :none, ".", "", "yyyy-mm-dd", Pair{Symbol,String}[])
+                       nothing, :none, ".", "", "yyyy-mm-dd", Pair{Symbol,String}[],
+                       Pair{Symbol,String}[])
 
 """
     register_type!(b, T::Type; aliases = (,))
@@ -295,6 +297,34 @@ function register_currency!(b::EnvironmentBuilder, code::Symbol, symbol::Abstrac
 end
 
 """
+    register_term!(b, lang, key, word)
+
+Uma palavra que a **camada de idioma** empresta a quem não tem idioma nenhum.
+
+Existe pelo lugar em que o `KanonScience` se encontrou: o estilo `@` numera `Theorem 1`,
+e num roteiro de aula em português o rótulo tinha de ser `Teorema 1`. As três saídas
+óbvias quebram uma declaração cada — pôr português dentro de uma camada que se anuncia
+sem idioma, pôr um estilo de domínio dentro do `Extenso`, que não conhece domínio nenhum,
+ou pôr qualquer das duas coisas no núcleo, que não tem nem uma nem outra (invariante 3).
+
+O glossário é a quarta: o **domínio** declara a chave e a palavra inglesa de que se
+contenta; o **idioma** registra a tradução, que para ele é só uma palavra da própria
+língua; e o núcleo transporta o par sem entender nenhum dos dois lados. É a forma da
+D-041 — a camada obtém do contexto o que é do idioma — aplicada ao rótulo em vez de ao
+separador.
+
+Uma chave sem tradução no idioma ativo não é erro: quem consulta passa o padrão, e o
+domínio continua escrevendo em inglês onde ninguém traduziu (D-056).
+"""
+function register_term!(b::EnvironmentBuilder, lang::Symbol, key::Symbol,
+                        word::AbstractString)
+    lang === b.locale || return b
+    i = findfirst(p -> first(p) === key, b.terms)
+    i === nothing ? push!(b.terms, key => String(word)) : (b.terms[i] = key => String(word))
+    return b
+end
+
+"""
     register_separators!(b; decimal, group)
 
 Separador decimal e de milhar do idioma. O núcleo emite `0.42` e `1200`; a camada de
@@ -340,6 +370,7 @@ struct Environment
     group_separator::String
     date_pattern::String
     currency::Vector{Pair{Symbol,String}}
+    terms::Vector{Pair{Symbol,String}}
 end
 
 """
@@ -402,7 +433,8 @@ function freeze(b::EnvironmentBuilder, domains::Vector{Symbol})
     Environment(b.locale, domains, types, aliases,
                 build_keywords(b), sort(b.styles; by = s -> s.name), copy(b.marks),
                 b.inflect, b.repair, b.joiner, b.decimal_separator, b.group_separator,
-                b.date_pattern, sort(b.currency; by = first))
+                b.date_pattern, sort(b.currency; by = first),
+                sort(b.terms; by = first))
 end
 
 """
@@ -536,3 +568,21 @@ FormatContext(env::Environment; today::Union{Nothing,Date} = nothing) =
 decimal_separator(ctx::FormatContext) = ctx.env.decimal_separator
 group_separator(ctx::FormatContext) = ctx.env.group_separator
 currency_symbol(ctx::FormatContext, code::Symbol) = currency_symbol(ctx.env, code)
+
+"""
+    term(ctx, key, default) -> String
+
+A palavra que o idioma ativo dá a `key`, ou `default` quando ele não dá nenhuma.
+
+É o lado da leitura de [`register_term!`](@ref), e o `default` é obrigatório de
+propósito: quem pergunta tem de saber escrever a própria resposta, e um domínio que
+dependesse da existência da tradução deixaria de funcionar em ambiente neutro — que é
+onde o teste de neutralidade o observa.
+"""
+function term(env::Environment, key::Symbol, default::AbstractString)
+    i = findfirst(p -> first(p) === key, env.terms)
+    i === nothing ? String(default) : last(env.terms[i])
+end
+
+term(ctx::FormatContext, key::Symbol, default::AbstractString) =
+    term(ctx.env, key, default)

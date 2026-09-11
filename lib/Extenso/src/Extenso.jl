@@ -99,12 +99,25 @@ const PALAVRAS = [
     :and => "e", :or => "ou", :not => "não",
     :is => "é", :present => "presente", :absent => "ausente",
     :today => "hoje",
+    :include => "incluir",
     Symbol("true") => "verdadeiro", Symbol("false") => "falso", :null => "nulo",
 ]
 
 "Os nomes dos tipos do núcleo em português."
 const TIPOS = (:texto => :text, :numero => :number, :dinheiro => :money,
                :data => :date, :booleano => :boolean, :lista => :list)
+
+"""
+As palavras que as camadas de domínio pedem ao idioma (`Kanon.register_term!`).
+
+Não são palavras-chave: são palavras do texto, e por isso moram aqui e não em `PALAVRAS`.
+Uma camada sem idioma — o `KanonScience` é a que existe — escreve `Theorem 1` em inglês
+canônico e pergunta ao ambiente se a língua ativa tem outra palavra para a chave; esta
+tabela é a resposta em português. `Extenso` não conhece o `KanonScience`, nem carrega o
+pacote, nem sabe se ele está presente: `teorema` é palavra portuguesa, e é só isso que
+está escrito aqui (D-056).
+"""
+const TERMOS = (:theorem => "Teorema",)
 
 """
     Kanon.configure_locale!(b, ::Val{:pt})
@@ -117,6 +130,10 @@ function Kanon.configure_locale!(b::EnvironmentBuilder, ::Val{:pt})
 
     for (apelido, canonico) in TIPOS
         register_type_alias!(b, apelido, canonico)
+    end
+
+    for (chave, palavra) in TERMOS
+        register_term!(b, :pt, chave, palavra)
     end
 
     register_inflection!(b, :pt; marks = formas_de_marca(),

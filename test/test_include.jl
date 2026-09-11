@@ -313,3 +313,90 @@ D.
         @test render(m, Dict()) == "A.\n\nD."
     end
 end
+
+# --- a linha que quis ser uma inclusão (D-054, D-055) ------------------------
+#
+# Descoberto pelo modelo real nº 10, e a forma mais cara de defeito que este projeto
+# conhece: o documento sai errado e nada avisa. `include` era a única palavra-chave sem
+# apelido de idioma, e num modelo `pt` a linha `incluir "fragmentos/x.kanon"` não era
+# inclusão nenhuma — era prosa, e o caminho do arquivo saía impresso no meio do texto.
+
+@testset "a linha com forma de inclusão que não é uma (K1215)" begin
+    fonte(palavra) = """
+    kanon 1
+
+    data
+      nome : text !
+
+    text
+
+    : abertura
+    Contrato de {nome}.
+    $palavra "clausulas.kanon"
+    """
+
+    @testset "a palavra errada avisa, e o aviso diz o que vai acontecer" begin
+        m = load_string(Environment(), fonte("incluir"); name = "h.kanon", root = INC)
+        d = only(filter(x -> x.code == "K1215", collect(m.analysis.diagnostics)))
+        @test d.severity === :warning
+        @test d.line == 10
+        @test occursin("`incluir` não é a palavra que a escreve", d.message)
+        @test occursin("vai sair impresso no documento", d.message)
+        @test occursin("include \"clausulas.kanon\"", something(d.hint, ""))
+    end
+
+    @testset "e o aviso é fiel: a linha sai mesmo impressa" begin
+        m = load_string(Environment(), fonte("incluir"); name = "h.kanon", root = INC)
+        s = render(m, Dict("nome" => "locação"))
+        @test occursin("incluir \"clausulas.kanon\"", s)
+        @test !occursin("O preço é", s)          # o fragmento não entrou
+    end
+
+    @testset "a palavra certa continua incluindo, sem aviso nenhum" begin
+        m = load_string(Environment(), fonte("include"); name = "h.kanon", root = INC)
+        @test isempty(m.analysis.diagnostics)
+        s = render(m, Dict("nome" => "locação", "preco" => Money(100, :BRL), "prazo" => 5))
+        @test occursin("O preço é", s)
+    end
+
+    @testset "prosa que só se parece com uma inclusão não é avisada" begin
+        # o aviso é estreito de propósito: a linha inteira, uma palavra, e um caminho
+        # `.kanon` entre aspas. Qualquer coisa fora dessa forma é prosa, e prosa é o que
+        # o plano do texto tem de mais comum
+        for linha in ("Ele disse \"clausulas.kanon\" e saiu.",
+                      "incluir \"clausulas.txt\"",
+                      "incluir o arquivo \"clausulas.kanon\"",
+                      "incluir \"clausulas.kanon\" no fim")
+            m = load_string(Environment(), """
+            kanon 1
+
+            data
+              nome : text !
+
+            text
+
+            : abertura
+            $linha
+            """; name = "h.kanon", root = INC)
+            @test isempty(m.analysis.diagnostics)
+        end
+    end
+end
+
+# --- o glossário do idioma (D-056) -------------------------------------------
+#
+# O núcleo transporta pares chave → palavra sem entender nenhum dos dois lados: é o que
+# deixa uma camada de domínio sem idioma — `KanonScience` escreve `Theorem` — receber a
+# palavra da camada de idioma sem que nenhuma das duas conheça a outra.
+
+@testset "o glossário responde o padrão quando o idioma não tem a palavra" begin
+    env = Environment()
+    @test Kanon.term(env, :theorem, "Theorem") == "Theorem"
+    @test Kanon.term(env, :qualquer, "outra") == "outra"
+
+    b = Kanon.EnvironmentBuilder(:xx)
+    register_term!(b, :xx, :theorem, "Satz")
+    register_term!(b, :yy, :theorem, "Teorema")      # outro idioma: não entra
+    register_term!(b, :xx, :theorem, "Lehrsatz")     # a última registrada vale
+    @test Kanon.term(Kanon.freeze(b, Symbol[]), :theorem, "Theorem") == "Lehrsatz"
+end

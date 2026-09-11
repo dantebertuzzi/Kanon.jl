@@ -184,8 +184,15 @@ function unidade_de(raw::AbstractDict, ctx)
     v === nothing ? "" : String(kanon_decode(AbstractString, v, ctx))
 end
 
-"`Theorem 1`, `Theorem 3.1` — inglês canônico, porque este domínio não tem idioma."
-theorem_number(path, ctx) = "Theorem " * join(path, ".")
+"""
+`Theorem 1`, `Theorem 3.1` — inglês canônico, porque este domínio não tem idioma; e
+`Teorema 1` num modelo cujo idioma tenha palavra para a chave `:theorem`.
+
+Perguntar não é ter idioma: a camada continua sem conhecer língua nenhuma, e escreve a
+palavra inglesa sempre que ninguém tenha registrado outra. Quem traduz é a camada de
+idioma, para quem `teorema` é uma palavra do próprio dicionário (D-056).
+"""
+theorem_number(path, ctx) = Kanon.term(ctx, :theorem, "Theorem") * " " * join(path, ".")
 
 """
     configure!(b)

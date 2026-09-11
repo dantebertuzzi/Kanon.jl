@@ -1,0 +1,70 @@
+kanon 1 pt
+
+# Roteiro de aula — **modelo real nº 10** do portão da 1.0.
+#
+# Escolhido pelo que a **composição** ainda não tinha sofrido. A inclusão de fragmento
+# existe desde a F7 e um documento só a usa: o relatório nº 3, escrito em inglês, sem
+# camada de idioma, e cujo fragmento traz blocos do mesmo estilo do hospedeiro e não é
+# citado por ele. Três coisas ficaram, portanto, sem nenhum documento que as atravesse.
+#
+# Quatro coisas só aparecem aqui:
+#
+#   1. **Um fragmento incluído num modelo em português.**
+#   2. **Dois estilos de bloco convivendo com contadores independentes**, e a fronteira
+#      do arquivo passando no meio deles: os teoremas são do hospedeiro, os itens
+#      numerados vêm do fragmento, e cada família conta a sua.
+#   3. **Uma remissão do hospedeiro a um bloco definido no fragmento** — o número de um
+#      bloco que o arquivo que o cita não declara —, ao lado de outra ao próprio
+#      hospedeiro, no mesmo parágrafo e com estilos diferentes.
+#   4. **O marcador `@` num documento em português.** O `KanonScience` se declara sem
+#      idioma e escreve `Theorem` em inglês canônico; até aqui nenhum documento em
+#      português tinha numerado um teorema, e o certificado nº 8 não usou o marcador.
+#
+# O documento é o roteiro que um professor emite por turma: o texto é o mesmo todo
+# semestre, e a amostra, os números e a monitoria mudam.
+#
+# A linha abaixo, `incluir "fragmentos/avaliacao.kanon"`, foi escrita assim porque é
+# assim que se escreve em português — e não existia. `include` era a única palavra-chave
+# sem apelido de idioma (D-054), e uma palavra-chave que falta não dá erro: a linha deixa
+# de ser diretiva e vira **prosa**. Este roteiro saía com um parágrafo dizendo o caminho
+# do fragmento, sem um único diagnóstico, e o `check` passava (D-055). O rótulo dos
+# teoremas saía `Theorem 1` (D-056).
+
+dados
+  instituicao : texto      !
+  disciplina  : texto      !
+  codigo      : texto      !
+  turma       : texto      !
+  docente     : texto      !
+  monitor     : texto
+  encontros   : numero     !
+  amostra     : numero     !
+  variavel    : texto      !
+  estimativa  : measure    !
+  referencia  : measure    !
+  emissao     : data       = hoje
+
+texto
+
+: cabecalho
+{instituicao} — {disciplina} ({codigo}), turma {turma}. Roteiro preparado por {docente}[, com a monitoria de {monitor}], em {emissao:corrente}.
+
+: apresentacao
+Este roteiro cobre {encontros:extenso} encontros e usa, em todos os exemplos, a mesma amostra de {amostra} observações de {variavel}.
+
+@@ estimador
+A média amostral, calculada sobre as {amostra} observações da amostra, é um estimador não viesado da média populacional. O valor observado nesta turma é de {estimativa}, contra a referência de {referencia} apurada no semestre anterior.
+
+@@@ precisao
+A estimativa é precisa a menos de um centésimo do próprio valor, com incerteza relativa de {estimativa:relative}, e o valor central de {estimativa:bare} está escrito com os algarismos que a medição sustenta e nenhum além deles.
+
+@@ intervalo
+O intervalo de confiança de noventa e cinco por cento para a média populacional cobre a média amostral com a margem que a incerteza acima exprime, e a interpretação dele é sobre o procedimento, nunca sobre o intervalo já calculado.
+
+incluir "fragmentos/avaliacao.kanon"
+
+: fecho
+O {::estimador} será demonstrado no primeiro encontro, e os critérios do item {::avaliacao} valem para toda a turma.
+
+regras
+  precisao  quando estimativa é precise

@@ -20,8 +20,13 @@ using Unicode
 
 # A ordem dos `include` segue a dependência conceitual, não a de definição: em Julia,
 # funções podem ser definidas em qualquer ordem desde que existam antes da chamada.
-include("ast.jl")
+#
+# A exceção é este primeiro trio, e é de definição: `Template` guarda os avisos da
+# leitura (D-055) e `Diagnostic` nasce de um `Span`. `span.jl` carrega o que os dois
+# precisam antes de qualquer um deles existir.
+include("span.jl")
 include("diagnostics.jl")
+include("ast.jl")
 include("source.jl")
 include("lex.jl")
 include("parse.jl")
@@ -72,6 +77,7 @@ export register_type!, register_aliases!, register_block_style!
 export register_inflection!, register_repair_hook!, register_currency!
 export register_separators!, register_date_pattern!
 export register_type_alias!, register_list_joiner!
+export register_term!, term
 export configure!, configure_locale!
 export @kanon_type
 export typefor, typenames, stylefor, hasmark, currency_symbol

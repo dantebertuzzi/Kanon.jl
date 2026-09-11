@@ -30,8 +30,9 @@ function newid!(ctx::ParseCtx)
     return ctx.nextid
 end
 
-function err!(ctx::ParseCtx, code::AbstractString, sp::Span, msg::AbstractString; hint = nothing)
-    push!(ctx.diags, Diagnostic(code, :syntax, sp, ctx.src.name, msg; hint))
+function err!(ctx::ParseCtx, code::AbstractString, sp::Span, msg::AbstractString;
+              hint = nothing, severity::Symbol = :error)
+    push!(ctx.diags, Diagnostic(code, :syntax, sp, ctx.src.name, msg; hint, severity))
     return nothing
 end
 
@@ -231,6 +232,9 @@ end
 
 function parse_with!(ctx::ParseCtx, src::SourceFile)
     ctx.src = src
+    # O contexto é compartilhado com os fragmentos durante a composição: o que interessa
+    # a este arquivo é o que ele próprio acrescentou.
+    antes = length(ctx.diags)
     version, lang, next_line = parse_pragma!(ctx)
 
     # Problema no pragma é fatal. Continuar a analisar um arquivo cuja versão, idioma ou
@@ -258,5 +262,6 @@ function parse_with!(ctx::ParseCtx, src::SourceFile)
     set = sorted(DiagnosticSet(ctx.diags))
     haserrors(set) && throw(KanonSyntaxError(set))
 
-    return Template(version, lang, [src.name], data, text, rules, ctx.nextid)
+    return Template(version, lang, [src.name], data, text, rules, ctx.nextid,
+                    ctx.diags[(antes + 1):end])
 end
