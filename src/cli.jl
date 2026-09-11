@@ -33,6 +33,7 @@ Opções
   --to FORMATO   text (padrão), markdown ou typst
   --today DATA   a data de hoje, em AAAA-MM-DD; `today` nunca vem do relógio
   --locale IDIOMA
+  --domain NOME  carrega uma camada de domínio (repetível): --domain KanonLegal
   --version
   --help
 
@@ -71,14 +72,14 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
 
     opts = parse_options(args[2:end], err)
     opts === nothing && return EXIT_USAGE
-    posicionais, saida, hoje, idioma, formato = opts
+    posicionais, saida, hoje, idioma, dominios, formato = opts
 
     isempty(posicionais) &&
         (println(err, "kanon: falta o arquivo do modelo."); return EXIT_USAGE)
     length(posicionais) > 2 &&
         (println(err, "kanon: argumentos demais."); return EXIT_USAGE)
 
-    ambiente = env === nothing ? build_env(idioma, err) : env
+    ambiente = env === nothing ? build_env(idioma, dominios, err) : env
     ambiente === nothing && return EXIT_USAGE
 
     try
@@ -102,9 +103,34 @@ function report(err::IO, e::KanonError, code::Int)
     return code
 end
 
-function build_env(idioma::Union{Nothing,Symbol}, err::IO)
+"""
+Monta o ambiente da execução: o idioma e as camadas de domínio pedidas na linha de
+comando.
+
+**Quem manda carregar é o usuário, nunca o modelo** (invariante 4 e §11.1). Um `--domain`
+é o equivalente de linha de comando ao `using` que o programa escreveria, e por isso é
+opção da CLI e não pragma do arquivo: um modelo que pudesse nomear o pacote a carregar
+seria dado não confiável mandando o motor executar código.
+
+Sem isto a linha de comando não alcançava documento nenhum com camada de domínio — que é
+a maior parte deles (D-058).
+"""
+function build_env(idioma::Union{Nothing,Symbol}, dominios::Vector{Symbol}, err::IO)
+    mods = Module[]
+    for nome in dominios
+        m = try
+            Base.require(Main, nome)
+        catch e
+            println(err, "kanon: a camada `", nome, "` não está disponível neste ",
+                    "ambiente Julia.")
+            println(err, "       Instale o pacote e rode de novo: ",
+                    "`julia -e 'using Pkg; Pkg.add(\"", nome, "\")'`.")
+            return nothing
+        end
+        push!(mods, m)
+    end
     try
-        return Environment(locale = idioma)
+        return Environment(locale = idioma, domains = mods)
     catch e
         e isa KanonEnvironmentError || rethrow()
         showerror(err, e)
@@ -119,6 +145,7 @@ function parse_options(args::Vector{String}, err::IO)
     saida = nothing
     hoje = nothing
     idioma = nothing
+    dominios = Symbol[]
     formato = PlainText()
     i = 1
     while i <= length(args)
@@ -147,6 +174,13 @@ function parse_options(args::Vector{String}, err::IO)
             i += 1
             i > length(args) && (println(err, "kanon: `--locale` precisa de um idioma."); return nothing)
             idioma = Symbol(args[i])
+        elseif a == "--domain"
+            i += 1
+            i > length(args) && (println(err, "kanon: `--domain` precisa do nome de uma camada."); return nothing)
+            nome = Symbol(args[i])
+            nome in dominios &&
+                (println(err, "kanon: a camada `", nome, "` foi pedida duas vezes."); return nothing)
+            push!(dominios, nome)
         elseif startswith(a, "-")
             println(err, "kanon: opção desconhecida `", a, "`.")
             return nothing
@@ -155,7 +189,7 @@ function parse_options(args::Vector{String}, err::IO)
         end
         i += 1
     end
-    (posicionais, saida, hoje, idioma, formato)
+    (posicionais, saida, hoje, idioma, dominios, formato)
 end
 
 function tryparse_date(s::AbstractString)

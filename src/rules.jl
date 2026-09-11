@@ -179,7 +179,8 @@ cada uma consome.
 **Bloco removido não consome número; bloco repetido consome um por iteração** (§6.2). É
 o que faz a numeração depender dos dados, e por isso ela mora aqui e não na `Analysis`.
 """
-function build_plan(m::Model, values::Vector{Any}, ctx::FormatContext, budget)
+function build_plan(m::Model, values::Vector{Any}, ctx::FormatContext, budget,
+                    preview::Bool = false)
     tmpl = m.template
     a = m.analysis
     blocos = tmpl.text.blocks
@@ -193,7 +194,7 @@ function build_plan(m::Model, values::Vector{Any}, ctx::FormatContext, budget)
         regra_for = k_for == 0 ? nothing : tmpl.rules.rules[k_for]
         regra_when = k_when == 0 ? nothing : tmpl.rules.rules[k_when]
 
-        elementos = instances_of(m, values, ctx, b, regra_for)
+        elementos = instances_of(m, values, ctx, b, regra_for, preview)
         criadas = 0
 
         for elemento in elementos
@@ -223,12 +224,37 @@ Os elementos sobre os quais o bloco se repete. Um bloco sem `one for each` tem u
 iteração só, com `nothing` no lugar do elemento.
 """
 function instances_of(m::Model, values::Vector{Any}, ctx::FormatContext, b::Block,
-                      regra::Union{Nothing,Rule})
+                      regra::Union{Nothing,Rule}, preview::Bool = false)
     regra === nothing && return Any[nothing]
     sc = RuleScope(values, m.template.data.fields, nothing, nothing, ctx)
     v = scope_value(sc, regra.foreach)
-    v === nothing && return Any[]           # coleção ausente: nenhuma iteração
+    if v === nothing
+        # Coleção ausente: nenhuma iteração — salvo no rascunho, e só quando o contrato
+        # garante que o documento terá pelo menos uma (D-057).
+        return preview && garantida(m, regra.foreach) ? Any[nothing] : Any[]
+    end
     collect(Any, v)
+end
+
+"""
+O contrato garante que esta coleção tem ao menos um elemento?
+
+Obrigatória (ou com valor padrão) e com mínimo maior que zero: `texto[1..] !` garante,
+`texto[] ` não garante, e `texto[1..]` sem `!` também não. É a condição que decide se o
+rascunho mostra uma cópia do bloco repetido — a mesma pergunta que a D-024 faz do valor
+interpolado, no plano do bloco.
+
+Só o campo de primeiro nível, de propósito: uma coleção dentro de composto depende do
+composto existir, e afirmar a garantia ali seria afirmar mais do que o contrato diz.
+"""
+function garantida(m::Model, p::Path)
+    length(p.segments) == 1 || return false
+    i = findfirst(f -> f.name === p.segments[1], m.template.data.fields)
+    i === nothing && return false
+    f = m.template.data.fields[i]
+    f.presence === OPTIONAL && return false
+    f.card.kind === ATLEAST || f.card.kind === EXACT || f.card.kind === RANGE || return false
+    f.card.lo >= 1
 end
 
 "O sujeito de uma instância: o elemento, quando o bloco itera sobre o próprio sujeito."

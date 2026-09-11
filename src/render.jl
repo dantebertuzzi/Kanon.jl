@@ -338,5 +338,5 @@ nenhum.
 """
 function preview(m::Model, data; today::Union{Nothing,Date} = nothing,
                  budget::Budget = Budget(), to = PlainText())
-    render(bind(m, data; today, budget); budget, preview = true, to)
+    render(bind(m, data; today, budget, preview = true); budget, preview = true, to)
 end

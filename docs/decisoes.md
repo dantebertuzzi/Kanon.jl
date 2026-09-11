@@ -1955,3 +1955,82 @@ saída descartada, com um `if` no lugar do dicionário.
 palavras-chave (essas são do léxico, e o parser não consulta o ambiente — invariante 8).
 É o texto que a camada escreve **dentro do documento**, e é a única coisa que ela escreve
 por conta própria.
+
+---
+
+## D-057 — O rascunho mostra a cópia que o contrato promete
+
+*2026-09-11 · aceita · surgida ao escrever o modelo real nº 11*
+
+**A observação.** A minuta do contrato de prestação de serviços é o estado normal de um
+contrato: o escritório a escreve com o escopo em aberto e o preço em negociação. O
+rascunho saía com `«valor»`, com `«inicio»` — e **sem a cláusula das entregas**, que é
+justamente a parte em aberto. `entregas : texto[1..] !` promete ao menos um item no
+documento pronto, e o rascunho mostrava zero.
+
+**Por que acontecia.** `instances_of` devolve zero iterações quando a coleção está
+ausente, o que é a resposta certa para o `render` — e a única resposta que ele conhecia.
+O plano é montado em `bind`, que não sabia distinguir rascunho de documento.
+
+**Decisão.** No rascunho, um bloco repetido sobre coleção **garantida** ausente produz
+**uma** iteração, com o marcador no lugar do elemento. Sobre coleção **opcional**
+ausente, nenhuma — porque o documento pronto pode legitimamente não ter nenhuma.
+
+É a doutrina da D-024 aplicada ao plano do bloco em vez do valor interpolado: *"só o valor
+garantido que falta vira marcador, porque é o único cuja ausência não tem representação no
+texto final"*. Um bloco repetido sobre `[1..] !` tem representação garantida no texto
+final; sobre `[]`, não tem.
+
+**Garantida quer dizer as duas coisas**: obrigatória (ou com valor padrão) **e** com
+mínimo maior que zero. `texto[1..]` sem `!` não garante nada, e `texto[] !` tampouco.
+Só o campo de primeiro nível, de propósito: uma coleção dentro de composto depende de o
+composto existir, e afirmar a garantia ali seria afirmar mais do que o contrato diz.
+
+**O que isso não promete.** O rascunho mostra **uma** cópia, não a quantidade final: ele
+não sabe quantas entregas serão contratadas, e não inventa. Quando o bloco repetido é de
+nível 1, os números dos blocos seguintes ainda mudam entre o rascunho e o documento — e
+com uma cópia eles mudam menos, e a estrutura aparece. Zero cópias escondia a estrutura
+inteira.
+
+---
+
+## D-058 — A camada de domínio na linha de comando
+
+*2026-09-11 · aceita · surgida ao escrever o modelo real nº 11*
+
+**A observação.** O modelo nº 11 devia ser o primeiro a passar pela CLI. Não passou:
+`kanon check contrato.kanon --locale pt` recusa o documento com dezesseis diagnósticos,
+porque `pessoa`, `dinheiro` e o marcador `§` vêm do `KanonLegal`, e **a CLI não tinha
+como carregar uma camada de domínio**. `--locale` era a única opção de ambiente.
+
+O alcance é maior que o modelo: dos dez modelos reais escritos até aqui, **nove** usam
+camada de domínio. A linha de comando — que a §12 documenta desde a F0 e que é como o
+redator chega ao motor — não alcançava nenhum deles.
+
+**Por que passou tanto tempo.** `test_cli.jl` exercita os cinco códigos de saída com
+modelos-brinquedo, escritos em inglês canônico e sem camada nenhuma, porque a suíte do
+núcleo não pode depender de camada (invariante 3). A suíte de cada camada chama o motor
+de dentro de Julia, onde `Environment(domains = [...])` sempre esteve à mão. A pergunta
+"e pela linha de comando?" não era de ninguém — a mesma forma da D-046 e da D-052.
+
+**Decisão.** `--domain NOME`, repetível: `kanon render c.kanon d.json --locale pt
+--domain KanonLegal`. O nome é resolvido no ambiente Julia ativo; o que não estiver
+instalado é erro de **uso** (código 3), com a linha do `Pkg.add` na mensagem, e nunca uma
+pilha de Julia.
+
+**Quem manda carregar é o usuário, e isto não afrouxa a invariante 4.** Um `--domain` é o
+equivalente de linha de comando ao `using` que o programa escreveria. O que a invariante
+proíbe é o **modelo** mandar carregar código — um pragma `domain KanonLegal` no arquivo
+seria dado não confiável escolhendo o que o motor executa, e é por isso que ele não
+existe, nem vai existir. A linha de comando é do operador, não do documento.
+
+**Alternativas descartadas.** Um pragma no modelo (acima). Uma variável de ambiente
+`KANON_DOMAINS`: mesma capacidade, menos visível no comando que a usa, e invisível no
+histórico do shell. Um arquivo de configuração por projeto: resolve o incômodo de repetir
+a opção, e não resolve nada que a opção não resolva — se o incômodo aparecer, ele é
+aditivo depois.
+
+**O que veio junto.** A dica do `K2005` — tipo desconhecido — mandava carregar a camada e
+passá-la em `domains = [...]`, que é a forma de quem chama o motor de dentro de Julia. Um
+redator na linha de comando lia a dica e não tinha o que fazer com ela. Agora ela diz as
+duas formas.

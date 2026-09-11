@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.356 testes** ao todo — 1.541 no núcleo (~50 s com Aqua), 268 em `Extenso`,
-178 em `KanonLegal`, 215 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.414 testes** ao todo — 1.556 no núcleo (~50 s com Aqua), 268 em `Extenso`,
+221 em `KanonLegal`, 215 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -35,7 +35,7 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existem **dez** modelos reais no repositório, em `test/golden/exemplos/`:
+Existem **onze** modelos reais no repositório, em `test/golden/exemplos/`:
 `escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
 `certificado.kanon` (um por linha de planilha), `laudo.kanon` (dois domínios ao mesmo
 tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst),
@@ -45,9 +45,9 @@ tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst)
 colunas). O portão para a 1.0 pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos cinco que faltam vai cobrar alguma coisa — como os dez primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os nove últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **vinte e dois defeitos e
+dos quatro que faltam vai cobrar alguma coisa — como os onze primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os dez últimos mediram
+isso: escritos com o motor pronto e a suíte verde, produziram **vinte e quatro defeitos e
 uma questão aberta de versão**.
 
 | | O que apareceu | Modelo |
@@ -74,6 +74,8 @@ uma questão aberta de versão**.
 | **D-054** | `include` era a **única palavra-chave sem apelido de idioma**, e num modelo `pt` a linha `incluir "x.kanon"` não era inclusão nenhuma: virava prosa, e o caminho do arquivo saía impresso no documento. O modelo carregava limpo e o `check` passava | aula |
 | **D-055** | e o parser **não tinha como avisar**: todo `K1xxx` era erro, erro viaja por exceção, e um aviso era descartado entre a leitura e a análise porque o `Template` não tinha onde guardá-lo | aula |
 | **D-056** | `Theorem 1` em qualquer idioma — e as três saídas óbvias quebravam uma declaração cada: o domínio não tem idioma, o idioma não conhece domínio, e o núcleo não tem nem uma coisa nem outra | aula |
+| **D-057** | o **rascunho** de uma minuta saía sem a cláusula que o contrato promete: um bloco repetido sobre coleção garantida ausente vinha com zero cópias, escondendo justamente a parte em aberto que o redator abriu o rascunho para ver | serviços |
+| **D-058** | a **CLI não tinha como carregar uma camada de domínio**, e por isso não alcançava nove dos dez modelos reais já escritos — a linha de comando que a §12 documenta desde a F0 servia só ao que não usa camada | serviços |
 
 **O padrão nos nove vale mais que os nove: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
@@ -98,7 +100,11 @@ nenhum teste tinha lido um CSV, e por isso ninguém tinha perguntado como uma c�
 um composto. E a inclusão de fragmentos, que existe desde a F7, tinha **um**
 documento: escrito em inglês, sem camada de idioma, com um fragmento do mesmo estilo do
 hospedeiro e que o hospedeiro não cita — e por isso ninguém tinha perguntado como se
-escreve `include` em português.
+escreve `include` em português. E a suíte da CLI exercita os cinco códigos de saída
+com modelos-brinquedo, em inglês canônico e sem camada, porque a suíte do núcleo não pode
+depender de camada; a de cada camada chama o motor de dentro de Julia, onde
+`Environment(domains = [...])` sempre esteve à mão. As duas juntas cobriam tudo, e
+deixavam de fora a única pergunta que importa ao redator: **e pela linha de comando?**
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -106,7 +112,7 @@ modelo nº 3 foi escolhido justamente por atravessar três interseções vazias 
 um modelo em arquivo, com fragmento incluído, na camada científica, emitido também em
 Markdown.
 
-O que procurar em cada um dos cinco que faltam:
+O que procurar em cada um dos quatro que faltam:
 
 - Uma construção que a gramática não expressa, ou expressa mal.
 - Uma mensagem de erro que não diz o que fazer.
@@ -192,7 +198,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado), `ensaio` (a camada científica em português, medições vindas de JSON) `verificacao` (um por registro de um CSV, medições em colunas com ponto) e `aula` (um roteiro por turma, com fragmento incluído em português e duas famílias de numeração), cada um com a saída exigida |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado), `ensaio` (a camada científica em português, medições vindas de JSON) `verificacao` (um por registro de um CSV, medições em colunas com ponto) `aula` (um roteiro por turma, com fragmento incluído em português e duas famílias de numeração) e `servicos` (um contrato em minuta, com o rascunho, o documento pronto e o Markdown), cada um com a saída exigida |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída, o escape do valor interpolado e o do rótulo |
@@ -744,17 +750,17 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **10 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **11 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
 contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo, o
-edital, a doação, o ensaio, a verificação e a aula, escritos com o motor já pronto e a suíte
-verde, cobraram mais vinte e dois (D-031 a D-035 e D-040 a D-056) — **a taxa de descoberta
-não caiu quando o código ficou bom, e o oitavo e o décimo acharam os dois casos de
-documento falso sem diagnóstico nenhum.**
+edital, a doação, o ensaio, a verificação, a aula e os serviços, escritos com o motor já
+pronto e a suíte verde, cobraram mais vinte e quatro (D-031 a D-035 e D-040 a D-058) — **a
+taxa de descoberta não caiu quando o código ficou bom, e o décimo primeiro achou o motor
+inalcançável pela porta por onde o redator entra.**
 
 ### O que a implementação já mudou na especificação
 
-Trinta e oito decisões saíram de escrever o código, e vinte e duas delas fecharam buracos
+Quarenta decisões saíram de escrever o código, e vinte e quatro delas fecharam buracos
 que nenhuma releitura teria encontrado — o texto era internamente coerente em todos os
 casos:
 
@@ -782,13 +788,15 @@ casos:
 | **D-054** | a §9 promete que o idioma renomeia as palavras-chave, e a tabela foi escrita antes de a linguagem ter `include` — uma palavra-chave sem apelido não dá erro: vira prosa |
 | **D-055** | o próprio parser já tinha escrito que a intenção denunciada não vira prosa em silêncio, e tinha escrito isso só para o cabeçalho de bloco |
 | **D-056** | três documentos — o do núcleo, o do domínio e o do idioma — declaram cada um o que não têm, e nenhum dos três disse quem escreve a palavra que falta aos outros dois |
+| **D-057** | a D-024 decidiu o que o rascunho faz com o **valor** que falta, e a §8.3 decidiu o que o plano faz com a **coleção** que falta; nenhuma das duas percebeu que o rascunho também monta plano |
+| **D-058** | a §12 descreve a linha de comando desde a F0 e a §5 descreve as camadas desde a F0, e nenhuma das duas disse como se carrega uma camada pela linha de comando |
 
 E uma na direção contrária, que é a primeira: a **D-043** não mudou a especificação —
 a §8.3 dizia desde a F0 que o caminho iterado denota o elemento corrente *"tanto no texto
 quanto no `when`"*, e era o render que não obedecia. O texto normativo achou o defeito no
 código, que é o que ele existe para fazer.
 
-Se cinco modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
+Se quatro modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.
 
 **O método, fixado pelo segundo modelo e confirmado pelo terceiro.** Escreva o modelo

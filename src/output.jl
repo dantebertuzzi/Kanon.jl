@@ -60,8 +60,12 @@ O que só é marcação **no início de uma linha**: títulos, citações, itens
 linha de sublinhado de um título ATX alternativo.
 
 Escapar estes no meio do texto seria ruído puro: `12.345` viraria `12\\.345` e
-`R\$ 250.000,00` ficaria ilegível no fonte, sem que nada estivesse sendo protegido — um
-ponto no meio de uma frase não abre lista nenhuma.
+`- item` do meio de uma frase não abre lista nenhuma, sem que nada estivesse sendo
+protegido.
+
+O cifrão **não** está nesta lista, e é de propósito: ele abre matemática em Pandoc e no
+GitHub, e escapado é literal nos dois e no CommonMark. `R\\\$ 42.000,00` no fonte é o
+preço de um contrato não virar fórmula, e o modelo real nº 11 é quem o paga.
 """
 const MARKDOWN_INICIO = raw"#+->=~"
 

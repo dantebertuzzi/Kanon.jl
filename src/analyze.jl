@@ -936,8 +936,8 @@ function analyze_data!(ctx::AnalysisCtx)
         # nomes sem nenhuma indicação do que fazer, e a §10.4 manda sugerir a correção
         # provável quando há uma.
         lista = "Tipos disponíveis: $(join(names, ", "))."
-        falta = "Se `$(f.type)` vem de uma camada, carregue-a e passe-a em " *
-                "`domains = [...]`. " * lista
+        falta = "Se `$(f.type)` vem de uma camada, carregue-a: `domains = [...]` em " *
+                "Julia, `--domain` na linha de comando. " * lista
         err!(ctx, "K2005", f.span,
              "`$(f.name)` é declarado do tipo `$(f.type)`, que este ambiente não conhece.";
              hint = did_you_mean(f.type, names, falta),
