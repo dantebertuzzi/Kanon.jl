@@ -132,6 +132,7 @@ const DADOS_LAUDO = Dict{String,Any}(
         ds = [x for x in e.diagnostics if x.code == "K2005"]
         @test length(ds) == 2                       # `area` e `frente`
         @test all(occursin("measure", d.message) for d in ds)
-        @test occursin("carregue-a e passe-a em `domains = [...]`", first(ds).hint)
+        @test occursin("carregue-a: `domains = [...]` em Julia, `--domain` na linha de " *
+                       "comando", first(ds).hint)
     end
 end

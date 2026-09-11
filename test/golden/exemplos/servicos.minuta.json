@@ -1,0 +1,21 @@
+{
+  "contratante": {
+    "nome": "Marcos Aurélio Sobral",
+    "genero": "m",
+    "estado_civil": "casado",
+    "cpf": "111.222.333-44",
+    "endereco": "Avenida Cardoso de Sá, 1420, Petrolina/PE",
+    "regime": "comunhão parcial de bens"
+  },
+  "contratada": {
+    "nome": "Renata Coelho Amorim",
+    "genero": "f",
+    "estado_civil": "solteira",
+    "cpf": "555.666.777-88",
+    "endereco": "Rua das Acácias, 87, Juazeiro/BA"
+  },
+  "objeto": "a elaboração do projeto executivo das instalações elétricas do edifício A_2 do campus",
+  "parcelas": 6,
+  "prazo": 180,
+  "multa": 2
+}

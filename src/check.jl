@@ -457,7 +457,7 @@ Valida os dados contra o contrato e decodifica o que passar. Não lança: devolv
 `Bound` com os diagnósticos acumulados, para que o chamador decida.
 """
 function bind(m::Model, data; today::Union{Nothing,Date} = nothing,
-              budget::Budget = Budget())
+              budget::Budget = Budget(), preview::Bool = false)
     ctx = CheckCtx(m, FormatContext(m.env, today),
                    isempty(m.template.sources) ? "<string>" : m.template.sources[1],
                    Diagnostic[])
@@ -477,7 +477,7 @@ function bind(m::Model, data; today::Union{Nothing,Date} = nothing,
     # O plano é montado sempre, inclusive com dados incompletos: é dele que o rascunho
     # depende, e uma condição sobre campo ausente tem resposta definida e conservadora —
     # `is present` é falso, comparação é falsa.
-    plano = build_plan(m, valores, ctx.fctx, budget)
+    plano = build_plan(m, valores, ctx.fctx, budget, preview)
 
     # A remissão quebrada só se reporta quando não há outro erro: com um campo faltando,
     # o bloco pode ter sumido por causa do campo, e o K3040 seria cascata.

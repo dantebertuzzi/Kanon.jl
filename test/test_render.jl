@@ -335,3 +335,59 @@ Assina {r}[, dito {r.suffix}], por si.
         @test render(m, Dict("r" => Rotulo("Ana", "  "))) == "Assina Ana, por si."
     end
 end
+
+# --- o rascunho de um bloco repetido (D-057) ---------------------------------
+#
+# Descoberto pelo modelo real nº 11. O rascunho existe para mostrar o texto que **vai**
+# sair; um bloco repetido sobre coleção garantida saía do rascunho com zero cópias, e o
+# contrato promete pelo menos uma. A minuta escondia justamente a parte que o redator
+# abriu o rascunho para ver.
+
+@testset "rascunho: o bloco repetido sobre coleção garantida aparece uma vez" begin
+    fonte(card) = """
+    kanon 1
+
+    data
+      titulo : text !
+      itens  : text$card
+
+    text
+
+    : cabeca
+    {titulo}
+
+    :: item <- itens
+    O item é {itens}.
+
+    : fecho
+    Fim.
+
+    rules
+      item  one for each itens
+    """
+
+    @testset "garantida: o rascunho mostra a cópia que o contrato promete" begin
+        m = load_string(Environment(), fonte("[1..] !"); name = "t.kanon")
+        r = preview(m, Dict("titulo" => "Lista"))
+        @test occursin("1. O item é «itens».", r)
+        @test count("O item é", r) == 1
+
+        # com os dados, as cópias são as dos dados — o rascunho não inventa quantidade
+        @test count("O item é", render(m, Dict("titulo" => "Lista",
+                                               "itens" => ["a", "b", "c"]))) == 3
+    end
+
+    @testset "opcional: nenhuma cópia, porque o documento pode não ter nenhuma" begin
+        m = load_string(Environment(), fonte("[]"); name = "t.kanon")
+        r = preview(m, Dict("titulo" => "Lista"))
+        @test !occursin("O item é", r)
+        @test !occursin("«itens»", r)
+    end
+
+    @testset "e o render continua recusando os mesmos dados" begin
+        m = load_string(Environment(), fonte("[1..] !"); name = "t.kanon")
+        e = try; render(m, Dict("titulo" => "Lista")); catch err; err; end
+        @test e isa KanonContractError
+        @test "K3001" in Set(d.code for d in e.diagnostics)
+    end
+end

@@ -191,3 +191,38 @@ end
     @test occursin("kanon 1.0", cli("--version").out)
     @test occursin("kanon check", cli().err)      # sem argumento, a ajuda vai ao stderr
 end
+
+# --- a camada de domínio na linha de comando (D-058) -------------------------
+#
+# Descoberto pelo modelo real nº 11: `--locale` era a única opção de ambiente, e por isso
+# a CLI não alcançava nenhum documento com camada de domínio — que são quase todos. Quem
+# manda carregar é o **usuário**, na linha de comando, e nunca o modelo: um arquivo que
+# pudesse nomear o pacote a carregar seria dado não confiável mandando executar código
+# (invariante 4).
+
+@testset "CLI: --domain carrega a camada, e só o usuário a pede" begin
+    @testset "camada que não está no ambiente é erro de uso" begin
+        r = cli("check", MODELO_CLI, "--domain", "KanonInexistente")
+        @test r.codigo == Kanon.EXIT_USAGE
+        @test occursin("não está disponível neste ambiente Julia", r.err)
+        @test occursin("Pkg.add", r.err)
+        @test !occursin("Stacktrace", r.err)
+    end
+
+    @testset "a mesma camada duas vezes é erro de uso" begin
+        r = cli("check", MODELO_CLI, "--domain", "A", "--domain", "A")
+        @test r.codigo == Kanon.EXIT_USAGE
+        @test occursin("duas vezes", r.err)
+    end
+
+    @testset "`--domain` sem nome é erro de uso" begin
+        @test cli("check", MODELO_CLI, "--domain").codigo == Kanon.EXIT_USAGE
+    end
+
+    @testset "um módulo sem `configure!` carrega e não muda nada" begin
+        # `Dates` é um módulo Julia que não é camada de Kanon: a §5 diz que o construtor
+        # chama `configure!` de quem o define, e passa adiante quem não o define.
+        r = cli("check", MODELO_CLI, "--domain", "Dates")
+        @test r.codigo == Kanon.EXIT_OK
+    end
+end

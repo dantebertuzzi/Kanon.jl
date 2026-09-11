@@ -1,0 +1,76 @@
+kanon 1 pt
+
+# Contrato de prestação de serviços — **modelo real nº 11** do portão da 1.0.
+#
+# Escolhido pelo caminho que o documento percorre **antes de estar pronto**. Dez modelos
+# reais foram escritos, e todos renderizam de uma vez, com os dados completos, chamando o
+# motor de dentro de Julia. Nenhum passou pelo **rascunho** — o único comando que produz
+# saída incompleta — nem pela **linha de comando**, que é como o redator chega ao motor.
+# A minuta é o estado normal de um contrato: o escritório a escreve com o escopo em
+# aberto e o preço ainda em negociação, e quer lê-la assim.
+#
+# Quatro coisas só aparecem aqui:
+#
+#   1. **O rascunho de um documento de verdade**, com camada de domínio, bloco repetido,
+#      grupos opcionais e remissão — e não com os campos de um modelo de teste.
+#   2. **A CLI**, com os códigos de saída da §12: o `preview` sai com 0 e avisa no
+#      *stderr*; o `render` dos mesmos dados sai com 1 e não escreve documento nenhum.
+#   3. **Um golden em Markdown**, que o acervo não tinha: o rótulo de uma camada — que é
+#      a única parte que o motor calcula — no formato que renumera o que parece lista.
+#   4. **O escape do valor num documento real**: `A_2` é um prédio, e em Markdown seria
+#      o começo de uma ênfase.
+#
+# A pergunta que o rascunho faz, e que nenhum teste de unidade tinha feito: o documento
+# incompleto tem os **números** do documento pronto? A numeração é a única coisa que o
+# motor calcula, e um rascunho que renumera manda o redator revisar remissões que vão
+# mudar debaixo dele.
+
+dados
+  contratante : pessoa     !
+  contratada  : pessoa     !
+  objeto      : texto      !
+  entregas    : texto[1..] !
+  valor       : dinheiro   !
+  parcelas    : numero     !
+  inicio      : data       !
+  prazo       : numero     !
+  multa       : numero     !
+  garantia    : dinheiro
+  responsavel : texto
+  foro        : texto      = "Petrolina"
+  emissao     : data       = hoje
+
+texto
+
+: preambulo
+Pelo presente instrumento particular de prestação de serviços, as partes adiante qualificadas ajustam o que segue:
+
+: qualificacao_contratante <- contratante
+{nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}, doravante denominado(a) CONTRATANTE;
+
+: qualificacao_contratada <- contratada
+{nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}, doravante denominado(a) CONTRATADA.
+
+§§ objeto
+Constitui objeto deste contrato {objeto}[, sob a responsabilidade técnica de {responsavel}].
+
+§§§ entrega <- entregas
+Integra o objeto a entrega seguinte: {entregas}, cujo recebimento se fará mediante termo assinado pelas partes.
+
+§§ preco
+Pela execução do objeto, a CONTRATANTE pagará à CONTRATADA a importância de {valor} ({valor:extenso}), em {parcelas:extenso} parcelas mensais e sucessivas[, prestada garantia no valor de {garantia}].
+
+§§ prazo
+O prazo de execução é de {prazo:extenso} dias, contados de {inicio:corrente}, e só se prorroga por acordo escrito entre as partes.
+
+§§ multa
+O descumprimento de qualquer obrigação sujeita a parte inadimplente à multa de {multa}% sobre a importância prevista na {::preco}, sem prejuízo das perdas e danos apuradas.
+
+§§ foro
+Fica eleito o foro da comarca de {foro} para dirimir as questões oriundas deste contrato, com renúncia a qualquer outro.
+
+: fecho
+E por estarem assim justas e contratadas, as partes assinam o presente em duas vias de igual teor, em {emissao:corrente}.
+
+regras
+  entrega  um para cada entregas

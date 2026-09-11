@@ -908,10 +908,29 @@ kanon contract modelo.kanon                 # JSON Schema 2020-12 + x-kanon
 kanon preview  modelo.kanon dados.json      # rascunho com «marcadores», nunca exporta
 ```
 
+**[acrescentado na F10 — D-058]** O ambiente da execução é declarado na linha de comando:
+`--locale pt` e `--domain NOME`, este repetível. Sem o segundo, a CLI não alcança nenhum
+documento que use camada de domínio — e são quase todos.
+
+```
+kanon render contrato.kanon dados.json --locale pt --domain KanonLegal
+```
+
+**Quem manda carregar é o operador, nunca o modelo.** A opção é o equivalente de linha de
+comando ao `using` que um programa escreveria; um pragma no arquivo que nomeasse o pacote
+a carregar seria dado não confiável escolhendo o que o motor executa, e a §11 o proíbe.
+Camada que não esteja no ambiente é erro de **uso** (código 3).
+
 Códigos de saída: `0` sucesso; `1` erro de contrato (dados); `2` erro de modelo
 (sintaxe ou referência); `3` erro de uso da CLI; `4` limite de recurso excedido.
 `kanon preview` sai com `0` e escreve o aviso no *stderr* mesmo com campos faltando —
 é o único comando que produz saída incompleta, e ela é sempre visivelmente marcada.
+
+**[acrescentado na F10 — D-057]** O rascunho mostra **o texto que vai sair**, e não uma
+versão inflada dele: o valor garantido que falta vira marcador, o nulável que falta elide
+o grupo, e um bloco repetido sobre coleção **garantida** ausente sai **uma vez**, marcado
+— o contrato promete ao menos uma cópia, e um rascunho sem nenhuma esconde a estrutura.
+Sobre coleção opcional ausente, não sai: o documento pronto pode não ter nenhuma.
 
 Candidato para a F9, herdado do docassemble: `kanon ask modelo.kanon dados.json`
 pergunta os campos faltantes um a um e emite o JSON completo. Atende à necessidade real
