@@ -1842,3 +1842,116 @@ medição não sustenta, ou a falta dos que ela sustenta.
 roadmap manda desde o nº 3. Os do nº 3 e do nº 8 também foram — mas a conta à mão da
 relativa foi feita com a mesma casa fixa que o motor usava. Conferir à mão protege contra o
 motor, e não contra a convenção errada que o autor do golden compartilha com ele.
+
+---
+
+## D-054 — `include` é palavra-chave, e palavra-chave tem apelido de idioma
+
+*2026-09-11 · aceita · surgida ao escrever o modelo real nº 10*
+
+**A observação.** O roteiro de aula é o primeiro documento em português que inclui um
+fragmento. Escrito como um redator escreveria, ele traz a linha `incluir
+"fragmentos/avaliacao.kanon"` no plano do texto. O modelo **carregava limpo**, o `check`
+passava, e o roteiro saía com um parágrafo dizendo `incluir
+"fragmentos/avaliacao.kanon"` — o caminho do arquivo impresso no documento, e nenhum
+diagnóstico em lugar nenhum. Só a remissão `{::avaliacao}`, que apontava um bloco do
+fragmento, acusou alguma coisa: `K2033`, bloco inexistente — um sintoma três linhas
+adiante da causa.
+
+**Por que passava.** A §9 promete que a camada de idioma renomeia as palavras-chave, e a
+tabela do `Extenso` traz as dezesseis que existiam quando ela foi escrita. `include`
+entrou na F7, com a inclusão de fragmentos, e não entrou na tabela: era a única palavra
+da linguagem sem forma portuguesa. Nenhum modelo em português tinha incluído um fragmento
+— o único que inclui é o relatório nº 3, escrito em inglês — e a interseção "inclusão ×
+idioma" não tinha documento nenhum.
+
+**Decisão.** `:include => "incluir"` entra em `PALAVRAS`. Pela D-003 a forma inglesa
+**deixa de valer** num arquivo que declara idioma, como acontece com todas as outras.
+
+**O que isso não conserta.** O apelido resolve o português e não resolve o silêncio: quem
+escrever `include` num modelo `pt` — a forma que este repositório documentou até hoje —
+cai exatamente no mesmo buraco. É a D-055.
+
+---
+
+## D-055 — Uma linha que quis ser inclusão não vira prosa em silêncio
+
+*2026-09-11 · aceita · surgida ao escrever o modelo real nº 10*
+
+**A observação.** O defeito da D-054 não era a falta do apelido. Era o documento sair
+errado sem que nada avisasse — a mesma categoria da D-048, e a mais cara de todas, porque
+as outras se veem lendo a saída uma vez e esta se vê lendo a saída **e sabendo o que
+deveria estar lá**.
+
+**Por que passava.** Uma linha que o plano do texto não reconhece é prosa. É assim de
+propósito: `: Considerando o exposto` é prosa, e não um bloco chamado `Considerando`. Mas
+o próprio `parse_text.jl` já tinha escrito o limite dessa regra para o cabeçalho de bloco
+— *"a presença de `<-` denuncia a INTENÇÃO de escrever um cabeçalho, e quando ela aparece
+e o resto não casa o resultado é erro, não prosa silenciosa"*. A inclusão não tinha a
+cláusula equivalente.
+
+**Decisão.** `K1215`, **aviso**: uma linha cuja forma inteira seja uma palavra, um espaço
+e um caminho terminado em `.kanon` entre aspas, e cuja palavra não seja a da inclusão nem
+qualquer outra palavra-chave, é avisada. A mensagem diz o que vai acontecer — *"o caminho
+vai sair impresso no documento"* — e a dica escreve a linha certa **na língua do arquivo**
+(D-051): num modelo `pt`, `incluir "x.kanon"`.
+
+Aviso, e não erro, por uma razão estreita: um documento pode falar da própria linguagem, e
+a linha citada em prosa é legítima. Não há escape para ela, e recusar fecharia a porta a um
+texto que ninguém teria como escrever de outro jeito. O que estava errado era o silêncio.
+
+**A forma é estreita de propósito.** A linha inteira, uma palavra só, e o `.kanon` entre
+aspas: `Ele disse "clausulas.kanon" e saiu.` não avisa, `incluir "clausulas.txt"` não
+avisa, e `incluir o arquivo "clausulas.kanon"` não avisa. Prosa é o que o plano do texto
+tem de mais comum, e um aviso que a alcance por engano custa mais do que resolve.
+
+**O que veio junto, e é a metade que importa.** O aviso não tinha por onde sair. Todo
+`K1xxx` era erro até aqui, e erro viaja por exceção; um aviso do parser era acumulado no
+contexto e **descartado** entre a leitura e a análise, porque o `Template` não tinha onde
+guardá-lo. O diagnóstico existia no código e não chegava a ninguém. `Template` passou a
+carregar os avisos da leitura, `compose` junta os do hospedeiro e os dos fragmentos, e
+`analyze` começa a lista com eles. `Span` e `NodeId` mudaram-se para `src/span.jl`: o
+`Diagnostic` nasce de um `Span` e o `Template` passou a guardar `Diagnostic`, e em Julia um
+campo precisa do tipo já definido.
+
+---
+
+## D-056 — O glossário: a palavra que o idioma empresta a quem não tem idioma
+
+*2026-09-11 · aceita · surgida ao escrever o modelo real nº 10*
+
+**A observação.** O roteiro de aula numera teoremas com o marcador `@`, e saía `Theorem
+1. A média amostral…` num documento em português. Era uma dívida conhecida desde o
+certificado nº 8, com o gatilho já puxado; o nº 10 é o documento que a cobra, porque é o
+primeiro que numera um teorema em português.
+
+**Por que é difícil.** As três saídas óbvias quebram uma declaração cada:
+
+- pôr `Teorema` dentro do `KanonScience`, que se anuncia **sem idioma**, em inglês
+  canônico, e é a prova em forma de pacote de que a linguagem não é portuguesa;
+- pôr o estilo `@` dentro do `Extenso`, que não conhece domínio nenhum, não carrega o
+  `KanonScience` e não sabe se ele está presente;
+- pôr qualquer das duas coisas no núcleo, que não tem nem idioma nem domínio
+  (invariante 3).
+
+**Decisão.** Um **glossário** no ambiente: `register_term!(b, lang, chave, palavra)` e
+`term(ctx, chave, padrão)`. O domínio declara a chave e a palavra inglesa de que se
+contenta; o idioma registra a tradução, que para ele é só uma palavra da própria língua; e
+o núcleo transporta o par sem entender nenhum dos dois lados. `theorem_number` passa a ser
+`term(ctx, :theorem, "Theorem") * " " * join(path, ".")`.
+
+É a forma da D-041 — a camada obtém do contexto o que é do idioma — aplicada ao rótulo em
+vez de ao separador. E o padrão é obrigatório na chamada de propósito: quem pergunta tem de
+saber escrever a própria resposta, e assim uma camada de domínio continua funcionando em
+ambiente neutro, que é onde o teste de neutralidade a observa.
+
+**Alternativas descartadas.** Um pacote-ponte `KanonScienceExtenso`, que é a resposta
+canônica de Julia para o cruzamento de dois pacotes: correta, e cara demais para uma
+palavra — seriam seis pacotes num repositório de cinco, e um por par de camadas daí em
+diante. O estilo consultar `ctx.env.locale` e ter a tabela dentro do domínio: é a primeira
+saída descartada, com um `if` no lugar do dicionário.
+
+**O que o glossário não é.** Não é tradução de diagnóstico (D-027), nem tabela de
+palavras-chave (essas são do léxico, e o parser não consulta o ambiente — invariante 8).
+É o texto que a camada escreve **dentro do documento**, e é a única coisa que ela escreve
+por conta própria.

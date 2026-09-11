@@ -1334,6 +1334,7 @@ Resolve o modelo contra o ambiente. Não muta o `Template` e não lança: devolv
 """
 function analyze(env::Environment, tmpl::Template)
     ctx = AnalysisCtx(env, tmpl)
+    append!(ctx.out.diagnostics, tmpl.diagnostics)   # o que a leitura avisou (D-055)
     analyze_data!(ctx)
     index_blocks!(ctx)
     bind_rules!(ctx)          # antes do texto: as remissões consultam as tabelas

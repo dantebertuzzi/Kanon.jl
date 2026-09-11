@@ -779,9 +779,17 @@ e `kanon 1 pt` no cabeçalho:
 | `and` / `or` / `not` | `e` / `ou` / `não` |
 | `is` / `present` / `absent` | `é` / `presente` / `ausente` |
 | `today` | `hoje` |
+| `include` | `incluir` |
 
 O arquivo canônico é o inglês: um motor sem nenhuma camada instalada lê qualquer
 modelo em inglês.
+
+**[acrescentado na F10 — D-054]** A tabela é a lista **inteira** das palavras-chave, e
+não um resumo: `include` entrou na linguagem com a inclusão de fragmentos e ficou três
+fases sem forma portuguesa, porque nenhum modelo em português tinha incluído um
+fragmento. Uma palavra-chave sem apelido não é um incômodo de redação — a linha que a
+usa deixa de ser diretiva e vira **prosa**, e o que ela dizia sai impresso no documento
+(D-055, `K1215`).
 
 **Mistura é erro** (questão 15.3, decisão D-003). O idioma é o declarado no pragma, ou
 inglês se omitido; qualquer palavra-chave fora desse conjunto é erro de sintaxe com a
@@ -795,6 +803,15 @@ separa as duas línguas: o que é **citação do modelo** sai na língua do mode
 **prosa da ferramenta** — a moldura da mensagem, o título do diagnóstico — sai em
 português (D-027). O nome de um **atributo de tipo** não é palavra-chave, e sai como o
 domínio o registrou.
+
+**[acrescentado na F10 — D-056]** A camada de idioma também empresta palavras a quem não
+tem idioma nenhum. Uma camada de domínio que escreva texto no documento — o rótulo
+`Theorem 1` do estilo `@` é o caso — declara uma **chave** e a palavra de que se contenta,
+e pergunta ao ambiente se a língua ativa tem outra: `term(ctx, :theorem, "Theorem")`. O
+idioma registra a tradução com `register_term!`, e para ele é só uma palavra da própria
+língua — `Extenso` não conhece o `KanonScience`, não o carrega e não sabe se ele está
+presente. Sem tradução registrada, vale o padrão: perguntar não é ter idioma, e a camada
+continua escrevendo inglês em ambiente neutro.
 
 ---
 

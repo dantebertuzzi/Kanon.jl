@@ -87,6 +87,7 @@ const CODE_TITLES = Dict{String,String}(
     "K1211" => "remissão malformada",
     "K1212" => "nível de bloco acima do teto da versão 1",
     "K1214" => "linha de inclusão malformada",
+    "K1215" => "linha com forma de inclusão, lida como prosa",
     # --- plano das regras ---
     "K1301" => "regra malformada",
     "K1302" => "expressão malformada",

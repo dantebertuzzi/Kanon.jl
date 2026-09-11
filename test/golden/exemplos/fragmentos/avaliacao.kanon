@@ -1,0 +1,27 @@
+kanon 1 pt
+
+# Os critérios que toda disciplina do departamento repete, escritos uma vez. O roteiro
+# que o inclui não sabe quais campos ele exige — a carga unifica os dois contratos
+# (D-005) —, e os itens daqui são numerados pelo estilo do núcleo, e não pelo dos
+# teoremas do hospedeiro: critério de avaliação não é teorema, e cada estilo conta a sua
+# própria família.
+
+dados
+  avaliacoes  : texto[1..] !
+  reposicao   : booleano   !
+  repositorio : texto      !
+  licenca     : texto      = "CC BY 4.0"
+
+texto
+
+:: avaliacao
+O aproveitamento será apurado por {avaliacoes}, e a nota final é a média aritmética simples das notas obtidas.
+
+::: reposicao_prova
+Haverá prova de reposição para quem faltar a uma avaliação por motivo justificado, aplicada no último encontro e abrangendo todo o conteúdo do período.
+
+:: dados_abertos
+Os conjuntos de dados usados nos exemplos estão depositados em {repositorio}, sob a licença {licenca}, e nenhum resultado apresentado em aula depende de material que não esteja nesse depósito.
+
+regras
+  reposicao_prova  quando reposicao

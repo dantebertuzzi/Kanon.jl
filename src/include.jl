@@ -146,7 +146,11 @@ function compose(t::Template, ldr::Loader, kw::KeywordTable)
 
     set = sorted(DiagnosticSet(diags))
     haserrors(set) && throw(KanonReferenceError(set))
-    Template(t.version, t.language, sources, data, TextPlane(blocos), regras, ctx.nextid)
+    # Os avisos do hospedeiro vêm no modelo dele; os dos fragmentos ficaram no `ctx`
+    # que os leu — um só para todos eles, que é o mesmo que mantém os identificadores
+    # únicos. Erro de leitura não chega aqui: `parse_with!` o lança.
+    Template(t.version, t.language, sources, data, TextPlane(blocos), regras, ctx.nextid,
+             vcat(t.diagnostics, ctx.diags))
 end
 
 """

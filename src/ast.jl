@@ -12,28 +12,6 @@
 # A tentação, ao implementar a F5, será guardar o número calculado dentro do `Block`.
 # Funciona, é mais curto, e mata a v2 (D-011).
 
-"Índice denso de nó. Denso para que as tabelas laterais sejam `Vector`, não `Dict` (I4)."
-const NodeId = Int32
-
-"""
-    Span
-
-Posição de um trecho no arquivo. Colunas são contadas em **caracteres**, 1-based —
-é o que o redator vê no editor, não o que o byte diz.
-"""
-struct Span
-    file::Int32
-    line::Int32
-    col::Int32
-    endline::Int32
-    endcol::Int32
-end
-
-Span(file::Integer, line::Integer, col::Integer) = Span(file, line, col, line, col)
-
-"Junta dois trechos no menor que cobre os dois."
-merge_span(a::Span, b::Span) = Span(a.file, a.line, a.col, b.endline, b.endcol)
-
 abstract type Node end
 
 id(n::Node) = n.id
@@ -307,7 +285,21 @@ struct Template
     text::TextPlane
     rules::RulesPlane
     nnodes::Int32
+    # avisos que a leitura produziu e que não impedem a árvore de existir
+    diagnostics::Vector{Diagnostic}
 end
+
+"""
+Um modelo sem aviso nenhum — a forma que toda construção usava antes de o parser ter o
+que avisar.
+
+O campo existe porque o parser passou a poder **avisar**, e não só recusar: até a D-055
+todo `K1xxx` era erro, e um erro viaja por exceção. Um aviso não tem exceção que o
+carregue, e sem lugar na árvore ele era descartado entre a leitura e a análise — o
+diagnóstico existia no código e não chegava a ninguém.
+"""
+Template(version, language, sources, data, text, rules, nnodes) =
+    Template(version, language, sources, data, text, rules, nnodes, Diagnostic[])
 
 """
     source_of(tmpl, span) -> String
