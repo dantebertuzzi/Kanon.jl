@@ -14,6 +14,15 @@
 using Kanon
 using KanonLSP
 
+"""
+O ambiente pedido na linha de comando.
+
+As camadas carregam com `Base.require`, e o `Environment` se constrói por `invokelatest`:
+o `require` define métodos que o código já em execução não enxerga, e sem isso o
+`configure_locale!` de `pt` que o `Extenso` acabou de trazer não existia para esta função.
+O servidor morria ao iniciar com `--locale pt --domain KanonLegal` — a mesma forma da
+D-059, no outro lançador (D-065). Camada que não existe é erro de uso, e não pilha.
+"""
 function ambiente(args)
     locale = nothing
     dominios = Module[]
@@ -23,16 +32,34 @@ function ambiente(args)
             locale = Symbol(args[i + 1]); i += 2
         elseif args[i] == "--domain" && i < length(args)
             nome = Symbol(args[i + 1])
-            # `@eval using` porque o domínio é escolhido em tempo de execução; é a única
-            # forma, e acontece **fora** do motor — o modelo continua sem executar nada.
-            push!(dominios, @eval (using $nome; $nome))
+            m = try
+                Base.require(Main, nome)
+            catch
+                println(stderr, "kanon-lsp: a camada `", nome, "` não está disponível neste ",
+                        "ambiente Julia.")
+                exit(3)
+            end
+            push!(dominios, m)
             i += 2
         else
             println(stderr, "kanon-lsp: opção desconhecida `", args[i], "`.")
             exit(3)
         end
     end
-    Environment(locale = locale, domains = dominios)
+    try
+        Base.invokelatest(Environment; locale = locale, domains = dominios)
+    catch e
+        e isa Kanon.KanonEnvironmentError || rethrow()
+        println(stderr, "kanon-lsp: ", sprint(showerror, e))
+        exit(3)
+    end
 end
 
-KanonLSP.serve(env = ambiente(ARGS))
+# `invokelatest` também aqui, e pela razão menos óbvia das duas: uma instrução de nível
+# superior roda inteira no mundo em que começou. Escrito `KanonLSP.serve(env =
+# ambiente(ARGS))`, o `ambiente` carregava a camada e o `serve` continuava sem vê-la — o
+# servidor subia, o `Environment` conhecia `pessoa`, e o esquema dela não existia para a
+# análise: todo campo de sujeito saía como "o contrato não declara `nome`" num modelo que
+# o motor aceita limpo (D-065).
+env = ambiente(ARGS)
+Base.invokelatest(KanonLSP.serve; env = env)

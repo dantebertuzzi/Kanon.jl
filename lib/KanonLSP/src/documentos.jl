@@ -53,13 +53,13 @@ mutable struct Server
     io_out::IO
     env::Kanon.Environment
     docs::Dict{String,Document}
-    published::Set{String}          # a quem já mandamos diagnósticos, para poder limpar
+    alcance::Dict{String,Set{String}}   # em que URIs cada documento aberto tem o que dizer
     shutdown_requested::Bool
     running::Bool
 end
 
 Server(io_in::IO, io_out::IO, env::Kanon.Environment = Kanon.Environment()) =
-    Server(io_in, io_out, env, Dict{String,Document}(), Set{String}(), false, true)
+    Server(io_in, io_out, env, Dict{String,Document}(), Dict{String,Set{String}}(), false, true)
 
 # --- URI ---------------------------------------------------------------------
 #

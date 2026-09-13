@@ -88,7 +88,11 @@ jobs:
       - name: KanonLSP
         run: |
           julia --project=lib/KanonLSP -e '
-            using Pkg; Pkg.develop([PackageSpec(path=".")]); Pkg.instantiate()'
+            using Pkg
+            # as camadas entram só para a suíte: é o modelo real nº 13 que as pede
+            Pkg.develop([PackageSpec(path="."), PackageSpec(path="lib/Extenso"),
+                         PackageSpec(path="lib/KanonScience"), PackageSpec(path="lib/KanonLegal")])
+            Pkg.instantiate()'
           julia --project=lib/KanonLSP lib/KanonLSP/test/runtests.jl
         shell: bash
 

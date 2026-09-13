@@ -1,5 +1,3 @@
-12.345
-paulo_lins@lins.adv.br
 propor reclamação trabalhista
 Frutas do Vale Exportadora Ltda.
 
@@ -9,3 +7,5 @@ verdadeiro
 2027-09-13
 
 
+12.345
+paulo_lins@lins.adv.br

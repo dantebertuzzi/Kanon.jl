@@ -80,6 +80,7 @@ function inteiro_extenso(n::Integer; genero::Symbol = :m)
     end
 
     partes = String[]
+    valores = Int[]                 # o grupo de cada parte, para a emenda
     for i in length(grupos):-1:1
         g = grupos[i]
         g == 0 && continue
@@ -89,21 +90,30 @@ function inteiro_extenso(n::Integer; genero::Symbol = :m)
         texto = (i == 2 && g == 1) ? "" : grupo_extenso(g, gen)
         nome = i == 1 ? "" : (g == 1 ? escala[1] : escala[2])
         push!(partes, strip(texto * (isempty(nome) ? "" : " " * nome)))
+        push!(valores, g)
     end
 
-    juntar_escalas(partes, grupos)
+    juntar_escalas(partes, valores)
 end
 
 """
-`e` entre a penúltima e a última parte quando a última é menor que cem ou centena exata;
-vírgula nas demais emendas. É o que separa `mil e duzentos` de `mil duzentos e trinta`.
+`e` antes da última parte quando o grupo dela é menor que cem ou é centena exata; espaço
+nas demais emendas, **e nunca vírgula**. É o que separa `mil e duzentos` de `mil duzentos
+e trinta`, e `um milhão e duzentos mil` de `um milhão duzentos e trinta mil`.
+
+A regra vale pelo grupo da **última parte escrita**, e não pelo grupo das unidades: em
+`1.200.000` as unidades são zero e a última parte é `duzentos mil`, que leva o `e`.
+
+Até o modelo real nº 13 a emenda do meio levava vírgula — `mil, duzentos e trinta` —, e
+este comentário, o de `inteiro_extenso` e o do teste já diziam a forma sem ela. O laudo
+nº 5 tinha sido publicado com `seiscentos e dezoito mil, setecentos e cinquenta reais`,
+escrito à mão com a mesma convenção do código (D-063).
 """
-function juntar_escalas(partes::Vector{String}, grupos::Vector{Int})
+function juntar_escalas(partes::Vector{String}, valores::Vector{Int})
     length(partes) <= 1 && return isempty(partes) ? "zero" : partes[1]
-    ultimo = grupos[1]
-    conector = (ultimo != 0 && (ultimo < 100 || (ultimo % 100 == 0 && ultimo < 1000))) ?
-               " e " : ", "
-    join(partes[1:(end - 1)], ", ") * conector * partes[end]
+    ultimo = valores[end]
+    conector = (ultimo < 100 || ultimo % 100 == 0) ? " e " : " "
+    join(partes[1:(end - 1)], " ") * conector * partes[end]
 end
 
 # --- ordinais ----------------------------------------------------------------
