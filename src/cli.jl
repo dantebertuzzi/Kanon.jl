@@ -18,6 +18,15 @@ const EXIT_MODEL = 2
 const EXIT_USAGE = 3
 const EXIT_RESOURCE = 4
 
+"""
+Um erro de **uso** que nasce depois das opções — um arquivo de dados que o ambiente não
+sabe ler, um formato que não comporta o que se pede para escrever. Sai com o código 3 e
+uma frase, nunca com uma pilha de Julia.
+"""
+struct CliUsageError <: Exception
+    msg::String
+end
+
 const USAGE = """
 kanon — motor de modelos de documento
 
@@ -27,6 +36,8 @@ kanon — motor de modelos de documento
   kanon preview  modelo.kanon [dados.json]   rascunho com «marcadores», nunca exporta
   kanon outline  modelo.kanon                o esqueleto: cada bloco e a regra dele
   kanon ask      modelo.kanon [dados]        pergunta o que falta, e emite os dados
+                                             (em JSON se os dados vieram em JSON, ou
+                                             se `-o` termina em .json)
 
 Opções
   -o ARQUIVO     escreve a saída no arquivo, em vez do stdout
@@ -83,8 +94,14 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
     ambiente === nothing && return EXIT_USAGE
 
     try
-        return run_command(cmd, posicionais, saida, hoje, formato, ambiente, out, err, input)
+        # `invokelatest`, e não uma chamada comum: o `--domain` acabou de carregar código,
+        # e esta função foi compilada num mundo em que ele não existia. Sem isto, nenhum
+        # método da camada — nem o `configure!`, nem o decodificador de `pessoa` — é
+        # visível daqui, e a CLI de verdade não alcança camada nenhuma (D-059).
+        return Base.invokelatest(run_command, cmd, posicionais, saida, hoje, formato,
+                                 ambiente, out, err, input)
     catch e
+        e isa CliUsageError && (println(err, "kanon: ", e.msg); return EXIT_USAGE)
         e isa KanonSyntaxError && return report(err, e, EXIT_MODEL)
         e isa KanonReferenceError && return report(err, e, EXIT_MODEL)
         e isa KanonContractError && return report(err, e, EXIT_CONTRACT)
@@ -114,6 +131,12 @@ seria dado não confiável mandando o motor executar código.
 
 Sem isto a linha de comando não alcançava documento nenhum com camada de domínio — que é
 a maior parte deles (D-058).
+
+O ambiente é construído com `invokelatest` porque o `require` acima muda o mundo: os
+métodos que a camada acabou de definir não existem para o código que já estava rodando.
+Um teste que carrega a camada antes de chamar `main` nunca vê isso — a camada já
+estava carregada —, e foi assim que a D-058 passou verde sem funcionar no `bin/kanon`
+(D-059).
 """
 function build_env(idioma::Union{Nothing,Symbol}, dominios::Vector{Symbol}, err::IO)
     mods = Module[]
@@ -130,7 +153,7 @@ function build_env(idioma::Union{Nothing,Symbol}, dominios::Vector{Symbol}, err:
         push!(mods, m)
     end
     try
-        return Environment(locale = idioma, domains = mods)
+        return Base.invokelatest(Environment; locale = idioma, domains = mods)
     catch e
         e isa KanonEnvironmentError || rethrow()
         showerror(err, e)
@@ -213,7 +236,8 @@ function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::
     end
 
     if cmd == "ask"
-        return do_ask(modelo, dados, saida, hoje, out, err, entrada)
+        origem = length(posicionais) == 2 ? posicionais[2] : nothing
+        return do_ask(modelo, dados, origem, saida, hoje, out, err, entrada)
     end
 
     if cmd == "contract"
@@ -271,39 +295,61 @@ dos dois afrouxa o contrato, e é por isso que os dois podem existir.
 
 Escreve as perguntas no *stderr* e os dados no *stdout*, para que
 `kanon ask m.kanon > dados.kdata` funcione.
+
+Três coisas que o modelo real nº 12 cobrou, todas da mesma frase — **o que o `ask` emite,
+o `render` lê de volta** (D-061):
+
+- **Pergunta tudo o que falta**, e não só o obrigatório. O opcional é onde o documento
+  varia — o réu, o número do processo —, e um `ask` que nunca o oferece só produz o
+  documento mínimo. Enter deixa o opcional em branco e mantém o padrão.
+- **A resposta é conferida na hora**, pelo mesmo `check` que o `render` vai usar, e a
+  pergunta se repete com a mensagem dele. Uma data digitada `13/09/2027` não descobre
+  que está errada depois da última pergunta.
+- **Os dados saem na forma em que vieram**: JSON se a entrada era JSON ou se `-o`
+  termina em `.json`, e `chave = valor` nos demais casos. O `chave = valor` não escreve
+  lista nem composto, e uma `pessoa` vinda de um JSON saía como `Dict{String, Any}(...)`
+  — um arquivo que o `render` recusava com "é uma coleção, e veio um valor único".
 """
-function do_ask(modelo, dados, saida, hoje, out::IO, err::IO, entrada::IO)
+function do_ask(modelo, dados, origem, saida, hoje, out::IO, err::IO, entrada::IO)
+    formato = formato_dos_dados(saida, origem)
     valores = Dict{String,Any}()
     dados === nothing || for (k, v) in pairs(dados)
         valores[String(k)] = v
     end
 
     for f in modelo.template.data.fields
-        haskey(valores, String(f.name)) && valores[String(f.name)] !== nothing && continue
-        f.presence === OPTIONAL && continue      # opcional não se pergunta: ele pode faltar
-        f.presence === DEFAULTED && continue     # o padrão preenche
+        nome = String(f.name)
+        haskey(valores, nome) && valores[nome] !== nothing && continue
 
         if !(canonical_typename(modelo.env, f.type) in DIGITAVEIS) || islist(f.card)
             println(err, "  ", f.name, " — ", f.type,
                     islist(f.card) ? " (uma lista)" : "",
+                    f.presence === OPTIONAL ? ", opcional" : "",
                     ": preencha no arquivo de dados; não cabe numa linha.")
             continue
         end
 
-        println(err, prompt_de(f))
-        print(err, "  ", f.name, " = ")
-        flush(err)
-        linha = readline(entrada)
-        isempty(strip(linha)) && continue
-        valores[String(f.name)] = coerce_answer(modelo.env, f, strip(linha))
+        println(err, prompt_de(modelo.env, f))
+        while true
+            print(err, "  ", f.name, " = ")
+            flush(err)
+            eof(entrada) && (println(err); break)
+            linha = strip(readline(entrada))
+            isempty(linha) && break              # obrigatório fica faltando; o resto, como está
+            valor = coerce_answer(modelo.env, f, linha)
+            recusa = recusa_da_resposta(modelo, f, valor, hoje)
+            recusa === nothing && (valores[nome] = valor; break)
+            println(err, "  ", recusa)
+        end
     end
 
+    texto = serialize_data(formato, valores)   # antes do diagnóstico: formato errado é uso
     conjunto = check(modelo, valores; today = hoje)
     if haserrors(conjunto)
         format_diagnostics(err, conjunto)
         println(err, "kanon: os dados ainda não bastam.")
     end
-    emit(out, saida, serialize_data(valores))
+    emit(out, saida, texto)
     return haserrors(conjunto) ? EXIT_CONTRACT : EXIT_OK
 end
 
@@ -322,25 +368,97 @@ A resposta, convertida pelo tipo **declarado** — e não adivinhada pela forma.
 
 Pelo tipo canônico: sem isso, `nome : texto` num modelo em português cairia no ramo
 geral, e a resposta `123` viraria o número 123 em vez do nome que o autor digitou.
+
+E o booleano pela palavra **do arquivo**: num modelo `pt` o literal se escreve
+`verdadeiro`, e é o que o redator digita. `true` continua valendo, porque é a forma do
+arquivo de dados.
 """
 function coerce_answer(env::Environment, f::FieldDecl, texto::AbstractString)
-    canonical_typename(env, f.type) === :text && return String(texto)
+    canon = canonical_typename(env, f.type)
+    canon === :text && return String(texto)
+    if canon === :boolean
+        k = keyword(env.keywords, texto)
+        k === KW_TRUE && return true
+        k === KW_FALSE && return false
+    end
     parse_data_value(texto)
 end
 
-"A pergunta de um campo: o nome, o tipo, e a linha em que ele foi declarado."
-prompt_de(f::FieldDecl) = string(f.name, " — ", f.type, ", linha ", f.span.line)
+"""
+O que o motor diria desta resposta, ou `nothing` se ela serve.
 
-"Os dados no formato `chave = valor`, que é o que `kanon render` lê de volta."
-function serialize_data(valores::Dict{String,Any})
+Pergunta ao `check`, e não a uma validação própria: um `ask` que aceitasse o que o
+`render` recusa seria a ferramenta discordando do motor, que a D-029 diz ser pior que
+nenhuma.
+"""
+function recusa_da_resposta(modelo, f::FieldDecl, valor, hoje)
+    conjunto = check(modelo, Dict{String,Any}(String(f.name) => valor); today = hoje)
+    for d in conjunto
+        d.severity === :error && d.path == String(f.name) && d.code != "K3001" &&
+            return d.message
+    end
+    nothing
+end
+
+"""
+A pergunta de um campo: o nome, o tipo, a linha em que ele foi declarado, a forma em que
+a resposta se escreve e o que Enter faz.
+
+A forma vem dita porque nenhuma outra coisa a diz: `13/09/2027` é como uma data se
+escreve em português, e não é como ela entra.
+"""
+function prompt_de(env::Environment, f::FieldDecl)
+    kt = env.keywords
+    partes = [string(f.name, " — ", f.type, ", linha ", f.span.line)]
+    canon = canonical_typename(env, f.type)
+    canon === :date && push!(partes, "aaaa-mm-dd")
+    canon === :boolean && push!(partes, written(kt, KW_TRUE) * " ou " * written(kt, KW_FALSE))
+    canon === :number && push!(partes, "ponto decimal, sem separador de milhar")
+    f.presence === OPTIONAL && push!(partes, "opcional: Enter deixa em branco")
+    f.presence === DEFAULTED && f.default !== nothing &&
+        push!(partes, "Enter mantém " * literal_text(kt, f.default))
+    join(partes, " · ")
+end
+
+extensao_json(caminho::AbstractString) = endswith(lowercase(caminho), ".json")
+
+"JSON se `-o` pede, ou, sem `-o`, se os dados vieram em JSON."
+function formato_dos_dados(saida, origem)
+    saida === nothing || return extensao_json(saida) ? :json : :kdata
+    origem !== nothing && extensao_json(origem) ? :json : :kdata
+end
+
+"""
+Os dados no formato em que o `render` os lê de volta.
+
+`chave = valor` só escreve escalar. Um composto ou uma lista nele não é um arquivo de
+dados, é a representação de um `Dict` de Julia — e o formato recusa em vez de escrevê-la.
+"""
+function serialize_data(formato::Symbol, valores::AbstractDict)
+    if formato === :json
+        io = IOBuffer()
+        write_json(io, json_de(valores))
+        return String(take!(io))
+    end
     io = IOBuffer()
     for k in sort!(collect(keys(valores)))
         v = valores[k]
         v === nothing && continue
+        (v isa AbstractDict || v isa AbstractVector) &&
+            throw(CliUsageError("`$k` é " * (v isa AbstractVector ? "uma lista" : "um objeto") *
+                                ", e o formato `chave = valor` não o escreve. " *
+                                "Peça os dados em JSON: `-o dados.json`."))
         println(io, k, " = ", v isa AbstractString ? "\"" * v * "\"" : v)
     end
     String(take!(io))
 end
+
+"Chaves em ordem alfabética, de todo objeto e em toda profundidade: o arquivo vai a `diff`."
+json_de(v::AbstractDict) =
+    JObj(Pair{String,Any}[String(k) => json_de(v[k]) for k in sort!(collect(keys(v)); by = string)])
+json_de(v::AbstractVector) = Any[json_de(x) for x in v]
+json_de(v::Date) = Dates.format(v, "yyyy-mm-dd")
+json_de(v) = v
 
 """
 Lê os dados. Um arquivo `.json` passa pela extensão de `JSON3`; qualquer outro é lido no
@@ -348,14 +466,11 @@ formato mínimo `chave = valor`, que existe para o núcleo não precisar de depe
 nenhuma para funcionar.
 """
 function read_data(path::AbstractString)
-    if endswith(lowercase(path), ".json")
-        try
-            return read_json(path)
-        catch e
-            e isa MethodError || rethrow()
-            error("para ler JSON, carregue `JSON3` — ele é extensão do Kanon, e não " *
-                  "dependência: `using JSON3` antes de `using Kanon`.")
-        end
+    if extensao_json(path)
+        json_disponivel() || throw(CliUsageError(
+            "para ler `$path`, o JSON3 precisa estar instalado neste ambiente Julia: " *
+            "`julia -e 'using Pkg; Pkg.add(\"JSON3\")'`."))
+        return Base.invokelatest(read_json, path)
     end
     d = Dict{String,Any}()
     for linha in eachline(path)
@@ -366,6 +481,25 @@ function read_data(path::AbstractString)
         d[strip(partes[1])] = parse_data_value(strip(partes[2]))
     end
     d
+end
+
+"""
+Carrega o JSON3 se ele ainda não está carregado, e diz se a leitura de JSON existe.
+
+O `bin/kanon` só faz `using Kanon`, e o JSON3 é extensão, não dependência: sem isto um
+arquivo `.json` — o único formato de dados que carrega uma `pessoa` — não era lido pela
+linha de comando de verdade, e a recusa saía como pilha de Julia (D-060). Como o
+`--domain`, é o operador quem pede, ao dar um arquivo `.json`; o pacote carregado é
+sempre o mesmo, e nunca um nome vindo dos dados.
+"""
+function json_disponivel()
+    Base.get_extension(@__MODULE__, :KanonJSON3Ext) === nothing || return true
+    try
+        Base.require(Main, :JSON3)
+    catch
+        return false
+    end
+    Base.get_extension(@__MODULE__, :KanonJSON3Ext) !== nothing
 end
 
 function parse_data_value(v::AbstractString)

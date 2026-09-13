@@ -1,0 +1,26 @@
+{
+  "outorgante": [
+    {
+      "nome": "Marta Regina Soares",
+      "genero": "f",
+      "estado_civil": "casada",
+      "cpf": "111.222.333-44",
+      "endereco": "Rua do Sol, 45, Centro, Petrolina/PE"
+    },
+    {
+      "nome": "José Carlos Soares",
+      "genero": "m",
+      "estado_civil": "casado",
+      "cpf": "555.666.777-88",
+      "endereco": "Rua do Sol, 45, Centro, Petrolina/PE"
+    }
+  ],
+  "outorgado": {
+    "nome": "Paulo Henrique Lins",
+    "genero": "m",
+    "estado_civil": "casado",
+    "cpf": "999.888.777-66",
+    "endereco": "Avenida Cardoso de Sá, 210, sala 3, Petrolina/PE"
+  },
+  "especiais": ["receber citação", "confessar", "transigir", "desistir", "firmar compromisso", "dar quitação"]
+}

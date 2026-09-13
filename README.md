@@ -139,8 +139,12 @@ kanon preview  template.kanon [data.json]   # draft with «markers», never expo
 
 ```
 kanon outline  template.kanon              # every block, and the rule that governs it
-kanon ask      template.kanon              # asks for what is missing, one at a time
+kanon ask      template.kanon [data.json]  # asks for what is missing, one at a time
 ```
+
+Domain and language layers are loaded by the operator, never by the template:
+`--locale pt --domain KanonLegal`. `ask` checks every answer as it is typed, and writes
+the data back in the shape it came in — JSON in, JSON out.
 
 `preview` is the only command that produces incomplete output, and it is always visibly
 marked. It is not a lenient mode: `render` still refuses exactly the same data.

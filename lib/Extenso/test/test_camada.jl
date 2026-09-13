@@ -381,6 +381,16 @@ end
                         name = "pt.kanon")
         f = only(m.template.data.fields)
         @test Kanon.coerce_answer(m.env, f, "123") === "123"
+
+        # e o booleano pela palavra do arquivo, que é a que o redator digita (D-061)
+        mb = load_string(ENV_PT, "kanon 1 pt\n\ndados\n  ok : booleano !\n\ntexto\n\n: a\nx\n";
+                         name = "pt.kanon")
+        fb = only(mb.template.data.fields)
+        @test Kanon.coerce_answer(mb.env, fb, "verdadeiro") === true
+        @test Kanon.coerce_answer(mb.env, fb, "falso") === false
+        @test Kanon.coerce_answer(mb.env, fb, "true") === true      # a forma do arquivo de dados
+        @test Kanon.coerce_answer(mb.env, fb, "sim") == "sim"       # e o resto o check recusa
+        @test occursin("verdadeiro ou falso", Kanon.prompt_de(mb.env, fb))
         @test Kanon.canonical_typename(ENV_PT, :texto) === :text
         @test Kanon.canonical_typename(ENV_PT, :text) === :text      # o canônico é ele mesmo
         @test Kanon.canonical_typename(ENV_PT, :inexistente) === :inexistente

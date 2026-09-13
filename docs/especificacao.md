@@ -936,6 +936,18 @@ Candidato para a F9, herdado do docassemble: `kanon ask modelo.kanon dados.json`
 pergunta os campos faltantes um a um e emite o JSON completo. Atende à necessidade real
 por trás do pedido de "modo leniente" sem relaxar nada.
 
+**[acrescentado na F10 — D-061]** O que o `ask` emite, o `render` lê de volta. Os dados
+saem **na forma em que vieram**: JSON se `-o` termina em `.json` ou, sem `-o`, se a
+entrada era `.json`; `chave = valor` nos demais casos, e pedir `chave = valor` com lista
+ou composto nos dados é erro de uso. O `ask` pergunta todo campo escalar que falta —
+obrigatório, opcional ou com padrão —, diz a forma da resposta, e a confere na hora pelo
+`check`, repetindo a pergunta com a mensagem dele. Enter deixa o opcional em branco e
+mantém o padrão.
+
+**[acrescentado na F10 — D-059, D-060]** A camada pedida por `--domain` e o leitor de JSON
+carregado por um arquivo `.json` valem para a execução inteira. Um JSON sem o `JSON3`
+instalado no ambiente é erro de uso (código 3).
+
 ---
 
 ## 13. Política de compatibilidade
