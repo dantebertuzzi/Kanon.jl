@@ -31,33 +31,76 @@ no URI dele.
 Um problema dentro de um fragmento pertence ao fragmento, e mandá-lo para o hospedeiro o
 poria numa linha que muitas vezes nem existe lá (D-035). É a primeira coisa que esta fase
 consome da anterior.
+
+**O que se publica num URI é a soma do que todos os documentos abertos dizem sobre ele**
+(D-066). O LSP substitui a lista inteira a cada publicação, e um fragmento incluído por dois
+hospedeiros abertos recebia a lista de quem falou por último: abrir a procuração nº 12
+apagava do fragmento o erro que a notificação nº 13 continuava tendo, e o editor mostrava
+limpo um fragmento com que um documento aberto não renderiza.
 """
 function publish_diagnostics!(s::Server, d::Document)
-    # O próprio documento entra sempre, mesmo sem nada a dizer: sem a lista vazia, o
-    # editor guarda para sempre o erro que o redator acabou de corrigir.
-    por_arquivo = Dict{String,Vector{Any}}(d.uri => Any[])
-
+    antes = get(s.alcance, d.uri, Set{String}())
+    agora = Set{String}([d.uri])
     for x in d.loaded.diagnostics
-        uri = arquivo_para_uri(d, x.file)
-        push!(get!(por_arquivo, uri, []), lsp_diagnostic(doc_para_posicao(s, d, uri), x))
+        push!(agora, arquivo_para_uri(d, x.file))
     end
-
-    for (uri, ds) in por_arquivo
-        notify(s.io_out, "textDocument/publishDiagnostics",
-               (uri = uri, diagnostics = ds))
-        push!(s.published, uri)
-    end
-
-    # o que ficou limpo desde a última vez precisa ser apagado, ou o editor guarda para
-    # sempre o erro de um fragmento que já foi corrigido
-    for uri in collect(s.published)
-        haskey(por_arquivo, uri) && continue
-        haskey(s.docs, uri) && continue
-        notify(s.io_out, "textDocument/publishDiagnostics", (uri = uri, diagnostics = []))
-        delete!(s.published, uri)
+    s.alcance[d.uri] = agora
+    # o que ficou limpo desde a última vez também se publica, e vazio, ou o editor guarda
+    # para sempre o erro de um fragmento que já foi corrigido
+    for uri in ordem_de_publicacao(d.uri, union(antes, agora))
+        publicar_uri!(s, uri)
     end
     return nothing
 end
+
+"O próprio documento primeiro, e os demais em ordem: a ordem das mensagens é determinística."
+ordem_de_publicacao(proprio::AbstractString, uris) =
+    vcat(proprio in uris ? [String(proprio)] : String[],
+         sort!([String(u) for u in uris if u != proprio]))
+
+documentos_em_ordem(s::Server) = [s.docs[k] for k in sort!(collect(keys(s.docs)))]
+
+"""
+Publica em `uri` tudo o que os documentos abertos dizem sobre ele.
+
+O mesmo diagnóstico dito por dois hospedeiros sai uma vez, com os dois nomeados. Um erro de
+fragmento pode existir num hospedeiro e não no outro — o contrato é unificado com o de quem
+inclui —, e por isso a mensagem diz **de onde** ele vem: `o contrato não declara
+\`processo\`` é falso lido na procuração e verdadeiro lido na notificação. Quando o próprio
+fragmento aberto diz a mesma coisa, o erro é dele, e a origem não se acrescenta.
+"""
+function publicar_uri!(s::Server, uri::AbstractString)
+    grupos = Pair{Any,Vector{String}}[]          # item => de quem veio ("" = do próprio)
+    for h in documentos_em_ordem(s)
+        uri in get(s.alcance, h.uri, ()) || continue
+        pos = doc_para_posicao(s, h, uri)
+        for x in h.loaded.diagnostics
+            arquivo_para_uri(h, x.file) == uri || continue
+            it = lsp_diagnostic(pos, x)
+            origem = h.uri == uri ? "" : nome_curto(h)
+            i = findfirst(g -> first(g) == it, grupos)
+            if i === nothing
+                push!(grupos, it => [origem])
+            else
+                origem in last(grupos[i]) || push!(last(grupos[i]), origem)
+            end
+        end
+    end
+    ds = Any[]
+    for (it, origens) in grupos
+        if "" in origens || isempty(origens)
+            push!(ds, it)
+        else
+            push!(ds, merge(it, (message = it.message * "\n\nAo ser incluído por " *
+                                             juntar_nomes(sort(origens)) * ".",)))
+        end
+    end
+    notify(s.io_out, "textDocument/publishDiagnostics", (uri = String(uri), diagnostics = ds))
+end
+
+nome_curto(h::Document) = "`" * basename(isempty(h.path) ? h.uri : h.path) * "`"
+
+juntar_nomes(v) = length(v) == 1 ? v[1] : join(v[1:(end - 1)], ", ") * " e " * v[end]
 
 arquivo_para_uri(d::Document, arquivo::AbstractString) =
     (arquivo == d.path || isempty(arquivo)) ? d.uri : uri_of(arquivo)
@@ -425,18 +468,37 @@ function completar_interpolacao(d::Document, l::Integer, ctx)
     tipo === :ref && return [item("::" * String(b.name), KIND_REFERENCE, rotulo_de(m, b))
                              for b in m.template.text.blocks if numerado(m, b)]
 
+    arquivo = file_index(m, isempty(d.path) ? d.uri : d.path)
+
     if tipo === :formatter
-        T = tipo_do_caminho(m, arg)
+        # Os formatadores que o **motor** aceita aqui, e pela mesma função que ele usa: os
+        # deste ambiente, e os de `list` quando o campo é coleção. `kanon_formats(T)` sem o
+        # ambiente enumera o processo inteiro, e o `kanon-lsp` sempre tem camada carregada —
+        # oferecia `extenso` num ambiente sem idioma, e `upper` para `{especiais:}`, que é
+        # uma lista de texto (D-067).
+        T = colecao_do_caminho(m, arg) ? Kanon.typefor(m.env, :list) :
+                                         tipo_no_bloco(m, arquivo, l, arg)
         T === nothing && return []
         return [item(String(f), KIND_VALUE, "formatador de `" * String(Kanon.kanon_typename(T)) * "`")
-                for f in Kanon.kanon_formats(T)]
+                for f in Kanon.kanon_formats(T, m.env)]
+    end
+
+    # depois do ponto, só os campos do tipo à esquerda dele: `{notificado.` num bloco cujo
+    # sujeito é `pessoa` oferecia os campos da raiz e os de `pessoa`, e o `.` é gatilho
+    # anunciado — o editor abria a lista errada sozinho (D-067)
+    if occursin('.', arg)
+        T = tipo_no_bloco(m, arquivo, l, arg[1:(findlast('.', arg) - 1)])
+        T === nothing && return []
+        return [item(spec.name, KIND_FIELD,
+                     string(spec.type, spec.optional ? " · opcional" : ""))
+                for spec in Kanon.kanon_schema(T)]
     end
 
     out = Any[]
     for f in m.template.data.fields
         push!(out, item(f.name, KIND_FIELD, detalhe_campo(f)))
     end
-    b = bloco_da_linha(m, l)
+    b = bloco_da_linha(m, arquivo, l)
     if b !== nothing && b.subject !== nothing
         rp = caminho_resolvido(m, b.subject)
         T = rp === nothing ? nothing : Kanon.typefor(m.env, rp.typename)
@@ -458,8 +520,18 @@ function tipo_do_caminho(m::Kanon.Model, caminho::AbstractString)
     isempty(segs) && return nothing
     i = findfirst(f -> String(f.name) == segs[1], m.template.data.fields)
     i === nothing && return nothing
-    T = Kanon.typefor(m.env, m.template.data.fields[i].type)
-    for s in segs[2:end]
+    descer(m, Kanon.typefor(m.env, m.template.data.fields[i].type), segs[2:end])
+end
+
+"O caminho é um campo do contrato declarado como coleção?"
+function colecao_do_caminho(m::Kanon.Model, caminho::AbstractString)
+    i = findfirst(f -> String(f.name) == strip(caminho), m.template.data.fields)
+    i !== nothing && Kanon.islist(m.template.data.fields[i].card)
+end
+
+"Desce pelos esquemas, um segmento de cada vez."
+function descer(m::Kanon.Model, T, segs)
+    for s in segs
         T === nothing && return nothing
         esquema = Kanon.kanon_schema(T)
         j = findfirst(spec -> String(spec.name) == s, esquema)
@@ -467,6 +539,21 @@ function tipo_do_caminho(m::Kanon.Model, caminho::AbstractString)
         T = Kanon.typefor(m.env, esquema[j].type)
     end
     T
+end
+
+"""
+O tipo do caminho **como o bloco o resolve**: pelo contrato e, se não, pelo sujeito
+(§4.2). Sem o segundo passo, `{nome:` dentro de `: b <- advogado` não completava
+formatador nenhum — `nome` não é campo da raiz —, e `{representante.` dentro de
+`: b <- notificado` não completava campo nenhum (D-067).
+"""
+function tipo_no_bloco(m::Kanon.Model, arquivo::Integer, l::Integer, caminho::AbstractString)
+    T = tipo_do_caminho(m, caminho)
+    T === nothing || return T
+    b = bloco_da_linha(m, arquivo, l)
+    (b === nothing || b.subject === nothing) && return nothing
+    sujeito = tipo_do_caminho(m, join(String.(b.subject.segments), "."))
+    sujeito === nothing ? nothing : descer(m, sujeito, split(strip(caminho), '.'))
 end
 
 function caminho_resolvido(m::Kanon.Model, p::Kanon.Path)
@@ -485,9 +572,15 @@ function rotulo_de(m::Kanon.Model, b::Kanon.Block)
     isempty(num) ? "bloco" : "hoje é " * join(num, '.')
 end
 
-"O bloco cujo trecho cobre a linha, ou `nothing`."
-function bloco_da_linha(m::Kanon.Model, l::Integer)
-    i = findfirst(b -> b.span.line <= l <= b.span.endline, m.template.text.blocks)
+"""
+O bloco cujo trecho cobre a linha **neste arquivo**, ou `nothing`.
+
+O arquivo conta pela razão que `at` já escreve: num modelo composto a linha 22 do fragmento
+e a linha 22 do hospedeiro são duas linhas diferentes.
+"""
+function bloco_da_linha(m::Kanon.Model, arquivo::Integer, l::Integer)
+    i = findfirst(b -> b.span.file == arquivo && b.span.line <= l <= b.span.endline,
+                  m.template.text.blocks)
     i === nothing ? nothing : m.template.text.blocks[i]
 end
 

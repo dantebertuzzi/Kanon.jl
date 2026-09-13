@@ -1,0 +1,23 @@
+kanon 1 pt
+
+# A qualificação do advogado do escritório, escrita uma vez e incluída por todo documento
+# que ele assina ou em que é constituído: a procuração nº 12 e a notificação nº 13.
+#
+# É o primeiro fragmento do acervo que serve a **dois** hospedeiros. Os dois anteriores —
+# o do relatório nº 3 e o da aula nº 10 — têm cada um o seu, e por isso a inclusão nunca
+# tinha sido usada para o que ela existe: não repetir texto entre documentos.
+#
+# O que a inclusão cobra de quem compartilha: o fragmento fixa os **nomes** dos campos.
+# Os dois hospedeiros chamam o advogado de `advogado`, e o papel dele no documento —
+# outorgado numa, procurador do notificante na outra — fica no rótulo `PROCURADOR`, que
+# serve às duas.
+
+dados
+  advogado : pessoa !
+  oab      : texto  !
+  email    : texto
+
+texto
+
+: qualificacao_procurador <- advogado
+PROCURADOR: {nome:upper}, advogado(a) inscrito(a) na OAB/PE sob o nº {oab}, com escritório profissional na {endereco}[, endereço eletrônico {email}].

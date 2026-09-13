@@ -329,7 +329,7 @@ function do_ask(modelo, dados, origem, saida, hoje, out::IO, err::IO, entrada::I
             continue
         end
 
-        println(err, prompt_de(modelo.env, f))
+        println(err, prompt_de(modelo.env, f; onde = onde_declarado(modelo, f)))
         while true
             print(err, "  ", f.name, " = ")
             flush(err)
@@ -407,9 +407,9 @@ a resposta se escreve e o que Enter faz.
 A forma vem dita porque nenhuma outra coisa a diz: `13/09/2027` é como uma data se
 escreve em português, e não é como ela entra.
 """
-function prompt_de(env::Environment, f::FieldDecl)
+function prompt_de(env::Environment, f::FieldDecl; onde::AbstractString = "linha $(f.span.line)")
     kt = env.keywords
-    partes = [string(f.name, " — ", f.type, ", linha ", f.span.line)]
+    partes = [string(f.name, " — ", f.type, ", ", onde)]
     canon = canonical_typename(env, f.type)
     canon === :date && push!(partes, "aaaa-mm-dd")
     canon === :boolean && push!(partes, written(kt, KW_TRUE) * " ou " * written(kt, KW_FALSE))
@@ -418,6 +418,22 @@ function prompt_de(env::Environment, f::FieldDecl)
     f.presence === DEFAULTED && f.default !== nothing &&
         push!(partes, "Enter mantém " * literal_text(kt, f.default))
     join(partes, " · ")
+end
+
+"""
+Onde o campo foi declarado, dito como o autor o encontra: a linha, e o arquivo quando ele
+não é o modelo aberto.
+
+Um campo que veio de fragmento tem a linha **do fragmento**, e `oab — texto, linha 17`
+mandava o redator à linha 17 da procuração, onde está outra coisa — a forma da D-035, na
+pergunta do `ask` (D-064).
+"""
+function onde_declarado(modelo, f::FieldDecl)
+    fontes = modelo.template.sources
+    (f.span.file <= 1 || f.span.file > length(fontes)) && return "linha $(f.span.line)"
+    base = dirname(fontes[1])
+    arquivo = isempty(base) ? fontes[f.span.file] : relpath(fontes[f.span.file], base)
+    string(arquivo, ", linha ", f.span.line)
 end
 
 extensao_json(caminho::AbstractString) = endswith(lowercase(caminho), ".json")

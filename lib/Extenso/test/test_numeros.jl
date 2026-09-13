@@ -25,11 +25,18 @@
     @testset "o `e` entre escalas não é sempre" begin
         # é o que separa `mil e duzentos` de `mil duzentos e trinta`
         @test inteiro_extenso(1200) == "mil e duzentos"
-        @test inteiro_extenso(1230) == "mil, duzentos e trinta"
+        @test inteiro_extenso(1230) == "mil duzentos e trinta"
         @test inteiro_extenso(1002) == "mil e dois"
         @test inteiro_extenso(2026) == "dois mil e vinte e seis"
+        # nunca vírgula, e o `e` pelo grupo da última parte escrita (D-063)
+        @test inteiro_extenso(618_750) == "seiscentos e dezoito mil setecentos e cinquenta"
+        @test inteiro_extenso(1_200_000) == "um milhão e duzentos mil"
+        @test inteiro_extenso(1_230_000) == "um milhão duzentos e trinta mil"
+        @test inteiro_extenso(1_200_300) == "um milhão duzentos mil e trezentos"
+        @test inteiro_extenso(1_000_001) == "um milhão e um"
+        @test !occursin(",", inteiro_extenso(987_654_321_123))
         @test inteiro_extenso(1_234_567) ==
-              "um milhão, duzentos e trinta e quatro mil, quinhentos e sessenta e sete"
+              "um milhão duzentos e trinta e quatro mil quinhentos e sessenta e sete"
     end
 
     @testset "escalas no singular e no plural" begin
@@ -86,7 +93,7 @@ end
 
     @testset "os centavos entram com `e`, e no masculino" begin
         @test dinheiro_extenso(123457//100, :BRL) ==
-              "mil, duzentos e trinta e quatro reais e cinquenta e sete centavos"
+              "mil duzentos e trinta e quatro reais e cinquenta e sete centavos"
         @test dinheiro_extenso(1//100, :BRL) == "um centavo"
         @test dinheiro_extenso(101//100, :BRL) == "um real e um centavo"
     end

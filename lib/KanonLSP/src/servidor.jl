@@ -5,7 +5,8 @@
 
 "O que este servidor sabe fazer. O cliente lê isto e para de perguntar o resto."
 const CAPABILITIES = (
-    textDocumentSync = (openClose = true, change = 1),        # 1 = o texto inteiro
+    # 1 = o texto inteiro; `save` porque um fragmento salvo muda os hospedeiros (D-066)
+    textDocumentSync = (openClose = true, change = 1, save = true),
     documentSymbolProvider = true,
     hoverProvider = true,
     definitionProvider = true,
@@ -82,11 +83,28 @@ function despachar!(s::Server, m::Message)
                   Int(get(m.params.textDocument, :version, d.version + 1)))
         return publish_diagnostics!(s, d)
 
+    elseif m.method == "textDocument/didSave"
+        # O hospedeiro lê o fragmento **do disco**, como o motor lê: o que muda os outros
+        # documentos é salvar, e não digitar. Sem isto, o erro corrigido e salvo no
+        # fragmento continuava valendo para cada hospedeiro até alguém mexer nele.
+        uri = String(m.params.textDocument.uri)
+        for outro in documentos_em_ordem(s)
+            outro.uri == uri && continue
+            reanalyze!(s, outro)
+            publish_diagnostics!(s, outro)
+        end
+        return nothing
+
     elseif m.method == "textDocument/didClose"
         uri = String(m.params.textDocument.uri)
         delete!(s.docs, uri)
-        notify(s.io_out, "textDocument/publishDiagnostics", (uri = uri, diagnostics = []))
-        delete!(s.published, uri)
+        tocados = pop!(s.alcance, uri, Set{String}())
+        push!(tocados, uri)
+        # o que o documento fechado dizia sai; o que os outros dizem sobre os mesmos
+        # arquivos fica — inclusive sobre ele, se for fragmento de um hospedeiro aberto
+        for u in ordem_de_publicacao(uri, tocados)
+            publicar_uri!(s, u)
+        end
         return nothing
     end
 

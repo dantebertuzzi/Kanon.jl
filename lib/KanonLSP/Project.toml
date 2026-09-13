@@ -13,7 +13,10 @@ Kanon = "0.1"
 julia = "1.10"
 
 [extras]
+Extenso = "7b3d5e91-2a48-4c6f-9d13-8e4a2f60c5b7"
+KanonLegal = "5e2a91c4-7d38-4b0e-9a65-3f81c2d4e7a9"
+KanonScience = "9f4c8b26-3e51-4a7d-b982-6c05d1e3f8a4"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Extenso", "KanonLegal", "KanonScience", "Test"]

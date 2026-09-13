@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 13 de setembro de 2026. Escrito para retomar sem depender de memória.
+> Estado em 14 de setembro de 2026. Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.476 testes** ao todo — 1.574 no núcleo (~50 s com Aqua), 273 em `Extenso`,
-260 em `KanonLegal`, 215 em `KanonScience`, 154 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.531 testes** ao todo — 1.574 no núcleo (~50 s com Aqua), 279 em `Extenso`,
+278 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -35,7 +35,7 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existem **doze** modelos reais no repositório, em `test/golden/exemplos/`:
+Existem **treze** modelos reais no repositório, em `test/golden/exemplos/`:
 `escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
 `certificado.kanon` (um por linha de planilha), `laudo.kanon` (dois domínios ao mesmo
 tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst),
@@ -44,13 +44,14 @@ tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst)
 `verificacao.kanon` (um certificado por registro de um CSV de verdade, com as medições em
 colunas), `aula.kanon` (fragmento incluído em português), `servicos.kanon` (o contrato em
 minuta, pelo rascunho e pela CLI) e `procuracao.kanon` (as partes de um JSON, o resto
-digitado no `kanon ask`, e a saída em Typst, pelo `bin/kanon` num processo novo). O portão
-para a 1.0 pede quinze.
+digitado no `kanon ask`, e a saída em Typst, pelo `bin/kanon` num processo novo) e
+`notificacao.kanon` (escrita no editor pelo `kanon-lsp`, com um fragmento que a procuração
+também inclui). O portão para a 1.0 pede quinze.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos três que faltam vai cobrar alguma coisa — como os doze primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os onze últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **vinte e oito defeitos e
+dos dois que faltam vai cobrar alguma coisa — como os treze primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os doze últimos mediram
+isso: escritos com o motor pronto e a suíte verde, produziram **trinta e três defeitos e
 uma questão aberta de versão**.
 
 | | O que apareceu | Modelo |
@@ -83,6 +84,11 @@ uma questão aberta de versão**.
 | **D-060** | e o `bin/kanon` não lia `.json` nenhum: o `JSON3` é extensão, ninguém o carregava, e a recusa saía como **pilha de Julia**. O JSON é o único formato que carrega uma `pessoa` — somadas, a D-059 e a D-060 deixavam a CLI sem documento jurídico nenhum | procuração |
 | **D-061** | o `ask` emitia `outorgado = Dict{String, Any}(...)`, que o `render` recusava; nunca perguntava o opcional — o réu, o processo, onde a procuração varia —; e só conferia a resposta depois da última pergunta, sem dizer que a data se escreve `aaaa-mm-dd` | procuração |
 | **D-062** | no Typst, `//` num valor começa um comentário e **apaga o resto da linha**; `~` e `-?` também somem. Compila sem erro. Achado ao compilar o golden, que foi o primeiro `.typ` do acervo a passar pelo Typst | procuração |
+| **D-063** | `R$ 18.750,00` saía `dezoito mil, setecentos e cinquenta reais`. A docstring e o comentário do teste diziam `mil duzentos e trinta`, sem vírgula, e as asserções logo abaixo exigiam a vírgula — e o laudo nº 5 já publicado a tinha no golden escrito à mão. A lição da D-053, pela terceira vez | notificação |
+| **D-064** | com a qualificação do advogado num fragmento, o `ask` perguntava `oab — texto, linha 17` — a linha 17 do fragmento, dita como se fosse da procuração | notificação |
+| **D-065** | o `kanon-lsp --locale pt --domain KanonLegal` **morria ao iniciar** — a D-059 no outro lançador —; e, corrigido isso, **subia e mentia**: todo campo de sujeito da notificação saía como `o contrato não declara \`nome\``, num modelo que o motor aceita limpo. A suíte do servidor nunca tinha executado o lançador | notificação |
+| **D-066** | o fragmento de dois documentos abertos recebia a lista de diagnósticos de quem falou por último: **abrir a procuração apagava o erro que a notificação ainda tinha**. E salvar o fragmento não mudava hospedeiro nenhum | notificação |
+| **D-067** | a completação resolvia o caminho por conta própria: `{notificado.` oferecia os campos de `pessoa`, `{nome:` no bloco do sujeito não oferecia nada, `{especiais:` oferecia os formatadores de `texto` para uma lista, e num ambiente sem idioma `{preco:` oferecia `extenso` | notificação |
 | — | **e um limite do idioma, que não é defeito**: a flexão tem um sujeito por bloco, e a frase central de uma procuração concorda com dois — o verbo com os outorgantes, o substantivo com o advogado. `nomeia(m)` flexiona; `procurador(a)` teria de flexionar por outro sujeito na mesma frase. O modelo nomeia o OUTORGADO pelo papel, como a locação já fazia com o LOCATÁRIO — e a locação nº 2 escreve `ao LOCATÁRIO` para a Helena sem que ninguém tivesse registrado por quê | procuração |
 
 **O padrão nos nove vale mais que os nove: o buraco estava sempre na interseção de duas
@@ -116,7 +122,11 @@ deixavam de fora a única pergunta que importa ao redator: **e pela linha de com
 a resposta que a D-058 deu a essa pergunta foi conferida **dentro** de Julia, num processo
 que já tinha carregado a camada e o `JSON3` — o único lugar onde os dois defeitos seguintes
 não existiam. O teste que confirma uma correção roda onde o defeito foi visto, ou não
-confirma nada.
+confirma nada. E a suíte do servidor de linguagem tinha a mesma forma, com um agravante:
+para ficar independente das camadas, usava um **domínio de mentira** — um `PessoaTeste`
+que se passa por `pessoa` —, e por isso nunca teve um processo com `Extenso` carregado nem
+executou o `kanon-lsp`. Independência da suíte e realismo do processo são coisas
+diferentes, e só a segunda é a que o redator tem.
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -124,7 +134,7 @@ modelo nº 3 foi escolhido justamente por atravessar três interseções vazias 
 um modelo em arquivo, com fragmento incluído, na camada científica, emitido também em
 Markdown.
 
-O que procurar em cada um dos três que faltam:
+O que procurar em cada um dos dois que faltam:
 
 - Uma construção que a gramática não expressa, ou expressa mal.
 - Uma mensagem de erro que não diz o que fazer.
@@ -152,6 +162,11 @@ enquanto se digita, a estrutura do arquivo com a regra ao lado de cada bloco, o 
 sob o cursor, o salto para a declaração e a completação que conhece os tipos. Um LSP
 serve a todos os editores; um editor gráfico serviria a um.
 
+**Com camada de domínio, só passou a funcionar com o modelo nº 13** (D-065): até ali o
+`kanon-lsp --locale pt --domain KanonLegal` morria ao iniciar e, corrigido isso, marcava
+como erro todo campo de sujeito. No editor, aponte o cliente para
+`julia --project=AMBIENTE lib/KanonLSP/bin/kanon-lsp --locale pt --domain KanonLegal`.
+
 **Falta a terceira coluna propriamente dita** — a pré-visualização do documento ao lado
 do modelo, atualizada a cada tecla. O motor já a entrega (`preview` rende com
 «marcadores» e nunca exporta); o que falta é o caminho até a tela. Como pedido do LSP
@@ -173,6 +188,9 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.574, ~50 s
+# o KanonLSP roda o modelo real nº 13 com a camada de verdade: desenvolva as camadas nele
+# antes, como o CI faz (`Pkg.develop` de `.`, `lib/Extenso`, `lib/KanonScience` e
+# `lib/KanonLegal` no projeto `lib/KanonLSP`)
 for p in Extenso KanonLegal KanonScience KanonLSP; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -210,7 +228,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado), `ensaio` (a camada científica em português, medições vindas de JSON) `verificacao` (um por registro de um CSV, medições em colunas com ponto) `aula` (um roteiro por turma, com fragmento incluído em português e duas famílias de numeração) `servicos` (um contrato em minuta, com o rascunho, o documento pronto e o Markdown) e `procuracao` (as partes em JSON, as respostas do `ask`, os dados que ele emite, e o documento em texto e em Typst), cada um com a saída exigida |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado), `ensaio` (a camada científica em português, medições vindas de JSON) `verificacao` (um por registro de um CSV, medições em colunas com ponto) `aula` (um roteiro por turma, com fragmento incluído em português e duas famílias de numeração) `servicos` (um contrato em minuta, com o rascunho, o documento pronto e o Markdown) `procuracao` (as partes em JSON, as respostas do `ask`, os dados que ele emite, e o documento em texto e em Typst) e `notificacao` (escrita pelo servidor de linguagem; a qualificação do advogado vem de `fragmentos/procurador.kanon`, que a procuração também inclui), cada um com a saída exigida |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída, o escape do valor interpolado e o do rótulo |
@@ -766,18 +784,19 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **12 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **13 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
 contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo, o
-edital, a doação, o ensaio, a verificação, a aula, os serviços e a procuração, escritos com
-o motor já pronto e a suíte verde, cobraram mais vinte e oito (D-031 a D-035 e D-040 a
-D-062) — **a taxa de descoberta não caiu quando o código ficou bom; o décimo primeiro achou
-o motor inalcançável pela porta por onde o redator entra, e o décimo segundo achou a porta
-ainda fechada, atrás de uma correção dada como feita.**
+edital, a doação, o ensaio, a verificação, a aula, os serviços, a procuração e a
+notificação, escritos com o motor já pronto e a suíte verde, cobraram mais trinta e três
+(D-031 a D-035 e D-040 a D-067) — **a taxa de descoberta não caiu quando o código ficou
+bom; o décimo primeiro achou o motor inalcançável pela porta por onde o redator entra, o
+décimo segundo achou a porta ainda fechada atrás de uma correção dada como feita, e o
+décimo terceiro achou a mesma porta fechada no editor.**
 
 ### O que a implementação já mudou na especificação
 
-Quarenta e quatro decisões saíram de escrever o código, e vinte e cinco delas fecharam buracos
+Quarenta e nove decisões saíram de escrever o código, e vinte e cinco delas fecharam buracos
 que nenhuma releitura teria encontrado — o texto era internamente coerente em todos os
 casos:
 
@@ -814,7 +833,7 @@ a §8.3 dizia desde a F0 que o caminho iterado denota o elemento corrente *"tant
 quanto no `when`"*, e era o render que não obedecia. O texto normativo achou o defeito no
 código, que é o que ele existe para fazer.
 
-Se três modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
+Se dois modelos cobrarem na mesma proporção, a 1.0 será uma linguagem diferente da que
 a F0 desenhou — e melhor.
 
 **O método, fixado pelo segundo modelo e confirmado pelo terceiro.** Escreva o modelo

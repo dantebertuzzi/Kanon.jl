@@ -26,14 +26,15 @@ kanon 1 pt
 # **E um limite do idioma, que não é defeito**: a flexão tem **um** sujeito por bloco, e
 # a frase central de uma procuração concorda com dois — o verbo com os outorgantes
 # (`nomeiam`), o substantivo com o advogado (`procuradora`). O bloco `poderes` flexiona
-# pelos outorgantes, e o OUTORGADO é nomeado pelo papel, em caixa alta, como a locação
-# nº 2 já fazia com o LOCATÁRIO. Ver `roadmap.md`.
+# pelos outorgantes, e o advogado é nomeado pelo papel, como a locação nº 2 já fazia com
+# o LOCATÁRIO. Ver `roadmap.md`.
+#
+# A qualificação do advogado vem de `fragmentos/procurador.kanon`, que a notificação
+# nº 13 também inclui: o escritório a escreve uma vez. Até o nº 13 ela era um parágrafo
+# daqui, rotulado OUTORGADO, e o campo se chamava `outorgado`.
 
 dados
   outorgante    : pessoa[1..] !
-  outorgado     : pessoa      !
-  oab           : texto       !
-  email         : texto
   finalidade    : texto       !
   reu           : texto
   processo      : texto
@@ -51,11 +52,10 @@ PROCURAÇÃO AD JUDICIA ET EXTRA
 : qualificacao <- outorgante
 OUTORGANTE: {nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}.
 
-: advogado <- outorgado
-OUTORGADO: {nome:upper}, advogado(a) inscrito(a) na OAB/PE sob o nº {oab}, com escritório profissional na {endereco}[, endereço eletrônico {email}].
+incluir "fragmentos/procurador.kanon"
 
 : poderes <- outorgante
-PODERES: pelo presente instrumento, o(s) OUTORGANTE(S) nomeia(m) seu bastante procurador o OUTORGADO acima qualificado, a quem confere(m) os poderes da cláusula ad judicia et extra, para o foro em geral, podendo propor contra quem de direito as ações competentes e defendê-lo(s) nas contrárias, em especial para {finalidade}[ em face de {reu}][, nos autos do processo nº {processo}], praticando todos os atos necessários ao fiel cumprimento deste mandato.
+PODERES: pelo presente instrumento, o(s) OUTORGANTE(S) nomeia(m) seu bastante procurador o advogado acima qualificado, a quem confere(m) os poderes da cláusula ad judicia et extra, para o foro em geral, podendo propor contra quem de direito as ações competentes e defendê-lo(s) nas contrárias, em especial para {finalidade}[ em face de {reu}][, nos autos do processo nº {processo}], praticando todos os atos necessários ao fiel cumprimento deste mandato.
 
 : poderes_especiais <- outorgante
 Confere(m)-lhe ainda os poderes especiais para {especiais}, na forma do art. 105 do Código de Processo Civil.

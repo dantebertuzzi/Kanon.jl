@@ -2171,3 +2171,149 @@ As bordas contam porque a vizinha é prosa do autor, que o escape não vê: `{a}
 **O método, que é o que fica.** A tabela de escape de um formato se confere contra o
 **compilador** do formato, e não contra a documentação dele. O golden em Typst agora afirma
 também que tirar as contrabarras devolve o texto puro — o escape só acrescenta.
+
+---
+
+## D-063 — O número por extenso não leva vírgula entre as classes
+
+*2026-09-14 · aceita · surgida ao escrever o modelo real nº 13*
+
+**A observação.** A notificação nº 13 cobra `R$ 18.750,00`, e o motor escreveu *"dezoito
+mil, setecentos e cinquenta reais"*. O projeto já dizia o contrário em três lugares: a
+docstring de `inteiro_extenso` (*"escreve-se `mil e duzentos`, mas `mil duzentos e
+trinta`"*), a de `juntar_escalas` (*"é o que separa `mil e duzentos` de `mil duzentos e
+trinta`"*) e o comentário do próprio teste. **As asserções logo abaixo do comentário
+exigiam a vírgula** — `inteiro_extenso(1230) == "mil, duzentos e trinta"`.
+
+E o laudo nº 5, já publicado, tinha *"seiscentos e dezoito mil, setecentos e
+cinquenta reais"* no golden escrito à mão.
+
+**Por que passou.** É a lição da D-053, pela terceira vez: o golden escrito à mão protege
+contra o motor, e não contra uma convenção que o autor do golden compartilha com ele. O
+teste foi escrito olhando a saída; o comentário, olhando a regra. Os modelos anteriores
+tinham valores redondos — `mil e oitocentos`, `quarenta e dois mil` —, e o laudo, o único
+que não tinha, foi conferido com a mesma vírgula.
+
+**Decisão.** Nenhuma vírgula entre as classes. O `e` entra antes da **última parte
+escrita** quando o grupo dela é menor que cem ou é centena exata; nas demais emendas, espaço:
+`mil duzentos e trinta`, `um milhão e duzentos mil`, `um milhão duzentos mil e trezentos`.
+A regra antiga olhava o grupo das **unidades**, e errava também quando ele era zero:
+`1.200.000` saía `um milhão, duzentos mil`.
+
+**Alternativa descartada.** Manter a vírgula e corrigir os comentários. A vírgula entre as
+classes aparece em cheque e em contrato, mas a forma que os três textos do projeto
+descreviam é a das gramáticas e a que o redator oficial usa; e, entre o que o projeto
+escreveu como regra e o que o teste escreveu olhando a saída, vale a regra.
+
+---
+
+## D-064 — A pergunta do `ask` diz de que arquivo é a linha
+
+*2026-09-14 · aceita · surgida ao escrever o modelo real nº 13*
+
+**A observação.** Com a qualificação do advogado movida para um fragmento, o `ask` da
+procuração perguntou `oab — texto, linha 17`. A linha 17 é do fragmento; na procuração ela
+é outra coisa. É a forma da D-035 — a posição certa com o nome errado, que vale menos que
+nada —, agora na pergunta do `ask`.
+
+**Decisão.** Um campo declarado fora do modelo aberto é perguntado com o caminho do
+arquivo relativo ao modelo: `oab — texto, fragmentos/procurador.kanon, linha 17`.
+
+---
+
+## D-065 — O `kanon-lsp` enxerga a camada que carrega
+
+*2026-09-14 · aceita · surgida ao escrever o modelo real nº 13*
+
+**A observação, em duas camadas.** O modelo nº 13 foi escrito pelo servidor de linguagem,
+iniciado como um editor o inicia: `kanon-lsp --locale pt --domain KanonLegal`, num processo
+novo.
+
+1. O servidor **morria ao iniciar**: *"o idioma `pt` não tem camada carregada"*, com pilha.
+   O lançador fazia `@eval using` e construía o `Environment` na mesma função — a D-059,
+   no outro lançador.
+2. Corrigido isso, o servidor **subia e mentia**: todo campo de sujeito da notificação saía
+   como `K2001 o contrato não declara \`nome\``, oito erros num modelo que o `kanon check`
+   aceita limpo. Uma instrução de nível superior roda inteira no mundo em que começou, e
+   em `KanonLSP.serve(env = ambiente(ARGS))` o `ambiente` carregava a camada e o `serve`
+   continuava sem ver o esquema de `pessoa`.
+
+O segundo é o pior dos dois, e só apareceu porque o primeiro foi corrigido: um servidor que
+não sobe o redator percebe; um que sublinha em vermelho o modelo certo ensina o redator a
+ignorar o sublinhado.
+
+**Por que passou.** A suíte do `KanonLSP` roda o servidor dentro de Julia, com um domínio
+de mentira em inglês canônico, e nunca executou o `bin/kanon-lsp`.
+
+**Decisão.** O lançador carrega a camada com `Base.require`, constrói o ambiente por
+`invokelatest`, e chama o `serve` também por `invokelatest`, em instrução separada. Camada
+inexistente é erro de uso (código 3) sem pilha. A suíte roda o lançador num processo à
+parte, com a camada de verdade, e afirma que a notificação abre sem diagnóstico.
+
+---
+
+## D-066 — O que o editor mostra num fragmento é a soma do que os documentos abertos dizem
+
+*2026-09-14 · aceita · surgida ao escrever o modelo real nº 13*
+
+**A observação.** O fragmento `procurador.kanon` é incluído pela procuração e pela
+notificação. Com um erro que só existe para a notificação — o fragmento usa `{processo}`,
+que a procuração declara e a notificação não —, a sequência *abrir a notificação, abrir a
+procuração* publicava o erro no fragmento e, em seguida, **a lista vazia**: o LSP substitui
+a lista inteira a cada publicação, e o servidor publicava a de quem falou por último. O
+editor mostrava limpo um fragmento com o qual um documento aberto não renderiza. Na ordem
+inversa, fechar a notificação deixava o erro preso no fragmento.
+
+E o hospedeiro lê o fragmento **do disco**: salvar a correção do fragmento não mudava
+nenhum hospedeiro até alguém digitar nele.
+
+**Por que passou.** O único teste de fragmento do servidor tinha um hospedeiro. Nenhum
+fragmento do acervo servia a dois documentos — este é o primeiro.
+
+**Decisão.**
+
+1. O servidor guarda, por documento aberto, os arquivos sobre os quais ele tem algo a
+   dizer. O que se publica num arquivo é a **soma** do que todos os documentos abertos
+   dizem sobre ele; ao fechar um documento, republicam-se os arquivos que ele alcançava.
+2. O diagnóstico publicado num fragmento por um hospedeiro diz **de onde** vem: *"Ao ser
+   incluído por \`notificacao.kanon\`."* Um erro de fragmento depende do contrato de quem
+   inclui, e a mesma frase é verdadeira lida num hospedeiro e falsa lida no outro. O mesmo
+   diagnóstico dito por dois hospedeiros sai uma vez, com os dois nomeados; quando o próprio
+   fragmento aberto diz a mesma coisa, o erro é dele, e a origem não se acrescenta.
+3. `didSave` reanalisa os demais documentos abertos, e o servidor anuncia `save`.
+
+**Alternativa descartada.** Os hospedeiros lerem o fragmento do **buffer** aberto, e não do
+disco: o editor mostraria um documento que o `kanon render` não produz, porque o motor lê
+o disco. A ferramenta discordaria do motor (D-029).
+
+---
+
+## D-067 — A completação oferece o que o motor aceita naquele ponto
+
+*2026-09-14 · aceita · surgida ao escrever o modelo real nº 13*
+
+**A observação.** Escrevendo a notificação no editor, quatro listas de completação estavam
+erradas, e todas pela mesma razão — a completação resolvia o caminho por conta própria, e
+não como o motor resolve:
+
+| Onde | O que vinha | O que o motor aceita |
+|---|---|---|
+| `{notificado.`, num bloco de sujeito `pessoa` | os campos da raiz e os de `pessoa` | os de `parte` |
+| `{representante.`, no bloco `<- notificado` | os campos da raiz e os de `parte` | os de `pessoa` |
+| `{nome:`, no bloco `<- advogado` | nada | os formatadores de `texto` |
+| `{especiais:`, com `especiais : texto[]` | os formatadores de `texto` | os de `list` |
+
+O `.` é gatilho **anunciado** pelo servidor: o editor abria sozinho a primeira lista, e o
+redator escolhia `cpf` para uma empresa. E a quinta, achada ao dar à suíte uma camada de
+verdade: `kanon_formats(T)` sem o ambiente enumera o processo inteiro, e o `kanon-lsp`
+sempre tem camada carregada — num ambiente sem idioma, `{preco:` oferecia `extenso`, que o
+motor recusa com `K2020`.
+
+**Decisão.** Depois do ponto, os campos do tipo à esquerda dele, resolvido pelo contrato e,
+se não, pelo sujeito do bloco (§4.2); o formatador pelo mesmo caminho, os de `list` quando o
+campo é coleção, e sempre por `kanon_formats(T, env)`, a função que a análise usa. O bloco
+de uma linha se procura **no arquivo** do documento, como `at` já fazia.
+
+**O método.** A suíte do servidor usava um domínio de mentira para ficar independente das
+camadas, e por isso nunca teve um processo com `Extenso` carregado. Independência da suíte
+e realismo do processo são coisas diferentes, e a segunda é a que o redator tem.
