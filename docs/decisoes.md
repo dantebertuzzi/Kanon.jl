@@ -2034,3 +2034,140 @@ aditivo depois.
 passá-la em `domains = [...]`, que é a forma de quem chama o motor de dentro de Julia. Um
 redator na linha de comando lia a dica e não tinha o que fazer com ela. Agora ela diz as
 duas formas.
+
+---
+
+## D-059 — A camada carregada pela linha de comando existe para o resto da execução
+
+*2026-09-13 · aceita · surgida ao escrever o modelo real nº 12*
+
+**A observação.** A procuração nº 12 foi o primeiro modelo levado ao `bin/kanon` num
+processo novo. `kanon ask procuracao.kanon partes.json --locale pt --domain KanonLegal`
+respondeu: *"o idioma `pt` não tem camada carregada"*. A D-058 tinha sido dada como feita
+dois dias antes, com a suíte verde.
+
+**A causa.** O `--domain` faz `Base.require` e, na mesma função, constrói o `Environment`.
+O `require` define métodos novos — o `configure_locale!` de `pt` que o `Extenso` traz, o
+`configure!` da camada, o `kanon_decode` de `pessoa` —, e o código que já estava rodando
+não os vê: ele foi compilado num mundo em que eles não existiam (*world age*). A CLI de
+verdade, portanto, **continuava sem alcançar camada nenhuma**.
+
+**Por que a suíte passou.** O `runtests.jl` do `KanonLegal` faz `using KanonLegal` no
+topo, e o `Kanon.main` chamado depois disso roda num mundo em que a camada já existia. O
+`require` dentro dele não carregava nada. **O teste da D-058 testava a opção num processo
+em que ela não tinha efeito.**
+
+**Decisão.** A construção do ambiente e o comando inteiro rodam por `Base.invokelatest`,
+depois dos `require`. E o teste do fluxo roda o `bin/kanon` num **processo à parte** —
+é a única forma de exercitar o caminho, e é mais lenta (dois processos, ~20 s) por isso.
+
+**Alternativas.** (a) Carregar as camadas no `bin/kanon`, antes de chamar `main`: o
+script teria de ler as opções duas vezes, e o `main` chamado de outro programa voltaria a
+ter o defeito. (b) `invokelatest` no ponto de chamada (escolhida): uma linha, no único
+lugar em que o mundo muda.
+
+**A lição, que vale mais que a correção.** O teste que confirma uma correção precisa
+rodar **no mesmo lugar em que o defeito foi observado**. A D-058 foi observada na linha de
+comando e confirmada dentro de Julia, onde o defeito não existe.
+
+---
+
+## D-060 — Um `.json` na linha de comando carrega o leitor de JSON
+
+*2026-09-13 · aceita · surgida ao escrever o modelo real nº 12*
+
+**A observação.** Com a D-059 corrigida, o mesmo comando saía com uma pilha de Julia:
+*"para ler JSON, carregue `JSON3`"*, levantada por `error()` e não capturada. O `bin/kanon`
+faz `using Kanon` e nada mais, e o `JSON3` é **extensão**, não dependência. Nenhum arquivo
+`.json` era lido pela linha de comando de verdade — e o JSON é o único formato de dados
+que carrega uma `pessoa`. Somada à D-059, a CLI não alcançava documento jurídico nenhum
+por dois caminhos independentes.
+
+**Decisão.** Ao ler um `.json`, a CLI carrega o `JSON3` se ele ainda não está carregado,
+e lê por `invokelatest`. Se o pacote não estiver instalado no ambiente, é erro de **uso**
+(código 3), com a linha do `Pkg.add` — nunca uma pilha.
+
+**Isto não afrouxa a invariante 4.** O que carrega é sempre o mesmo pacote, e nunca um
+nome que venha do modelo ou dos dados. É o operador quem pede, ao dar à CLI um arquivo
+`.json`, pelo mesmo raciocínio da D-058.
+
+**Alternativa descartada.** Tornar o `JSON3` dependência do núcleo: resolveria a CLI e
+tiraria do núcleo a propriedade de funcionar sem dependência nenhuma, que a F7 escolheu
+de propósito.
+
+---
+
+## D-061 — O que o `ask` emite, o `render` lê de volta
+
+*2026-09-13 · aceita · surgida ao escrever o modelo real nº 12 · revê parte da D-029*
+
+**A observação.** O fluxo do balcão — as partes num JSON do cadastro, o resto digitado —
+quebrou em três pontos, todos contra a frase que a documentação do `ask` já dizia:
+
+| O que acontecia | Consequência |
+|---|---|
+| a `pessoa` vinda do JSON saía como `outorgado = Dict{String, Any}(...)` | o `render` recusava o arquivo com "é uma coleção, e veio um valor único" — uma mensagem sobre o formato que o `ask` escreveu, e não sobre os dados |
+| o opcional nunca era perguntado | o réu, o número do processo, a validade — **onde a procuração varia** — não tinham como entrar pelo `ask` |
+| a resposta só era conferida depois da última pergunta, e a pergunta não dizia a forma | `sim` num booleano e `13/09/2027` numa data viravam dois `K3010` no fim, e o atendente recomeçava |
+
+**Por que passou.** A suíte do `ask` usava um modelo em inglês, sem camada, de cinco
+campos escalares, e lia a saída de volta com `chave = valor` — que é o formato em que ela
+tinha sido escrita. Nenhum teste tinha dado ao `ask` um dado que o `chave = valor` não
+escreve, porque nenhum modelo de teste tinha um.
+
+**Decisão.**
+
+1. **Os dados saem na forma em que vieram**: JSON se `-o` termina em `.json` ou, sem
+   `-o`, se a entrada era `.json`; `chave = valor` nos demais casos. O JSON sai pelo
+   emissor ordenado do próprio núcleo (o do checklist), com as chaves em ordem alfabética
+   em toda profundidade — o arquivo vai a `diff`. Pedir `chave = valor` com um composto
+   nos dados é erro de uso, com a sugestão do `-o dados.json`.
+2. **O `ask` pergunta tudo o que falta**, inclusive o opcional e o que tem padrão. Enter
+   deixa o opcional em branco e mantém o padrão, e a pergunta diz qual dos dois.
+3. **A resposta é conferida na hora, pelo `check`**, e a pergunta se repete com a
+   mensagem dele. A pergunta diz a forma: `aaaa-mm-dd`, `verdadeiro ou falso` na língua
+   do arquivo, número com ponto decimal. O booleano aceita a palavra do idioma do modelo.
+
+**O que isto revê da D-029.** A D-029 dizia "opcional não se pergunta: ele pode faltar".
+Poder faltar é verdade do contrato, e não razão para não perguntar: o `ask` existe para
+que o redator não abra o arquivo de dados, e o opcional que ele não pergunta obriga a
+abri-lo. O resto da D-029 — só se pergunta o que cabe numa linha — continua valendo, e a
+procuração confirma: as partes vêm do cadastro, e é certo que venham.
+
+**Alternativas.** Para o formato: (a) JSON sempre, como a §12 escrevia desde a F0 —
+quebraria o `kanon ask m.kanon > dados.kdata` de quem não tem o `JSON3`; (b) escolher o
+formato pelo **conteúdo** — JSON só se houver composto — faria o mesmo comando mudar de
+formato conforme os dados, que é adivinhar; (c) pela forma da entrada e da saída pedida
+(escolhida). Para a conferência: uma validação própria do `ask` — descartada pela razão
+da D-029: a ferramenta que discorda do motor é pior que nenhuma.
+
+---
+
+## D-062 — No Typst, o valor não apaga texto
+
+*2026-09-13 · aceita · surgida ao compilar o golden do modelo real nº 12*
+
+**A observação.** O golden da procuração foi o primeiro `.typ` do acervo **compilado** —
+o do edital nº 6 era comparado byte a byte e nunca tinha passado pelo Typst. Compilado
+com o Typst 0.15.1, ele saiu certo; e a mesma sessão, conferindo a tabela de escape contra
+o compilador, achou três construções que não estavam nela e que **não abrem marcação
+visível: apagam**.
+
+| No valor | O Typst lê | O documento |
+|---|---|---|
+| `processo 123//2026, vara` | comentário de linha | `processo 123` — o resto da linha some |
+| `~200 m²` | espaço inseparável | ` 200 m²` |
+| `sim -? não` | hífen opcional | `sim  não` |
+
+Nenhuma dá erro de compilação. É a classe mais cara do roadmap — o documento sai, e diz
+menos do que o dado dizia —, num formato que existe para virar PDF e ir à assinatura.
+
+**Decisão.** O escape do Typst acrescenta `~` sempre; `?` depois de `-` e no começo do
+valor; `-` no fim do valor; e `/` junto de outra barra ou em qualquer das bordas do valor.
+As bordas contam porque a vizinha é prosa do autor, que o escape não vê: `{a}/` com
+`a = "x/"` formaria `//` na emenda. A barra sozinha no meio do valor não leva escape —
+`Petrolina/PE` e `S/A` não formam nada, e escapá-las seria o ruído que a F8 recusou.
+
+**O método, que é o que fica.** A tabela de escape de um formato se confere contra o
+**compilador** do formato, e não contra a documentação dele. O golden em Typst agora afirma
+também que tirar as contrabarras devolve o texto puro — o escape só acrescenta.

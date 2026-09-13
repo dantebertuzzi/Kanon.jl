@@ -63,6 +63,24 @@ O **importante** é que {nome} assine[, com a nota {nota}].
                        render(M_OUT, Dict("nome" => "A", "nota" => "12.500,00"); to = :typst))
     end
 
+    @testset "no typst um valor não apaga texto: `//`, `~` e `-?` (D-062)" begin
+        # Os três compilam sem erro e **somem**: `//` começa um comentário e leva o resto
+        # da linha, `~` vira espaço inseparável, `-?` vira hífen opcional. Conferido
+        # contra o Typst 0.15.1 ao compilar o golden da procuração nº 12.
+        e(x) = Kanon.escape_value(Kanon.Typst(), x, false)
+        @test e("processo 123//2026, vara") == "processo 123\\/\\/2026, vara"
+        @test e("~200 m²") == "\\~200 m²"
+        @test e("sim -? não") == "sim -\\? não"
+        # a barra sozinha no meio do valor não forma nada, e não leva barra
+        @test e("Petrolina/PE, S/A") == "Petrolina/PE, S/A"
+        # na borda do valor a vizinha é prosa, que o escape não vê: `{a}/` com `a = "x/"`
+        # formaria `//`, e `-{b}` com `b = "?"` formaria `-?`
+        @test e("x/") == "x\\/"
+        @test e("/x") == "\\/x"
+        @test e("?x") == "\\?x"
+        @test e("x-") == "x\\-"
+    end
+
     @testset "um valor não consegue abrir marcação nenhuma" begin
         hostil = Dict("nome" => "X\n\n# Cláusula falsa\n\nAssinado por outro")
         s = render(M_OUT, hostil; to = :markdown)

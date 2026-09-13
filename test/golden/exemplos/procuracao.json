@@ -1,0 +1,39 @@
+{
+  "email": "paulo_lins@lins.adv.br",
+  "especiais": [
+    "receber citação",
+    "confessar",
+    "transigir",
+    "desistir",
+    "firmar compromisso",
+    "dar quitação"
+  ],
+  "finalidade": "propor reclamação trabalhista",
+  "oab": "12.345",
+  "outorgado": {
+    "cpf": "999.888.777-66",
+    "endereco": "Avenida Cardoso de Sá, 210, sala 3, Petrolina/PE",
+    "estado_civil": "casado",
+    "genero": "m",
+    "nome": "Paulo Henrique Lins"
+  },
+  "outorgante": [
+    {
+      "cpf": "111.222.333-44",
+      "endereco": "Rua do Sol, 45, Centro, Petrolina/PE",
+      "estado_civil": "casada",
+      "genero": "f",
+      "nome": "Marta Regina Soares"
+    },
+    {
+      "cpf": "555.666.777-88",
+      "endereco": "Rua do Sol, 45, Centro, Petrolina/PE",
+      "estado_civil": "casado",
+      "genero": "m",
+      "nome": "José Carlos Soares"
+    }
+  ],
+  "reu": "Frutas do Vale Exportadora Ltda.",
+  "substabelecer": true,
+  "validade": "2027-09-13"
+}

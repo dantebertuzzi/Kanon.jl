@@ -119,12 +119,32 @@ A contrabarra vai **antes do dígito**, e não antes do ponto: `1. x` no começo
 linha é item de enumeração explícita, e a forma de escrever o parágrafo é `\\1. x` — o
 inverso do Markdown, onde o ponto é que leva a barra. Duas linguagens de marcação, duas
 regras, e é por isso que o escape é método de formato e não uma função só.
+
+E três construções que **não abrem nada visível — apagam**, conferidas contra o Typst
+0.15.1 ao compilar o golden do modelo real nº 12 (D-062):
+
+- `//` começa um comentário em qualquer posição da linha: `processo 123//2026, vara` sai
+  `processo 123`, e o resto da linha some sem erro nenhum;
+- `~` é espaço inseparável: `~200 m²` perde o til;
+- `-?` é hífen opcional, e some inteiro.
+
+Os três são o pior tipo de defeito que um formato pode ter — o documento compila, sai, e
+diz menos do que o dado dizia. A barra só leva escape onde forma comentário: junto de outra
+barra, ou na borda do valor, onde a vizinha é prosa que o escape não vê.
 """
 function escape_value(::Typst, s::AbstractString, inicio_de_linha::Bool)
     io = IOBuffer()
     inicio = inicio_de_linha
-    for c in s
-        if c in TYPST_ESPECIAIS || (inicio && (isdigit(c) || c in TYPST_INICIO))
+    cs = collect(s)
+    n = length(cs)
+    for (i, c) in enumerate(cs)
+        anterior = i > 1 ? cs[i - 1] : nothing
+        seguinte = i < n ? cs[i + 1] : nothing
+        if c in TYPST_ESPECIAIS || (inicio && (isdigit(c) || c in TYPST_INICIO)) ||
+           c == '~' ||
+           (c == '/' && (i == 1 || i == n || anterior == '/' || seguinte == '/')) ||
+           (c == '?' && (i == 1 || anterior == '-')) ||
+           (c == '-' && i == n)
             print(io, '\\')
         end
         print(io, c)

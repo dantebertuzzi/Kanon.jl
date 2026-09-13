@@ -169,9 +169,31 @@ text
         @test !occursin("preco =", r.out)
     end
 
-    @testset "campo opcional não se pergunta: ele pode faltar" begin
-        r = ask("Ana\n40\ntrue\n")
-        @test !occursin("nota —", r.err)
+    @testset "campo opcional se pergunta, e Enter o deixa em branco (D-061)" begin
+        # O opcional é onde o documento varia: um `ask` que nunca o oferece só produz o
+        # documento mínimo. Até a D-061 ele não era perguntado.
+        r = ask("Ana\n40\ntrue\n\n")
+        @test occursin("nota — text, linha", r.err)
+        @test occursin("opcional: Enter deixa em branco", r.err)
+        @test !occursin("nota", r.out)
+        r2 = ask("Ana\n40\ntrue\nurgente\n")
+        @test occursin("nota = \"urgente\"", r2.out)
+    end
+
+    @testset "a resposta que o check recusa é perguntada de novo (D-061)" begin
+        r = ask("Ana\nquarenta\n40\ntrue\n")
+        @test occursin("`idade` é do tipo `number`", r.err)
+        @test count("idade = ", r.err) == 2
+        @test occursin("idade = 40", r.out)
+        # e a pergunta diz a forma da resposta
+        @test occursin("ponto decimal, sem separador de milhar", r.err)
+        @test occursin("true ou false", r.err)
+    end
+
+    @testset "sem entrada, o ask termina, e não pergunta para sempre" begin
+        r = ask("Ana\nquarenta\n")
+        @test r.codigo == Kanon.EXIT_CONTRACT
+        @test occursin("nome = \"Ana\"", r.out)
     end
 
     @testset "sai com erro de contrato enquanto os dados não bastam" begin

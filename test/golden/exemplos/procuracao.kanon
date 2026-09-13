@@ -1,0 +1,76 @@
+kanon 1 pt
+
+# Procuração ad judicia et extra — **modelo real nº 12** do portão da 1.0.
+#
+# Escolhido pela **porta por onde os dados entram no balcão**. As partes já estão no
+# cadastro do escritório, e vêm num JSON; o resto — o número da OAB, a ação, o réu, o
+# processo — o atendente digita na hora, respondendo ao `kanon ask`. O documento sai em
+# Typst, para virar PDF e ir à assinatura. Onze modelos reais foram escritos, e nenhum
+# passou por nenhuma das três coisas:
+#
+#   1. **`kanon ask` num documento de verdade**, com camada de domínio, idioma, campos
+#      opcionais e dados parciais vindos de um arquivo — a suíte dele usava um modelo em
+#      inglês, sem camada, de cinco campos.
+#   2. **O `bin/kanon` de verdade**, num processo novo, e não `Kanon.main` chamado de
+#      dentro de uma suíte que já carregou tudo.
+#   3. **Um golden em Typst com camada de domínio**, compilado pelo Typst: o único Typst
+#      do acervo era o edital, sem camada, e ninguém o tinha compilado.
+#
+# O fluxo inteiro, que o teste roda num processo à parte:
+#
+#   kanon ask    procuracao.kanon procuracao.partes.json -o dados.json   < respostas
+#   kanon render procuracao.kanon dados.json --to typst -o procuracao.typ
+#
+# (com `--locale pt --domain KanonLegal` nos dois).
+#
+# **E um limite do idioma, que não é defeito**: a flexão tem **um** sujeito por bloco, e
+# a frase central de uma procuração concorda com dois — o verbo com os outorgantes
+# (`nomeiam`), o substantivo com o advogado (`procuradora`). O bloco `poderes` flexiona
+# pelos outorgantes, e o OUTORGADO é nomeado pelo papel, em caixa alta, como a locação
+# nº 2 já fazia com o LOCATÁRIO. Ver `roadmap.md`.
+
+dados
+  outorgante    : pessoa[1..] !
+  outorgado     : pessoa      !
+  oab           : texto       !
+  email         : texto
+  finalidade    : texto       !
+  reu           : texto
+  processo      : texto
+  especiais     : texto[]
+  substabelecer : booleano    !
+  validade      : data
+  cidade        : texto       = "Petrolina"
+  emissao       : data        = hoje
+
+texto
+
+: titulo
+PROCURAÇÃO AD JUDICIA ET EXTRA
+
+: qualificacao <- outorgante
+OUTORGANTE: {nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}.
+
+: advogado <- outorgado
+OUTORGADO: {nome:upper}, advogado(a) inscrito(a) na OAB/PE sob o nº {oab}, com escritório profissional na {endereco}[, endereço eletrônico {email}].
+
+: poderes <- outorgante
+PODERES: pelo presente instrumento, o(s) OUTORGANTE(S) nomeia(m) seu bastante procurador o OUTORGADO acima qualificado, a quem confere(m) os poderes da cláusula ad judicia et extra, para o foro em geral, podendo propor contra quem de direito as ações competentes e defendê-lo(s) nas contrárias, em especial para {finalidade}[ em face de {reu}][, nos autos do processo nº {processo}], praticando todos os atos necessários ao fiel cumprimento deste mandato.
+
+: poderes_especiais <- outorgante
+Confere(m)-lhe ainda os poderes especiais para {especiais}, na forma do art. 105 do Código de Processo Civil.
+
+: substabelecimento
+Os poderes aqui outorgados podem ser substabelecidos, no todo ou em parte, com ou sem reserva de iguais.
+
+: prazo
+O presente mandato vale até {validade:corrente}.
+
+: fecho
+{cidade}, {emissao:corrente}.
+
+regras
+  qualificacao       um para cada outorgante
+  poderes_especiais  quando especiais é presente
+  substabelecimento  quando substabelecer
+  prazo              quando validade é presente
