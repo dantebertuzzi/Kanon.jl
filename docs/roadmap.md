@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 15 de setembro de 2026. Escrito para retomar sem depender de memória.
+> Estado em 15 de setembro de 2026 (o portão fechado; a primeira decisão da seção 1a feita). Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -22,7 +22,7 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.654 testes** ao todo — 1.618 no núcleo (~50 s com Aqua), 328 em `Extenso`,
+Suíte: **2.663 testes** ao todo — 1.625 no núcleo (~50 s com Aqua), 330 em `Extenso`,
 308 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
@@ -64,12 +64,14 @@ para um pandoc, ou o teste avisa e fica marcado como pulado.
 
 **Ao retomar, nesta ordem:**
 
-1. **Merge do PR do nº 15** (branch `modelo-real-15`), e conferir que o CI da `main` fica
-   verde nas seis configurações — o passo do pandoc é novo no macOS e no Windows.
-2. **A seção 1a**, uma decisão de cada vez, e cada uma registrada em `decisoes.md`. Com o
-   portão fechado ela deixa de ser lista e vira o trabalho: é o que separa o acervo de
-   uma sintaxe congelada.
-3. Só então a `0.1.0` e o registro no General (item 2), que é decisão sua.
+1. **A seção 1a**, uma decisão de cada vez, cada uma registrada em `decisoes.md`. Com o
+   portão fechado ela deixa de ser lista e vira o trabalho: é o que separa o acervo de uma
+   sintaxe congelada. A primeira, o tipo `list`, está feita (**D-071**); restam quatro.
+   A recomendação de ordem: **a flexão por dois sujeitos e a enumeração de trechos
+   opcionais juntas**, porque as duas pedem a mesma coisa — que sintaxe fica reservada
+   antes de congelar —, depois o **ponto final duplicado**, que muda saída de documento
+   publicado, e por último os **apelidos de atributo e formatador**, que só acrescentam.
+2. Só então a `0.1.0` e o registro no General (item 2), que é decisão sua.
 
 Isto não foi burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada
 um dos quinze cobrou alguma coisa. **Nenhuma outra atividade teve a mesma taxa de
@@ -82,7 +84,7 @@ congelamento.
 |---|---|---|
 | **D-031** | `quando flag` era recusado em português e aceito em inglês. Mesma causa em quatro lugares — e num deles o checklist de um modelo `pt` saía **sem `type` nenhum**, validando qualquer coisa | locação |
 | **D-032** | uma regra que remove a cláusula deixava o parágrafo dela órfão, rotulado `0.1` — um número que não existe. Virou o aviso `K2039` | locação |
-| **D-033** | o tipo `list` do núcleo **não é declarável** no plano de dados, e a mensagem mandava o autor para `list[]`, que é uma lista de listas | locação |
+| **D-033** | o tipo `list` do núcleo **não é declarável** no plano de dados, e a mensagem mandava o autor para `list[]`, que é uma lista de listas. Fechada pela **D-071** com o portão: nenhum dos quinze o declarou, e o nome saiu do plano de dados | locação |
 | **D-034** | uma incerteza cujo primeiro algarismo é 3 ganhava **uma casa decimal a mais do que a medição sustenta** — `21.40 ± 0.30` no lugar de `21.4 ± 0.3` —, porque `0.3 / 10.0^-1` vale `2.9999999999999996` | relatório |
 | — | **e um limite do idioma, que não é defeito**: a marca só sufixa, e o plural de um verbo em português muda o radical. `concluiu(ram)` não existe; a frase se escreve com particípios | certificado |
 | **D-035** | todo diagnóstico sobre algo vindo de fragmento nomeava o **hospedeiro**, com a linha do **fragmento**: um ponteiro para uma linha que muitas vezes nem existe no arquivo apontado | relatório |
@@ -187,13 +189,13 @@ O que procurar no que falta:
 O portão existe para que estas perguntas sejam respondidas **antes** da 1.0: depois dela,
 cada resposta muda a saída de documento publicado ou a gramática, e vira versão maior.
 Com o portão fechado, **são o próximo trabalho**: todas precisam de resposta antes do
-congelamento.
+congelamento. A primeira saiu em 15 de setembro de 2026 — o tipo `list` (D-071), que a
+evidência dos quinze modelos decidiu. Restam quatro.
 
 | Decisão | Por que agora | Tocada por |
 |---|---|---|
 | **O ponto final duplicado** — `{reu}` valendo `… Ltda.` no fim da frase sai `Ltda..` | o fim da frase depende da elisão, e o autor só escapa pondo prosa fixa depois do último grupo. Corrigir a emenda depois da 1.0 muda documento publicado | nº 8, nº 12 |
 | **Flexão por mais de um sujeito na mesma frase** — `nomeia(m)` pelos outorgantes e `procurador(a)` pelo advogado | se um dia existir, a sintaxe (uma marca que nomeia o sujeito) precisa estar **reservada** antes: hoje ela seria prosa, e dar-lhe sentido depois muda a saída | nº 2, nº 12 |
-| **O tipo `list` do núcleo** (D-033) — declarável ou removido | o gatilho escrito na dívida é "o fim do portão" | nº 2 |
 | **Apelido de idioma para atributos e formatadores** — `quando x é precise`, `{nome:upper}` num modelo `pt` | aditivo, e por isso não bloqueia; mas o nome em português que entrar depois convive para sempre com o inglês | nº 8, nº 9, nº 10, nº 12 |
 | **A enumeração de trechos opcionais** — `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta | a correção natural é o reparo de emenda trocar a vírgula pelo `e` quando o último grupo elide, e isso **muda a saída** de todo modelo escrito nessa forma. A outra, uma construção de enumeração, precisa da sintaxe reservada antes, pela razão da flexão por dois sujeitos | nº 14 |
 
@@ -802,7 +804,6 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 
 | Dívida | Onde | Gatilho |
 |---|---|---|
-| **O tipo `list` não é declarável no plano de dados** (D-033) | `core_types.jl`, `check.jl` | o fim do portão. A mensagem já não mente; falta decidir entre remover o tipo (versão maior) e torná-lo alcançável |
 | Os nomes de atributo não têm apelido de idioma: num modelo `pt` escreve-se `quando x é empty` | `environment.jl` | **puxado pelos modelos nº 8, nº 9 e nº 10** (e os formatadores, pelo nº 12 — linha abaixo), que escrevem `quando não (pontos é precise)` e `quando não (indicacao é precise)` em certificados em português. A §9 promete que o idioma renomeia palavras-chave, e atributo não é palavra-chave — mas o autor não sabe disso, e agora que o motor cita a regra de volta na língua certa (D-051) o `precise` no meio dela é a única palavra fora do lugar. Um `register_attribute_alias!` é aditivo, e o glossário da D-056 mostrou onde ele **não** vai: atributo é nome que a regra resolve, não texto que sai no documento |
 | As mensagens listam os atributos em inglês mesmo num modelo `pt`: `Atributos de \`texto\`: absent, present` | `analyze.jl` | um redator reclamar. Traduzir diagnóstico é projeto próprio, e a D-027 diz por que ele não é urgente |
 | `is not` em português vira `é não`, que é agramatical | `parse_rules.jl` | escrever `não (x é y)` resolve hoje; mudar a **ordem** da gramática por idioma seria versão maior |
@@ -858,7 +859,7 @@ décimo quinto passou por todas as portas do motor, e achou o documento errado d
 
 ### O que a implementação já mudou na especificação
 
-Cinquenta e duas decisões saíram de escrever o código, e vinte e seis delas fecharam buracos
+Cinquenta e três decisões saíram de escrever o código e os documentos, e vinte e seis delas fecharam buracos
 que nenhuma releitura teria encontrado — o texto era internamente coerente em todos os
 casos:
 

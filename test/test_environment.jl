@@ -71,11 +71,13 @@ Kanon.configure_locale!(b::Kanon.EnvironmentBuilder, ::Val{:xx}) = begin
 end
 
 @testset "ambiente" begin
-    @testset "o núcleo puro tem os seis tipos e nada de idioma" begin
+    @testset "o núcleo puro tem os cinco tipos declaráveis e nada de idioma" begin
         env = Environment()
         @test env.locale === nothing
         @test isempty(env.domains)
-        @test typenames(env) == [:boolean, :date, :list, :money, :number, :text]
+        @test typenames(env) == [:boolean, :date, :money, :number, :text]
+        # a coleção existe, e não se declara (D-071)
+        @test typefor(env, :list) !== nothing
         @test env.inflect === nothing
         @test isempty(env.marks)
         @test env.decimal_separator == "." && env.group_separator == ""

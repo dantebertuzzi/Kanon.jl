@@ -278,9 +278,20 @@ function kanon_decode(::Type{Bool}, raw, ctx)
     throw(UndecodableValue(Bool, raw, "esperava verdadeiro ou falso."))
 end
 
-# --- list --------------------------------------------------------------------
+# --- coleção ------------------------------------------------------------------
 
-kanon_typename(::Type{<:AbstractVector}) = :list
+"""
+O nome interno do comportamento de coleção: a junção, `count` e `empty` de todo campo
+declarado com cardinalidade de lista (`text[]`, `person[1..]`).
+
+**Não é um tipo que se declare** (D-071). O plano de dados diz "vários" pela cardinalidade,
+que diz também vários de quê; `x : list` é recusado com `K2009`, e o nome não aparece
+entre os tipos que o ambiente oferece. Até o fim do portão da 1.0 ele era declarável e
+inalcançável ao mesmo tempo (D-033): nenhum dos quinze modelos reais o declarou.
+"""
+const COLLECTION_TYPENAME = :list
+
+kanon_typename(::Type{<:AbstractVector}) = COLLECTION_TYPENAME
 
 """
 A única convenção tipográfica do núcleo: `", "` entre os elementos. Está declarada como
@@ -307,7 +318,7 @@ end
 # --- registro do núcleo ------------------------------------------------------
 
 """
-Os seis tipos e os valores de fábrica. Nenhum apelido de idioma: o núcleo é neutro, e
+Os cinco tipos, o comportamento de coleção e os valores de fábrica. Nenhum apelido de idioma: o núcleo é neutro, e
 `aliases` é assunto da camada (§2.2).
 """
 function configure!(b::EnvironmentBuilder)

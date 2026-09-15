@@ -360,7 +360,7 @@ function resolve_formatter!(ctx::AnalysisCtx, n::Interp, rp::ResolvedPath)
     ctx.out.formatter[id(n)] = n.formatter === nothing ? :default : n.formatter
     n.formatter === nothing && return nothing
 
-    effective = islist(rp.card) ? :list : rp.typename
+    effective = islist(rp.card) ? COLLECTION_TYPENAME : rp.typename
     T = typefor(ctx.env, effective)
     if T === nothing
         err!(ctx, "K2005", n.span,
@@ -384,11 +384,14 @@ function resolve_formatter!(ctx::AnalysisCtx, n::Interp, rp::ResolvedPath)
         return nothing
     end
 
+    # uma coleção não tem nome de tipo que o autor possa escrever (D-071)
+    alvo = islist(rp.card) ? "uma coleção" : "o tipo `$effective`"
     tail = isempty(fmts) ?
         "`$effective` não tem formatador nomeado; escreva `{$(string(n.path))}`." :
-        "Formatadores de `$effective`: $(join(fmts, ", "))."
+        (islist(rp.card) ? "Formatadores de uma coleção" : "Formatadores de `$effective`") *
+        ": $(join(fmts, ", "))."
     err!(ctx, "K2020", n.span,
-         "`$(n.formatter)` não existe para o tipo `$effective`.";
+         "`$(n.formatter)` não existe para $alvo.";
          hint = did_you_mean(n.formatter, fmts, tail), path = string(n.path))
     return nothing
 end
@@ -928,6 +931,18 @@ use.
 """
 function analyze_data!(ctx::AnalysisCtx)
     for f in ctx.tmpl.data.fields
+        if canonical_typename(ctx.env, f.type) === COLLECTION_TYPENAME
+            # O comportamento de coleção existe, e é da cardinalidade: quem escreve
+            # `x : list` quer `x : text[]`, e o nome solto não diz vários de quê (D-071).
+            push!(ctx.poisoned, f.name)
+            err!(ctx, "K2009", f.span,
+                 "`$(f.name)` é declarado do tipo `$(f.type)`, que não se declara: " *
+                 "uma coleção é dita pela cardinalidade, sobre o tipo dos elementos.";
+                 hint = "Declare `$(f.name) : $(written_typename(ctx.env, :text))[]` " *
+                        "para uma lista de textos — ou `[1..]` se ao menos um é obrigatório.",
+                 path = String(f.name))
+            continue
+        end
         typefor(ctx.env, f.type) === nothing || continue
         push!(ctx.poisoned, f.name)
         names = typenames(ctx.env)

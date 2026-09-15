@@ -101,6 +101,7 @@ const CODE_TITLES = Dict{String,String}(
     "K2006" => "sujeito não declarado no contrato",
     "K2007" => "sujeito sem campos",
     "K2008" => "caminho atravessa uma lista",
+    "K2009" => "tipo que não se declara",
     # --- referência: grupos opcionais e o teorema da lacuna ---
     "K2010" => "grupo opcional que nunca elide",
     "K2011" => "grupo opcional de valores garantidos",

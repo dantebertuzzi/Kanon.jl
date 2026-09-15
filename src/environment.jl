@@ -504,9 +504,14 @@ function written_typename(env::Environment, canonical::Symbol)
     i === nothing ? canonical : env.typealiases[i].alias
 end
 
-"Todo nome de tipo escrevível neste ambiente, ordenado — para a mensagem de erro."
+"""
+Todo nome de tipo **declarável** neste ambiente, ordenado — para a mensagem de erro e a
+completação do editor. O comportamento de coleção fica de fora com os apelidos dele: ele
+existe, e se escreve pela cardinalidade (D-071).
+"""
 typenames(env::Environment) =
-    sort!(vcat([e.name for e in env.types], [a.alias for a in env.typealiases]))
+    sort!(vcat([e.name for e in env.types if e.name !== COLLECTION_TYPENAME],
+               [a.alias for a in env.typealiases if a.canonical !== COLLECTION_TYPENAME]))
 
 "Estilo de bloco da unidade de marcador, ou `nothing`."
 function stylefor(env::Environment, unit::Char)

@@ -188,8 +188,8 @@ register_type_alias!(b, :dinheiro, :money)
 ```
 
 **[acrescentados na F4 — D-025]** `register_list_joiner!` substitui a única convenção
-tipográfica do núcleo (o `", "` de `list`, §3.3), e `register_type_alias!` dá nome em
-outro idioma a um tipo que **outro** registrou — o caso dos seis tipos do núcleo, que o
+tipográfica do núcleo (o `", "` que junta os elementos de uma coleção, §3.3), e `register_type_alias!` dá nome em
+outro idioma a um tipo que **outro** registrou — o caso dos tipos do núcleo, que o
 núcleo registra sem apelido nenhum porque é neutro.
 
 Os dois são registro no ambiente, e não método: um método sobre `AbstractVector` seria

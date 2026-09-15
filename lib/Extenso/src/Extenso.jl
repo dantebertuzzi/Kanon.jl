@@ -103,7 +103,10 @@ const PALAVRAS = [
     Symbol("true") => "verdadeiro", Symbol("false") => "falso", :null => "nulo",
 ]
 
-"Os nomes dos tipos do núcleo em português."
+"""
+Os nomes dos tipos do núcleo em português. `lista` não se declara (D-071), e fica aqui
+para que `itens : lista` seja recusado com o nome que o autor escreveu.
+"""
 const TIPOS = (:texto => :text, :numero => :number, :dinheiro => :money,
                :data => :date, :booleano => :boolean, :lista => :list)
 
