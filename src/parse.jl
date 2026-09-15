@@ -113,7 +113,11 @@ function parse_pragma!(ctx::ParseCtx)
             available = ctx.kw.lang === nothing ? "apenas o inglês canônico" : "`$(ctx.kw.lang)`"
             err!(ctx, "K1006", sp,
                  "o modelo declara o idioma `$(parts[3])`, e o ambiente tem $available.";
-                 hint = "Carregue a camada de idioma correspondente, ou escreva o modelo em inglês canônico.")
+                 # as duas formas, como a do `K2005`: quem está na linha de comando não
+                 # constrói ambiente, e "carregue a camada" não lhe dizia o que digitar (D-068)
+                 hint = "Carregue a camada do idioma: `locale = :$(parts[3])` em Julia, " *
+                        "`--locale $(parts[3])` na linha de comando — e `--domain` com o pacote " *
+                        "do idioma, se nenhuma camada o trouxer. Ou escreva o modelo em inglês canônico.")
         end
     end
 

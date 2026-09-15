@@ -408,7 +408,11 @@ function Environment(; locale::Union{Nothing,Symbol} = nothing, domains = Module
         d in names && enverr("o domínio `$d` aparece duas vezes na lista.")
         push!(names, d)
         b.domain = d
-        isdefined(m, :configure!) && getfield(m, :configure!)(b)
+        registro = isdefined(m, :configure!) ? getfield(m, :configure!) : nothing
+        # O `configure!` do próprio módulo, e não o do núcleo que ele importou com `using
+        # Kanon`: uma camada de idioma não tem vocabulário de domínio, e chamar o do núcleo
+        # registrava os seis tipos de novo, com um conflito que acusava a camada (D-068).
+        registro === nothing || registro === configure! || registro(b)
     end
 
     return freeze(b, names)

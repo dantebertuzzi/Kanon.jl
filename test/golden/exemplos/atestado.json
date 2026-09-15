@@ -1,0 +1,23 @@
+{
+  "art": "PE20250123456",
+  "cargo": "Secretária de Infraestrutura",
+  "cnpj_contratada": "08.765.432/0001-10",
+  "cnpj_contratante": "10.358.000/0001-80",
+  "conclusao": "2026-07-31",
+  "contratada": "Construtora Vale do São Francisco Ltda.",
+  "contratante": "Município de Petrolina",
+  "contrato": "112/2025",
+  "drenagem": 1320,
+  "execucao": 100,
+  "inicio": "2025-08-04",
+  "local": "Petrolina/PE",
+  "objeto": "a pavimentação asfáltica e a drenagem pluvial das ruas do loteamento Jardim Maravilha",
+  "pavimentacao": 12480.5,
+  "responsavel": "Ricardo Menezes Barros",
+  "signatario": "Luciana Ferraz Coelho",
+  "sinalizacao": 860,
+  "valor": {
+    "amount": "3847250.00",
+    "currency": "BRL"
+  }
+}

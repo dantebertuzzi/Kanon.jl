@@ -1,0 +1,12 @@
+{
+  "contratante": "Município de Petrolina",
+  "cnpj_contratante": "10.358.000/0001-80",
+  "contratada": "Construtora Vale do São Francisco Ltda.",
+  "cnpj_contratada": "08.765.432/0001-10",
+  "contrato": "112/2025",
+  "objeto": "a pavimentação asfáltica e a drenagem pluvial das ruas do loteamento Jardim Maravilha",
+  "local": "Petrolina/PE",
+  "valor": { "amount": "3847250.00", "currency": "BRL" },
+  "inicio": "2025-08-04",
+  "conclusao": "2026-07-31"
+}

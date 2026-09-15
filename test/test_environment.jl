@@ -51,6 +51,14 @@ module CamadaMarcador
         ref = (path, ctx) -> string(path[1]))
 end
 
+"""
+Um pacote de idioma passado como domínio — o que a linha de comando faz com `--domain
+Extenso`. Importa o `configure!` do núcleo com `using Kanon`, e não define o seu.
+"""
+module CamadaSoDeIdioma
+    using Kanon
+end
+
 "Uma camada de idioma de mentira, registrada como uma real: por despacho."
 Kanon.configure_locale!(b::Kanon.EnvironmentBuilder, ::Val{:xx}) = begin
     register_aliases!(b, :xx, (data = "dados", text = "texto", rules = "regras",
@@ -127,6 +135,14 @@ end
 
     @testset "o mesmo domínio duas vezes é erro" begin
         @test_throws KanonEnvironmentError Environment(domains = [CamadaLegal, CamadaLegal])
+    end
+
+    @testset "um módulo sem `configure!` próprio não registra o núcleo de novo (D-068)" begin
+        # `isdefined(m, :configure!)` enxerga o que o módulo importou: o construtor chamava
+        # o `configure!` do núcleo, e o conflito acusava a camada de registrar `text`.
+        env = Environment(locale = :xx, domains = [CamadaSoDeIdioma])
+        @test length(env.types) == 6
+        @test env.domains == [:CamadaSoDeIdioma]
     end
 
     @testset "idioma sem camada carregada falha com o nome do idioma" begin

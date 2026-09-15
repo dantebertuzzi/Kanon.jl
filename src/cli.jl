@@ -44,7 +44,8 @@ Opções
   --to FORMATO   text (padrão), markdown ou typst
   --today DATA   a data de hoje, em AAAA-MM-DD; `today` nunca vem do relógio
   --locale IDIOMA
-  --domain NOME  carrega uma camada de domínio (repetível): --domain KanonLegal
+  --domain NOME  carrega uma camada (repetível): --domain KanonLegal. Um idioma sem
+                 camada de domínio que o traga se carrega igual: --domain Extenso
   --version
   --help
 
@@ -152,6 +153,12 @@ function build_env(idioma::Union{Nothing,Symbol}, dominios::Vector{Symbol}, err:
         end
         push!(mods, m)
     end
+    if idioma !== nothing && !Base.invokelatest(idioma_carregado, idioma)
+        println(err, "kanon: o idioma `", idioma, "` não tem camada carregada.")
+        println(err, "       Carregue o pacote que define o idioma como se carrega uma ",
+                "camada: `--locale ", idioma, " --domain NOME`.")
+        return nothing
+    end
     try
         return Base.invokelatest(Environment; locale = idioma, domains = mods)
     catch e
@@ -161,6 +168,18 @@ function build_env(idioma::Union{Nothing,Symbol}, dominios::Vector{Symbol}, err:
         return nothing
     end
 end
+
+"""
+Se algum pacote carregado define o idioma — isto é, se o método de `configure_locale!`
+para ele não é o do núcleo, que só recusa.
+
+O `Extenso` chegava à linha de comando só como dependência de uma camada de domínio, e o
+modelo em português sem camada — o certificado nº 4, o edital nº 6, o atestado nº 14 —
+não passava pelo `bin/kanon`. A recusa do ambiente mandava "carregar o pacote", que é a
+forma de quem está dentro de Julia (D-068).
+"""
+idioma_carregado(idioma::Symbol) =
+    which(configure_locale!, Tuple{EnvironmentBuilder,Val{idioma}}).module !== @__MODULE__
 
 "Lê as opções. Devolve `nothing` se algo está malformado — o erro já foi escrito."
 function parse_options(args::Vector{String}, err::IO)
@@ -336,6 +355,8 @@ function do_ask(modelo, dados, origem, saida, hoje, out::IO, err::IO, entrada::I
             eof(entrada) && (println(err); break)
             linha = strip(readline(entrada))
             isempty(linha) && break              # obrigatório fica faltando; o resto, como está
+            recusa = recusa_da_forma(modelo.env, f, linha)
+            recusa === nothing || (println(err, "  ", recusa); continue)
             valor = coerce_answer(modelo.env, f, linha)
             recusa = recusa_da_resposta(modelo, f, valor, hoje)
             recusa === nothing && (valores[nome] = valor; break)
@@ -382,6 +403,39 @@ function coerce_answer(env::Environment, f::FieldDecl, texto::AbstractString)
         k === KW_FALSE && return false
     end
     parse_data_value(texto)
+end
+
+"""
+A resposta numérica que o documento escreveria diferente do que o `ask` leu, ou
+`nothing`.
+
+A pergunta diz "ponto decimal, sem separador de milhar", e o redator digita como o
+documento escreve. Num idioma em que o ponto separa os milhares, `1.320` é um número
+válido **das duas formas**: o `ask` lia `1.32`, o `check` não tinha o que objetar, e o
+atestado nº 14 saía com `1,32 m` de drenagem onde o fiscal mediu mil trezentos e vinte —
+um documento errado sem aviso nenhum. E `12.480,50`, que não é número em forma nenhuma
+da entrada, era recusado com "esperava um numero", sem a forma a escrever (D-069).
+
+Recusa, e não aceita a forma do documento: aceitar `12.480,50` seria um segundo formato de
+entrada, e a ambiguidade de `1.320` continuaria sem resposta.
+"""
+function recusa_da_forma(env::Environment, f::FieldDecl, texto::AbstractString)
+    canonical_typename(env, f.type) === :number || return nothing
+    grupo, decimal = env.group_separator, env.decimal_separator
+    # um grupo só: `1.234.567` não é decimal em forma nenhuma, e cai na forma do documento
+    if grupo == "." && occursin(r"^-?[1-9][0-9]{0,2}\.[0-9]{3}$", texto)
+        inteiro = replace(texto, "." => "")
+        fracao = endswith(texto, "0") ? rstrip(texto, '0') : texto * "0"
+        return "`$texto` é ambíguo: no documento o ponto separa os milhares, e na resposta " *
+               "ele separa os decimais. Escreva `$inteiro` se é o número inteiro, ou " *
+               "`$fracao` se é decimal."
+    end
+    occursin(r"^-?[0-9]+(\.[0-9]+)?$", texto) && return nothing
+    convertido = replace(replace(texto, grupo => ""), decimal => ".")
+    occursin(r"^-?[0-9]+(\.[0-9]+)?$", convertido) &&
+        return "`$texto` está na forma do documento; a resposta se escreve com ponto " *
+               "decimal e sem separador de milhar: `$convertido`."
+    nothing
 end
 
 """

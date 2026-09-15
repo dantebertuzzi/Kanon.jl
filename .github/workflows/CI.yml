@@ -57,6 +57,7 @@ jobs:
             using Pkg
             Pkg.develop([PackageSpec(path=".")])
             Pkg.add("Tables")          # só a suíte: é o certificado que gera um por linha
+            Pkg.add("JSON3")           # só a suíte: é o atestado que lê o contrato de um JSON
             Pkg.instantiate()'
           julia --project=lib/Extenso lib/Extenso/test/runtests.jl
         shell: bash

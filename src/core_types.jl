@@ -134,6 +134,9 @@ function kanon_decode(::Type{NumberValue}, raw, ctx)
     raw isa NumberValue && return raw
     raw isa Bool && throw(UndecodableValue(NumberValue, raw,
         "verdadeiro e falso nao sao numeros; declare o campo como `boolean`."))
+    # Como a data: a cadeia é o erro de quem escreve o arquivo, e a mensagem dá a forma.
+    raw isa AbstractString && throw(UndecodableValue(NumberValue, raw,
+        "o número se escreve com ponto decimal e sem separador de milhar na entrada."))
     throw(UndecodableValue(NumberValue, raw, "esperava um numero."))
 end
 

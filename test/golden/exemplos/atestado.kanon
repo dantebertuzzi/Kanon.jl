@@ -1,0 +1,67 @@
+kanon 1 pt
+
+# Atestado de capacidade técnica — **modelo real nº 14** do portão da 1.0.
+#
+# O documento que o órgão contratante emite ao fim de uma obra, e que a empresa junta à
+# próxima licitação para provar que já executou serviço semelhante. O que ele prova está
+# nos **quantitativos**: metros quadrados, metros lineares, percentual executado.
+#
+# Os dados do contrato vêm do sistema de contratos, num JSON; os quantitativos e o
+# responsável técnico o fiscal digita respondendo ao `kanon ask`, no balcão; e o atestado
+# sai pelo `bin/kanon`, num processo novo. Português sem camada de domínio: os nomes são
+# `texto`, e por isso não há gênero a flexionar (§7.1) — `ao((à))` e `engenheiro((a))`
+# estão escapados, como no certificado nº 4.
+
+dados
+  contratante      : texto    !
+  cnpj_contratante : texto    !
+  contratada       : texto    !
+  cnpj_contratada  : texto    !
+  contrato         : texto    !
+  objeto           : texto    !
+  local            : texto    !
+  valor            : dinheiro !
+  inicio           : data     !
+  conclusao        : data     !
+  pavimentacao     : numero   !
+  drenagem         : numero
+  sinalizacao      : numero
+  execucao         : numero   !
+  responsavel      : texto    !
+  art              : texto    !
+  ressalvas        : texto
+  signatario       : texto    !
+  cargo            : texto    !
+  cidade           : texto    = "Petrolina"
+  emissao          : data     = hoje
+
+texto
+
+: titulo
+ATESTADO DE CAPACIDADE TÉCNICA
+
+: preambulo
+{contratante}, inscrito no CNPJ sob o nº {cnpj_contratante}, atesta, para fins de comprovação de capacidade técnica, que a empresa {contratada}, inscrita no CNPJ sob o nº {cnpj_contratada}, executou, por força do contrato nº {contrato}, {objeto}, em {local}, no período de {inicio:corrente} a {conclusao:corrente}, pelo valor global de {valor} ({valor:extenso}).
+
+:: quantitativos
+Foram executados {pavimentacao} m² de pavimentação em concreto betuminoso usinado a quente[, {drenagem} m de rede de drenagem pluvial][ e {sinalizacao} m² de sinalização horizontal], o que corresponde a {execucao}% do objeto contratado.
+
+:: responsabilidade
+A responsabilidade técnica pelos serviços coube ao((à)) engenheiro((a)) civil {responsavel}, conforme a Anotação de Responsabilidade Técnica nº {art}.
+
+:: desempenho
+Os serviços foram executados de forma satisfatória, observados os prazos e as especificações do contrato, e nada consta que desabone a conduta técnica da contratada.
+
+:: ressalva
+Os serviços foram recebidos com a seguinte ressalva, registrada pela fiscalização: {ressalvas}.
+
+: fecho
+{cidade}, {emissao:corrente}.
+
+: assinatura
+{signatario}
+{cargo}
+
+regras
+  desempenho  quando ressalvas é ausente
+  ressalva    quando ressalvas é presente

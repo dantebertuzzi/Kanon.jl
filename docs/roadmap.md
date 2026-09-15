@@ -22,7 +22,7 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.531 testes** ao todo — 1.574 no núcleo (~50 s com Aqua), 279 em `Extenso`,
+Suíte: **2.593 testes** ao todo — 1.587 no núcleo (~50 s com Aqua), 328 em `Extenso`,
 278 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
@@ -35,7 +35,7 @@ As dez fases estão feitas ou entregues em parte. **O que resta não é código 
 
 ### 1. Quinze modelos reais — o portão, e o único item que importa
 
-Existem **treze** modelos reais no repositório, em `test/golden/exemplos/`:
+Existem **catorze** modelos reais no repositório, em `test/golden/exemplos/`:
 `escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
 `certificado.kanon` (um por linha de planilha), `laudo.kanon` (dois domínios ao mesmo
 tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst),
@@ -46,20 +46,22 @@ colunas), `aula.kanon` (fragmento incluído em português), `servicos.kanon` (o 
 minuta, pelo rascunho e pela CLI), `procuracao.kanon` (as partes de um JSON, o resto
 digitado no `kanon ask`, e a saída em Typst, pelo `bin/kanon` num processo novo) e
 `notificacao.kanon` (escrita no editor pelo `kanon-lsp`, com um fragmento que a procuração
-também inclui). O portão para a 1.0 pede quinze.
+também inclui) e `atestado.kanon` (português sem camada de domínio pelo `bin/kanon`, com os
+quantitativos digitados no `kanon ask`). O portão para a 1.0 pede quinze.
 
 **Onde está cada um.** Os doze primeiros estão na `main` — o nº 12 pelo PR #5. O nº 13
 foi mergeado pelo PR #6, mas o #6 estava empilhado sobre o #5 e entrou no branch
 `modelo-real-12`, não na `main`: chega a ela pelo PR do branch `modelo-real-13`. PR
 empilhado não se reaponta sozinho quando o de baixo é mergeado; a partir daqui, cada
-modelo abre o PR contra a `main` depois que o anterior entrou. O próximo modelo parte do
-branch `modelo-real-13`.
+modelo abre o PR contra a `main` depois que o anterior entrou. O nº 14 está no branch
+`modelo-real-14`, que parte do `modelo-real-13`; o PR dele vai à `main` depois do #7.
 
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-dos dois que faltam vai cobrar alguma coisa — como os treze primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os doze últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **trinta e três defeitos**,
-dois limites do idioma e as decisões que a seção 1a reúne para antes do congelamento.
+o que falta vai cobrar alguma coisa — como os catorze primeiros cobraram. **Nenhuma
+outra atividade tem a mesma taxa de descoberta por hora**, e os treze últimos mediram
+isso: escritos com o motor pronto e a suíte verde, produziram **trinta e cinco defeitos**,
+dois limites do idioma, um da gramática e as decisões que a seção 1a reúne para antes do
+congelamento.
 
 | | O que apareceu | Modelo |
 |---|---|---|
@@ -97,6 +99,9 @@ dois limites do idioma e as decisões que a seção 1a reúne para antes do cong
 | **D-066** | o fragmento de dois documentos abertos recebia a lista de diagnósticos de quem falou por último: **abrir a procuração apagava o erro que a notificação ainda tinha**. E salvar o fragmento não mudava hospedeiro nenhum | notificação |
 | **D-067** | a completação resolvia o caminho por conta própria: `{notificado.` oferecia os campos de `pessoa`, `{nome:` no bloco do sujeito não oferecia nada, `{especiais:` oferecia os formatadores de `texto` para uma lista, e num ambiente sem idioma `{preco:` oferecia `extenso` | notificação |
 | — | **e um limite do idioma, que não é defeito**: a flexão tem um sujeito por bloco, e a frase central de uma procuração concorda com dois — o verbo com os outorgantes, o substantivo com o advogado. `nomeia(m)` flexiona; `procurador(a)` teria de flexionar por outro sujeito na mesma frase. O modelo nomeia o OUTORGADO pelo papel, como a locação já fazia com o LOCATÁRIO — e a locação nº 2 escreve `ao LOCATÁRIO` para a Helena sem que ninguém tivesse registrado por quê | procuração |
+| **D-068** | **nenhum modelo em português sem camada de domínio passava pelo `bin/kanon`**: `--locale pt` dizia que o idioma não tinha camada, com o `Extenso` instalado, e mandava "carregar o pacote" — que não é coisa que se digite. E o `--domain Extenso` tentado em seguida **acusava a camada** de registrar `text` de novo: o construtor chamava o `configure!` do núcleo, que ela importa com `using Kanon` | atestado |
+| **D-069** | o fiscal digitou `1.320` metros de drenagem, o `ask` leu `1.32`, e o atestado saiu com **`1,32 m`** — sem aviso nenhum, num documento que prova experiência numa licitação pelos quantitativos. E `12.480,50` era recusado com "esperava um numero", sem a forma a escrever | atestado |
+| — | **e um limite da gramática, que não é defeito**: a enumeração de trechos opcionais. `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta — sem o `e` antes do último presente, porque a conjunção depende de qual trecho é o último, e a gramática não tem como dizê-lo | atestado |
 
 **O padrão vale mais que os defeitos um a um: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
@@ -133,7 +138,10 @@ confirma nada. E a suíte do servidor de linguagem tinha a mesma forma, com um a
 para ficar independente das camadas, usava um **domínio de mentira** — um `PessoaTeste`
 que se passa por `pessoa` —, e por isso nunca teve um processo com `Extenso` carregado nem
 executou o `kanon-lsp`. Independência da suíte e realismo do processo são coisas
-diferentes, e só a segunda é a que o redator tem.
+diferentes, e só a segunda é a que o redator tem. E a suíte do `ask` no núcleo é em
+inglês canônico, sem idioma, onde não há separador de milhar e `1.320` só tem uma
+leitura; o único modelo em português que tinha passado pelo `ask`, a procuração, não tinha
+número nenhum a digitar.
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -141,7 +149,7 @@ modelo nº 3 foi escolhido justamente por atravessar três interseções vazias 
 um modelo em arquivo, com fragmento incluído, na camada científica, emitido também em
 Markdown.
 
-O que procurar em cada um dos dois que faltam:
+O que procurar no que falta:
 
 - Uma construção que a gramática não expressa, ou expressa mal.
 - Uma mensagem de erro que não diz o que fazer.
@@ -157,8 +165,7 @@ O que procurar em cada um dos dois que faltam:
 
 O portão existe para que estas perguntas sejam respondidas **antes** da 1.0: depois dela,
 cada resposta muda a saída de documento publicado ou a gramática, e vira versão maior.
-Nenhuma bloqueia os dois modelos que faltam; todas precisam de resposta antes do
-congelamento.
+Nenhuma bloqueia o modelo que falta; todas precisam de resposta antes do congelamento.
 
 | Decisão | Por que agora | Tocada por |
 |---|---|---|
@@ -166,6 +173,7 @@ congelamento.
 | **Flexão por mais de um sujeito na mesma frase** — `nomeia(m)` pelos outorgantes e `procurador(a)` pelo advogado | se um dia existir, a sintaxe (uma marca que nomeia o sujeito) precisa estar **reservada** antes: hoje ela seria prosa, e dar-lhe sentido depois muda a saída | nº 2, nº 12 |
 | **O tipo `list` do núcleo** (D-033) — declarável ou removido | o gatilho escrito na dívida é "o fim do portão" | nº 2 |
 | **Apelido de idioma para atributos e formatadores** — `quando x é precise`, `{nome:upper}` num modelo `pt` | aditivo, e por isso não bloqueia; mas o nome em português que entrar depois convive para sempre com o inglês | nº 8, nº 9, nº 10, nº 12 |
+| **A enumeração de trechos opcionais** — `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta | a correção natural é o reparo de emenda trocar a vírgula pelo `e` quando o último grupo elide, e isso **muda a saída** de todo modelo escrito nessa forma. A outra, uma construção de enumeração, precisa da sintaxe reservada antes, pela razão da flexão por dois sujeitos | nº 14 |
 
 E um limite, registrado e não dívida: **o fragmento fixa os nomes dos campos**. A
 qualificação do advogado só serve à procuração e à notificação porque as duas chamam o
@@ -215,7 +223,7 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.574, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.587, ~50 s
 # o KanonLSP roda o modelo real nº 13 com a camada de verdade: desenvolva as camadas nele
 # antes, como o CI faz (`Pkg.develop` de `.`, `lib/Extenso`, `lib/KanonScience` e
 # `lib/KanonLegal` no projeto `lib/KanonLSP`)
@@ -705,7 +713,7 @@ referência da API a partir das docstrings — publicada pelo próprio CI — e 
 Codecov.
 
 **Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos defeitos que os
-modelos reais acharam — trinta e três até o nº 13, contando os do servidor de linguagem —
+modelos reais acharam — trinta e cinco até o nº 14, contando os do servidor de linguagem —
 era linha descoberta: todos estavam na **interseção de duas coisas cobertas
 separadamente**, que é uma coisa que percentual de linha não mede e não pode medir. O `codecov.yml` põe as duas
 checagens em `informational` de propósito — uma equipe que persegue o número escreve
@@ -782,8 +790,7 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
 | **Um valor que traz o próprio ponto final emenda mal no fim da frase** — `{cliente}` valendo `Usina … S.A.` fecha o parágrafo com `S.A..` | `elide.jl`, `render.jl` | **tocada pelos modelos nº 8 e nº 12**, e os dois a contornaram reescrevendo. A procuração mostra o que o nº 8 não mostrava: o fim da frase **depende da elisão** — `[ em face de {reu}][, nos autos do processo nº {processo}].` termina no réu (`Ltda.`) só quando o processo falta —, e o autor só escapa pondo prosa fixa depois do último grupo. É decisão para antes do congelamento: depois dele, mudar a emenda muda a saída de documento publicado. O reparo de emenda existe para a costura que a **elisão** abre, e estender-lhe a mão para o texto do valor é edição de prosa alheia — o motor não faz, e a decisão de fazer é de versão maior |
-| **`--locale pt` sem camada de domínio não carrega pela CLI** | `cli.jl` | o `Extenso` só entra quando uma camada o traz como dependência, e não há `--domain Extenso` — idioma não é domínio. O certificado nº 4 e o edital nº 6, que são `pt` sem camada, não passam pelo `bin/kanon`. Gatilho: o primeiro deles pedido pela linha de comando |
-| O `ask` lê `1.500` como `1.5` num modelo `pt` | `cli.jl` | a pergunta diz "ponto decimal, sem separador de milhar" desde a D-061, e a resposta ambígua não é recusada. Gatilho: o primeiro modelo com `numero` preenchido pelo `ask` |
+| O arquivo `chave = valor` escrito à mão lê `drenagem = 1.320` como `1.32` | `cli.jl` | o `ask` recusa a resposta ambígua desde a D-069, e o arquivo digitado não passa por ele: `parse_data_value` não conhece o ambiente. O JSON não tem o problema, porque lá o número é da gramática do JSON. Gatilho: o primeiro modelo com dados digitados à mão em `chave = valor` com número agrupado |
 | Os formatadores de `texto` são `upper`, `lower` e `title` num modelo `pt`, e o de `pessoa` é `maiusculo` | `core_types.jl`, `KanonLegal` | a mesma dívida dos atributos, pela outra porta: a procuração escreveu `{nome:maiusculo}` dentro do bloco `<- outorgado` e levou `K2020`: ali `nome` é `texto`, cujo formatador é `upper`, e `maiusculo` é o de `pessoa` — duas palavras, em duas línguas, para a mesma coisa |
 | Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
 | A cobertura mede só o núcleo; as quatro camadas não sobem `lcov` | `CI.yml` | quando uma camada crescer a ponto de a leitura do número dela dizer algo. Hoje diria pouco: o sinal deste projeto está nas invariantes, não no percentual |
@@ -812,19 +819,20 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **13 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **14 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
 contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo, o
-edital, a doação, o ensaio, a verificação, a aula, os serviços, a procuração e a
-notificação, escritos com o motor já pronto e a suíte verde, cobraram mais trinta e três
-(D-031 a D-035 e D-040 a D-067) — **a taxa de descoberta não caiu quando o código ficou
-bom; o décimo primeiro achou o motor inalcançável pela porta por onde o redator entra, o
-décimo segundo achou a porta ainda fechada atrás de uma correção dada como feita, e o
-décimo terceiro achou a mesma porta fechada no editor.**
+edital, a doação, o ensaio, a verificação, a aula, os serviços, a procuração, a
+notificação e o atestado, escritos com o motor já pronto e a suíte verde, cobraram mais
+trinta e cinco (D-031 a D-035 e D-040 a D-069) — **a taxa de descoberta não caiu quando o
+código ficou bom; o décimo primeiro achou o motor inalcançável pela porta por onde o
+redator entra, o décimo segundo achou a porta ainda fechada atrás de uma correção dada
+como feita, o décimo terceiro achou a mesma porta fechada no editor, e o décimo quarto a
+achou fechada para o idioma — e, aberta, um documento errado sem aviso atrás dela.**
 
 ### O que a implementação já mudou na especificação
 
-Quarenta e nove decisões saíram de escrever o código, e vinte e cinco delas fecharam buracos
+Cinquenta e uma decisões saíram de escrever o código, e vinte e cinco delas fecharam buracos
 que nenhuma releitura teria encontrado — o texto era internamente coerente em todos os
 casos:
 
