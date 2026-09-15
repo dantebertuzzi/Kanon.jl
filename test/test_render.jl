@@ -391,3 +391,69 @@ end
         @test "K3001" in Set(d.code for d in e.diagnostics)
     end
 end
+
+# A costura da interpolação — o ponto do valor e o ponto do autor (D-075).
+#
+# `{reu}` valendo `… Ltda.` no fim da frase saía `Ltda..`. Tocado pelos modelos reais
+# nº 8 e nº 12, que o contornaram reescrevendo; a procuração mostrou o caso que não se
+# contorna, porque o fim da frase **depende da elisão**: `[ em face de {reu}][, nos autos
+# do processo nº {processo}].` termina no réu só quando o processo falta.
+
+@testset "o ponto que o valor traz e o ponto do autor viram um (D-075)" begin
+    fonte = """
+    kanon 1
+
+    data
+      reu      : text
+      processo : text
+
+    text
+
+    : b
+    Propor a ação[ em face de {reu}][, nos autos do processo nº {processo}].
+    """
+    m = load_string(Environment(), fonte; name = "p.kanon")
+    r(d) = render(m, d)
+
+    @testset "o valor termina a frase, e sai um ponto só" begin
+        @test r(Dict("reu" => "Frutas do Vale Exportadora Ltda.")) ==
+              "Propor a ação em face de Frutas do Vale Exportadora Ltda."
+        # com o processo, o valor não encosta no ponto: nada a fundir
+        @test r(Dict("reu" => "Frutas do Vale Exportadora Ltda.", "processo" => "0001234-56")) ==
+              "Propor a ação em face de Frutas do Vale Exportadora Ltda., nos autos do processo nº 0001234-56."
+        # e um valor sem ponto próprio continua recebendo o do autor
+        @test r(Dict("reu" => "Helena Duarte")) == "Propor a ação em face de Helena Duarte."
+    end
+
+    @testset "sem elisão nenhuma, que é onde o reparo de emenda não chega" begin
+        m2 = load_string(Environment(), "kanon 1\n\ndata\n  x : text !\n\ntext\n\n: b\nA parte é {x}.\n";
+                         name = "q.kanon")
+        @test render(m2, Dict("x" => "Usina Bom Jesus S.A.")) == "A parte é Usina Bom Jesus S.A."
+        @test render(m2, Dict("x" => "Usina Bom Jesus")) == "A parte é Usina Bom Jesus."
+    end
+
+    @testset "funde um caractere, e só o terminador igual e colado" begin
+        c(corpo, d) = render(load_string(Environment(),
+            "kanon 1\n\ndata\n  x : text !\n\ntext\n\n: b\n" * corpo * "\n"; name = "c.kanon"), d)
+        v = Dict("x" => "Ltda.")
+        @test c("É a {x}...", v) == "É a Ltda..."          # reticências do autor: sai uma delas
+        @test c("É a {x}?", v) == "É a Ltda.?"             # terminador diferente fica
+        @test c("É a {x},", v) == "É a Ltda.,"             # separador não é ortografia
+        @test c("É a {x} .", v) == "É a Ltda. ."           # com espaço no meio não é costura
+        @test c("A {x} paga.", v) == "A Ltda. paga."       # no meio da frase, nada acontece
+        @test c("É a {x}..", v) == "É a Ltda.."            # o autor escreveu dois: some um só
+    end
+
+    @testset "o motor não mexe no ponto que é só do autor, nem no que é só do valor" begin
+        c(corpo, d) = render(load_string(Environment(),
+            "kanon 1\n\ndata\n  x : text !\n\ntext\n\n: b\n" * corpo * "\n"; name = "c.kanon"), d)
+        # dois pontos escritos pelo autor, sem valor nenhum no meio: prosa dele (D-014)
+        @test c("Fim.. {x}", Dict("x" => "A")) == "Fim.. A"
+        # dois pontos dentro do valor: dado dele (D-028)
+        @test c("A parte é {x}", Dict("x" => "Ltda..")) == "A parte é Ltda.."
+        # e o ponto de uma remissão não é valor
+        m3 = load_string(Environment(),
+            "kanon 1\n\ntext\n\n:: um\nTexto.\n\n: b\nConforme a {::um}.\n"; name = "r.kanon")
+        @test occursin("Conforme a 1.", render(m3, Dict()))
+    end
+end
