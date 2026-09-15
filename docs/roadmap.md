@@ -43,16 +43,23 @@ tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst)
 (a camada científica em português, com as medições vindas de um JSON),
 `verificacao.kanon` (um certificado por registro de um CSV de verdade, com as medições em
 colunas), `aula.kanon` (fragmento incluído em português), `servicos.kanon` (o contrato em
-minuta, pelo rascunho e pela CLI) e `procuracao.kanon` (as partes de um JSON, o resto
+minuta, pelo rascunho e pela CLI), `procuracao.kanon` (as partes de um JSON, o resto
 digitado no `kanon ask`, e a saída em Typst, pelo `bin/kanon` num processo novo) e
 `notificacao.kanon` (escrita no editor pelo `kanon-lsp`, com um fragmento que a procuração
 também inclui). O portão para a 1.0 pede quinze.
 
+**Onde está cada um.** Os doze primeiros estão na `main` — o nº 12 pelo PR #5. O nº 13
+foi mergeado pelo PR #6, mas o #6 estava empilhado sobre o #5 e entrou no branch
+`modelo-real-12`, não na `main`: chega a ela pelo PR do branch `modelo-real-13`. PR
+empilhado não se reaponta sozinho quando o de baixo é mergeado; a partir daqui, cada
+modelo abre o PR contra a `main` depois que o anterior entrou. O próximo modelo parte do
+branch `modelo-real-13`.
+
 Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
 dos dois que faltam vai cobrar alguma coisa — como os treze primeiros cobraram. **Nenhuma
 outra atividade tem a mesma taxa de descoberta por hora**, e os doze últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **trinta e três defeitos e
-uma questão aberta de versão**.
+isso: escritos com o motor pronto e a suíte verde, produziram **trinta e três defeitos**,
+dois limites do idioma e as decisões que a seção 1a reúne para antes do congelamento.
 
 | | O que apareceu | Modelo |
 |---|---|---|
@@ -91,7 +98,7 @@ uma questão aberta de versão**.
 | **D-067** | a completação resolvia o caminho por conta própria: `{notificado.` oferecia os campos de `pessoa`, `{nome:` no bloco do sujeito não oferecia nada, `{especiais:` oferecia os formatadores de `texto` para uma lista, e num ambiente sem idioma `{preco:` oferecia `extenso` | notificação |
 | — | **e um limite do idioma, que não é defeito**: a flexão tem um sujeito por bloco, e a frase central de uma procuração concorda com dois — o verbo com os outorgantes, o substantivo com o advogado. `nomeia(m)` flexiona; `procurador(a)` teria de flexionar por outro sujeito na mesma frase. O modelo nomeia o OUTORGADO pelo papel, como a locação já fazia com o LOCATÁRIO — e a locação nº 2 escreve `ao LOCATÁRIO` para a Helena sem que ninguém tivesse registrado por quê | procuração |
 
-**O padrão nos nove vale mais que os nove: o buraco estava sempre na interseção de duas
+**O padrão vale mais que os defeitos um a um: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
 nomes já são canônicos; toda a suíte de regras, contrato e `ask` estava em inglês. O tipo
 `list` era testado chamando `format` sobre um vetor, nunca declarando um campo. A regra do
@@ -141,7 +148,28 @@ O que procurar em cada um dos dois que faltam:
 - Um lugar onde os colchetes ficaram no lugar errado, ou onde faltou uma marca de flexão.
 - Um formatador que a camada devia ter e não tem.
 - **Um documento que sai errado sem que nada avise** — o que a D-048 acrescentou à lista,
-  e o mais caro dos cinco: os outros quatro se veem lendo a saída uma vez.
+  e o mais caro dos seis: os outros se veem lendo a saída uma vez.
+- **Uma porta testada fora do lugar em que o redator a usa** — o que os nº 12 e nº 13
+  acrescentaram: a CLI conferida dentro de Julia, o servidor com um domínio de mentira.
+  Todo modelo passa pelo lançador de verdade, num processo novo.
+
+### 1a. Antes de congelar — as decisões que o portão deixou
+
+O portão existe para que estas perguntas sejam respondidas **antes** da 1.0: depois dela,
+cada resposta muda a saída de documento publicado ou a gramática, e vira versão maior.
+Nenhuma bloqueia os dois modelos que faltam; todas precisam de resposta antes do
+congelamento.
+
+| Decisão | Por que agora | Tocada por |
+|---|---|---|
+| **O ponto final duplicado** — `{reu}` valendo `… Ltda.` no fim da frase sai `Ltda..` | o fim da frase depende da elisão, e o autor só escapa pondo prosa fixa depois do último grupo. Corrigir a emenda depois da 1.0 muda documento publicado | nº 8, nº 12 |
+| **Flexão por mais de um sujeito na mesma frase** — `nomeia(m)` pelos outorgantes e `procurador(a)` pelo advogado | se um dia existir, a sintaxe (uma marca que nomeia o sujeito) precisa estar **reservada** antes: hoje ela seria prosa, e dar-lhe sentido depois muda a saída | nº 2, nº 12 |
+| **O tipo `list` do núcleo** (D-033) — declarável ou removido | o gatilho escrito na dívida é "o fim do portão" | nº 2 |
+| **Apelido de idioma para atributos e formatadores** — `quando x é precise`, `{nome:upper}` num modelo `pt` | aditivo, e por isso não bloqueia; mas o nome em português que entrar depois convive para sempre com o inglês | nº 8, nº 9, nº 10, nº 12 |
+
+E um limite, registrado e não dívida: **o fragmento fixa os nomes dos campos**. A
+qualificação do advogado só serve à procuração e à notificação porque as duas chamam o
+advogado de `advogado`; a inclusão não tem parâmetro, e é assim de propósito (D-005).
 
 **Enquanto isso não acontecer, congelar a sintaxe é apostar.** Depois de congelada, cada
 erro de design vira permanente.
@@ -676,10 +704,10 @@ rende com «marcadores» e nunca exporta —, e o que falta é o caminho até a 
 referência da API a partir das docstrings — publicada pelo próprio CI — e cobertura no
 Codecov.
 
-**Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos dezenove defeitos que
-os modelos reais acharam, nem dos quatro que o servidor de linguagem achou, era linha
-descoberta: todos estavam na **interseção de duas coisas cobertas separadamente**, que é
-uma coisa que percentual de linha não mede e não pode medir. O `codecov.yml` põe as duas
+**Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos defeitos que os
+modelos reais acharam — trinta e três até o nº 13, contando os do servidor de linguagem —
+era linha descoberta: todos estavam na **interseção de duas coisas cobertas
+separadamente**, que é uma coisa que percentual de linha não mede e não pode medir. O `codecov.yml` põe as duas
 checagens em `informational` de propósito — uma equipe que persegue o número escreve
 testes que cobrem linhas sem afirmar nada.
 
