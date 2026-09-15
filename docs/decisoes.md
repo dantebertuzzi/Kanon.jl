@@ -2407,3 +2407,70 @@ digitou como o documento escreve mesmo assim. (c) Recusar e dizer as duas leitur
 `drenagem = 1.320` é lido `1.32` — e o JSON não, porque lá o número é da gramática do
 JSON. Nenhum modelo chegou a um arquivo de dados digitado com número agrupado, e fica na
 tabela de dívidas com esse gatilho.
+
+---
+
+## D-070 — A linha que o autor quebrou continua quebrada em todo formato
+
+*2026-09-15 · aceita · surgida ao escrever o modelo real nº 15*
+
+**A observação.** A reclamação trabalhista foi o primeiro documento levado ao `.docx`
+pelo caminho que a ajuda da CLI dá, `kanon render … --to markdown | pandoc -o
+reclamacao.docx`. O texto puro saiu certo, o Markdown saiu byte a byte igual ao escrito à
+mão, e o `.docx` lido de volta tinha duas linhas a menos:
+
+| No modelo | No `.docx` |
+|---|---|
+| `Nestes termos,` / `pede deferimento.` | `Nestes termos, pede deferimento.` |
+| `{nome:upper}` / `OAB/PE {oab}` | `PAULO HENRIQUE LINS OAB/PE 12.345` |
+
+Sem aviso nenhum, e no bloco de assinatura de uma petição. No Markdown uma quebra simples
+é espaço, e no Typst também (conferido no Typst 0.15.1). A §4.1 dizia desde a F0 que as
+quebras dentro do parágrafo *"são preservadas na saída verbatim; a camada de saída (F8)
+decide se são quebras rígidas"* — e a F8 não decidiu: preservou o `\n`, que é decidir
+pelo espaço sem dizer.
+
+**Por que passou.** Nenhum documento do acervo emitido em marcação tinha parágrafo de
+mais de uma linha. O único parágrafo assim é a assinatura do atestado nº 14, emitido em
+texto puro. E o único Markdown do acervo, o dos serviços nº 11, foi conferido como texto,
+nunca pelo leitor que o transforma no documento.
+
+**Decisão.**
+
+1. No Markdown e no Typst, a quebra simples dentro de um parágrafo sai **rígida**: a
+   linha ganha uma contrabarra no fim. O CommonMark, o leitor padrão do pandoc, o GFM e o
+   Typst leem igual, e ela se vê no arquivo, ao contrário dos dois espaços que todo editor
+   apaga.
+2. A barra só vai no trecho de linhas seguidas em que **nenhuma** abre construção de
+   bloco do formato: título, citação, item de lista, tabela, cerca de código, HTML,
+   definição. A lista, a tabela e o título escritos pelo autor são marcação dele e
+   passam intactos (D-028).
+3. A pergunta é feita ao texto **já escapado**. Um valor que começa a linha com `#` ou
+   `1.` chega como `\#` e `1\.`, e não abre nada. Por isso o dado não tem como desligar
+   a regra.
+4. Uma contrabarra ímpar no fim da linha já é quebra e fica como está. Uma par é
+   contrabarra escapada, e ainda falta a quebra.
+
+`line_breaks(fmt, paragrafo)` é o gancho, irmão de `escape_value` e `label`. O padrão
+devolve o parágrafo intacto, e um formato de camada que não o defina continua como estava.
+
+**Alternativas.** (a) Contrabarra em toda quebra: conferido no pandoc, ela desmonta a
+tabela, que vira bloco de linhas, e sai literal no fim do item de lista e do título no
+CommonMark. (b) Os dois espaços no fim da linha: invisíveis, e o primeiro editor que limpa
+espaço à direita desfaz a assinatura sem mudar nada que se veja. (c) Documentar
+`pandoc -f markdown+hard_line_breaks`: a semântica é exatamente essa, mas vale só para
+quem digitar a opção, e o `.docx` de quem copiar a linha da ajuda continuaria errado.
+(d) Um aviso quando o parágrafo de várias linhas sai em marcação: avisa e não conserta, e
+não há leitura em que o autor quisesse a assinatura numa linha só. (e) A regra por trecho
+(escolhida). Errar para o lado de achar bloco onde não há só deixa a quebra como estava
+antes desta decisão.
+
+**O que muda na saída.** Todo modelo com parágrafo de mais de uma linha emitido em
+Markdown ou Typst. Nenhum golden do acervo tinha esse caso, e é antes da 1.0 que a
+mudança custa pouco.
+
+**O que não mudou.** O escape do Markdown segue a tabela do CommonMark, e o leitor padrão
+do pandoc lê mais do que ela: `a)`, `(1)` e `iv.` no começo da linha abrem lista;
+`H~2~O` e `10^3^` são subscrito e sobrescrito no meio da linha; `--` vira travessão e a
+aspa reta vira curva. Nenhum valor desta reclamação tem essas formas, e o caso fica na
+tabela de dívidas, com o gatilho de um valor assim chegar a um `.docx`.

@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 14 de setembro de 2026. Escrito para retomar sem depender de memória.
+> Estado em 15 de setembro de 2026. Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -22,8 +22,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.593 testes** ao todo — 1.587 no núcleo (~50 s com Aqua), 328 em `Extenso`,
-278 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.654 testes** ao todo — 1.618 no núcleo (~50 s com Aqua), 328 em `Extenso`,
+308 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -33,9 +33,9 @@ Windows, com cobertura no Codecov.
 As dez fases estão feitas ou entregues em parte. **O que resta não é código de motor** —
 é uso, decisão e interface, nesta ordem de importância.
 
-### 1. Quinze modelos reais — o portão, e o único item que importa
+### 1. Quinze modelos reais — o portão, fechado
 
-Existem **catorze** modelos reais no repositório, em `test/golden/exemplos/`:
+Existem **quinze** modelos reais no repositório, em `test/golden/exemplos/`:
 `escritura.kanon`, `locacao.kanon`, `relatorio.kanon` (com fragmento incluído),
 `certificado.kanon` (um por linha de planilha), `laudo.kanon` (dois domínios ao mesmo
 tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst),
@@ -46,41 +46,35 @@ colunas), `aula.kanon` (fragmento incluído em português), `servicos.kanon` (o 
 minuta, pelo rascunho e pela CLI), `procuracao.kanon` (as partes de um JSON, o resto
 digitado no `kanon ask`, e a saída em Typst, pelo `bin/kanon` num processo novo),
 `notificacao.kanon` (escrita no editor pelo `kanon-lsp`, com um fragmento que a procuração
-também inclui) e `atestado.kanon` (português sem camada de domínio pelo `bin/kanon`, com os
-quantitativos digitados no `kanon ask`). O portão para a 1.0 pede quinze.
+também inclui), `atestado.kanon` (português sem camada de domínio pelo `bin/kanon`, com os
+quantitativos digitados no `kanon ask`) e `reclamacao.kanon` (a petição entregue em
+`.docx`, pelo `bin/kanon` encadeado ao pandoc, com o documento lido de volta). O portão
+para a 1.0 pedia quinze, e **está fechado**.
 
-**Onde está cada um.** Os catorze estão na `main`: o nº 13 pelo PR #7 e o nº 14 pelo
-PR #8, mergeados em 15 de setembro de 2026. O #6 tinha levado o nº 13 ao branch
-`modelo-real-12`, e não à `main`, porque estava empilhado sobre o #5 e PR empilhado não se
-reaponta sozinho quando o de baixo é mergeado. Por isso cada modelo abre o PR **contra a
-`main`**, depois que o anterior entrou.
+**Onde está cada um.** Os catorze primeiros estão na `main`, o último pelo PR #8. O CI da
+`main`, vermelho no Julia 1.10 depois desses merges, voltou a verde com o PR #9, mergeado
+em 15 de setembro de 2026. O nº 15 está no branch `modelo-real-15`, com o PR aberto
+**contra a `main`** — PR empilhado não se reaponta sozinho quando o de baixo é mergeado,
+e foi assim que o nº 13 foi parar no branch do nº 12.
 
-**O CI da `main` ficou vermelho no Julia 1.10** depois desses merges, no teste do
-`kanon-lsp` em processo novo (nº 13). O teste lia o stderr por `read(pipeline(...),
-String)`, que volta quando o stdout fecha, sem esperar a cópia do stderr: no 1.10 as
-mensagens saíam **vazias** — as asserções `!occursin("Stacktrace", ...)` passavam sem ter
-lido nada — e o buffer reaproveitado recusava escrita. O teste passa a usar `run` com os
-dois fluxos em buffers, um por processo. Conferido no 1.10 e no 1.13, localmente.
+**O CI agora instala o pandoc** (3.11, o binário da release de cada sistema), antes da
+suíte do `KanonLegal`: o teste do nº 15 roda a cadeia `bin/kanon | pandoc` de verdade, e no
+CI ele **recusa rodar** sem o pandoc em vez de se pular. Fora do CI, aponte `KANON_PANDOC`
+para um pandoc, ou o teste avisa e fica marcado como pulado.
 
 **Ao retomar, nesta ordem:**
 
-1. **Merge do PR da correção do CI** (branch `ci-lsp-julia-110`, que traz também esta
-   atualização do roadmap), e conferir que o CI da `main` volta a verde nas seis
-   configurações.
-2. **Escrever o nº 15**, num branch `modelo-real-15` que parte da `main`. A recomendação:
-   um documento que o escritório entrega em **`.docx`**, pelo caminho que a ajuda da CLI
-   documenta — `kanon render … --to markdown | pandoc -o saida.docx`. É a última porta
-   documentada que nenhum modelo atravessou: nenhum teste passa pelo pandoc, e o Markdown
-   do acervo (`servicos.md`) foi conferido como texto, não como o `.docx` que o redator
-   abre. Pela lição dos nº 12 a nº 14, o teste roda o pandoc de verdade, num processo à
-   parte (o pandoc não está instalado nesta máquina; o CI também precisará dele). E todo
-   stderr capturado de processo filho passa por `run`, pela razão acima.
-3. Com o nº 15, o portão fecha, e a seção 1a deixa de ser lista e vira decisão.
+1. **Merge do PR do nº 15** (branch `modelo-real-15`), e conferir que o CI da `main` fica
+   verde nas seis configurações — o passo do pandoc é novo no macOS e no Windows.
+2. **A seção 1a**, uma decisão de cada vez, e cada uma registrada em `decisoes.md`. Com o
+   portão fechado ela deixa de ser lista e vira o trabalho: é o que separa o acervo de
+   uma sintaxe congelada.
+3. Só então a `0.1.0` e o registro no General (item 2), que é decisão sua.
 
-Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e o
-que falta vai cobrar alguma coisa — como os catorze primeiros cobraram. **Nenhuma
-outra atividade tem a mesma taxa de descoberta por hora**, e os treze últimos mediram
-isso: escritos com o motor pronto e a suíte verde, produziram **trinta e cinco defeitos**,
+Isto não foi burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada
+um dos quinze cobrou alguma coisa. **Nenhuma outra atividade teve a mesma taxa de
+descoberta por hora**, e os catorze últimos mediram isso: escritos com o motor pronto e a
+suíte verde, produziram **trinta e seis defeitos**,
 dois limites do idioma, um da gramática e as decisões que a seção 1a reúne para antes do
 congelamento.
 
@@ -123,6 +117,7 @@ congelamento.
 | **D-068** | **nenhum modelo em português sem camada de domínio passava pelo `bin/kanon`**: `--locale pt` dizia que o idioma não tinha camada, com o `Extenso` instalado, e mandava "carregar o pacote" — que não é coisa que se digite. E o `--domain Extenso` tentado em seguida **acusava a camada** de registrar `text` de novo: o construtor chamava o `configure!` do núcleo, que ela importa com `using Kanon` | atestado |
 | **D-069** | o fiscal digitou `1.320` metros de drenagem, o `ask` leu `1.32`, e o atestado saiu com **`1,32 m`** — sem aviso nenhum, num documento que prova experiência numa licitação pelos quantitativos. E `12.480,50` era recusado com "esperava um numero", sem a forma a escrever | atestado |
 | — | **e um limite da gramática, que não é defeito**: a enumeração de trechos opcionais. `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta — sem o `e` antes do último presente, porque a conjunção depende de qual trecho é o último, e a gramática não tem como dizê-lo | atestado |
+| **D-070** | o fecho `Nestes termos,` / `pede deferimento.` e o bloco de assinatura saíam **numa linha só** no `.docx`, sem aviso nenhum. No Markdown e no Typst a quebra simples é espaço, e a §4.1 deixava ao formato decidir se ela é rígida — o formato não decidia nada. O texto puro do mesmo modelo estava certo, e o Markdown era byte a byte o escrito à mão | reclamação |
 
 **O padrão vale mais que os defeitos um a um: o buraco estava sempre na interseção de duas
 coisas testadas separadamente.** Toda a suíte em português usava tipos de domínio, cujos
@@ -162,7 +157,10 @@ executou o `kanon-lsp`. Independência da suíte e realismo do processo são coi
 diferentes, e só a segunda é a que o redator tem. E a suíte do `ask` no núcleo é em
 inglês canônico, sem idioma, onde não há separador de milhar e `1.320` só tem uma
 leitura; o único modelo em português que tinha passado pelo `ask`, a procuração, não tinha
-número nenhum a digitar.
+número nenhum a digitar. E o único Markdown do acervo, o dos serviços, tinha sido conferido
+como **texto** — nunca pelo leitor que faz dele o documento —, enquanto o único parágrafo de
+duas linhas do acervo, a assinatura do atestado, saía em texto puro: cada formato estava
+certo sozinho, e o `.docx` errado na interseção dos dois.
 
 Um documento atravessa essas interseções porque **não escolhe qual parte da linguagem
 usar**. É por isso que escrever um vale mais que acrescentar cem testes de unidade — e o
@@ -180,13 +178,16 @@ O que procurar no que falta:
   e o mais caro dos seis: os outros se veem lendo a saída uma vez.
 - **Uma porta testada fora do lugar em que o redator a usa** — o que os nº 12 e nº 13
   acrescentaram: a CLI conferida dentro de Julia, o servidor com um domínio de mentira.
-  Todo modelo passa pelo lançador de verdade, num processo novo.
+  Todo modelo passa pelo lançador de verdade, num processo novo. E o nº 15 estendeu a
+  regra ao que vem **depois** do motor: o formato intermediário se confere pelo leitor que
+  faz dele o documento, e não como texto.
 
 ### 1a. Antes de congelar — as decisões que o portão deixou
 
 O portão existe para que estas perguntas sejam respondidas **antes** da 1.0: depois dela,
 cada resposta muda a saída de documento publicado ou a gramática, e vira versão maior.
-Nenhuma bloqueia o modelo que falta; todas precisam de resposta antes do congelamento.
+Com o portão fechado, **são o próximo trabalho**: todas precisam de resposta antes do
+congelamento.
 
 | Decisão | Por que agora | Tocada por |
 |---|---|---|
@@ -207,7 +208,7 @@ erro de design vira permanente.
 
 O pacote está em `0.1.0-DEV`, que não é versão registrável. Registrar exige decidir a
 `0.1.0`, e essa decisão depende do item 1: uma `0.1.0` publicada cria expectativa de
-estabilidade que quinze modelos ainda podem desfazer.
+estabilidade que as decisões da seção 1a ainda podem desfazer.
 
 Se a decisão for registrar assim mesmo — o que é defensável, `0.1.x` não promete nada —, o
 que o registro vai cobrar está na seção da F10.
@@ -244,10 +245,11 @@ Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.587, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.618, ~50 s
 # o KanonLSP roda o modelo real nº 13 com a camada de verdade: desenvolva as camadas nele
 # antes, como o CI faz (`Pkg.develop` de `.`, `lib/Extenso`, `lib/KanonScience` e
-# `lib/KanonLegal` no projeto `lib/KanonLSP`)
+# `lib/KanonLegal` no projeto `lib/KanonLSP`); e o KanonLegal roda o modelo nº 15 pelo pandoc:
+# `KANON_PANDOC=/caminho/do/pandoc`, ou o pandoc no PATH
 for p in Extenso KanonLegal KanonScience KanonLSP; do
   julia --project=lib/$p lib/$p/test/runtests.jl
 done
@@ -285,7 +287,7 @@ Pontos de entrada, na ordem em que o código executa:
 | `lib/KanonLegal/` | `pessoa`, `imovel`, `parte`, e o estilo `§` com `CLÁUSULA PRIMEIRA` |
 | `lib/KanonScience/` | `measure`, e o estilo `@` que numera teoremas |
 | `test/test_neutralidade.jl` | **a espinha dorsal**: o núcleo sem camada nenhuma |
-| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado), `ensaio` (a camada científica em português, medições vindas de JSON) `verificacao` (um por registro de um CSV, medições em colunas com ponto) `aula` (um roteiro por turma, com fragmento incluído em português e duas famílias de numeração) `servicos` (um contrato em minuta, com o rascunho, o documento pronto e o Markdown) `procuracao` (as partes em JSON, as respostas do `ask`, os dados que ele emite, e o documento em texto e em Typst) e `notificacao` (escrita pelo servidor de linguagem; a qualificação do advogado vem de `fragmentos/procurador.kanon`, que a procuração também inclui), cada um com a saída exigida |
+| `test/golden/exemplos/` | **os modelos reais**: `escritura`, `locacao`, `relatorio` (com fragmento), `certificado` (por linha de planilha), `laudo` (dois domínios), `edital` (três níveis, com a saída também em Typst), `doacao` (regras com comparação, dados em JSON ao lado), `ensaio` (a camada científica em português, medições vindas de JSON) `verificacao` (um por registro de um CSV, medições em colunas com ponto) `aula` (um roteiro por turma, com fragmento incluído em português e duas famílias de numeração) `servicos` (um contrato em minuta, com o rascunho, o documento pronto e o Markdown) `procuracao` (as partes em JSON, as respostas do `ask`, os dados que ele emite, e o documento em texto e em Typst) e `notificacao` (escrita pelo servidor de linguagem; a qualificação do advogado vem de `fragmentos/procurador.kanon`, que a procuração também inclui), `atestado` (português sem camada, pelo `bin/kanon` e pelo `ask`) e `reclamacao` (entregue em `.docx`: o Markdown, e o `.docx` lido de volta pelo pandoc em `reclamacao.docx.txt`), cada um com a saída exigida |
 | `src/include.jl` | o carregador com raiz, a unificação de contratos e a composição |
 | `ext/` | `Tables.jl` e `JSON3` — extensões, e não dependências |
 | `src/output.jl` | os formatos de saída, o escape do valor interpolado e o do rótulo |
@@ -734,7 +736,7 @@ referência da API a partir das docstrings — publicada pelo próprio CI — e 
 Codecov.
 
 **Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos defeitos que os
-modelos reais acharam — trinta e cinco até o nº 14, contando os do servidor de linguagem —
+modelos reais acharam — trinta e seis até o nº 15, contando os do servidor de linguagem —
 era linha descoberta: todos estavam na **interseção de duas coisas cobertas
 separadamente**, que é uma coisa que percentual de linha não mede e não pode medir. O `codecov.yml` põe as duas
 checagens em `informational` de propósito — uma equipe que persegue o número escreve
@@ -813,6 +815,7 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | **Um valor que traz o próprio ponto final emenda mal no fim da frase** — `{cliente}` valendo `Usina … S.A.` fecha o parágrafo com `S.A..` | `elide.jl`, `render.jl` | **tocada pelos modelos nº 8 e nº 12**, e os dois a contornaram reescrevendo. A procuração mostra o que o nº 8 não mostrava: o fim da frase **depende da elisão** — `[ em face de {reu}][, nos autos do processo nº {processo}].` termina no réu (`Ltda.`) só quando o processo falta —, e o autor só escapa pondo prosa fixa depois do último grupo. É decisão para antes do congelamento: depois dele, mudar a emenda muda a saída de documento publicado. O reparo de emenda existe para a costura que a **elisão** abre, e estender-lhe a mão para o texto do valor é edição de prosa alheia — o motor não faz, e a decisão de fazer é de versão maior |
 | O arquivo `chave = valor` escrito à mão lê `drenagem = 1.320` como `1.32` | `cli.jl` | o `ask` recusa a resposta ambígua desde a D-069, e o arquivo digitado não passa por ele: `parse_data_value` não conhece o ambiente. O JSON não tem o problema, porque lá o número é da gramática do JSON. Gatilho: o primeiro modelo com dados digitados à mão em `chave = valor` com número agrupado |
 | Os formatadores de `texto` são `upper`, `lower` e `title` num modelo `pt`, e o de `pessoa` é `maiusculo` | `core_types.jl`, `KanonLegal` | a mesma dívida dos atributos, pela outra porta: a procuração escreveu `{nome:maiusculo}` dentro do bloco `<- outorgado` e levou `K2020`: ali `nome` é `texto`, cujo formatador é `upper`, e `maiusculo` é o de `pessoa` — duas palavras, em duas línguas, para a mesma coisa |
+| O escape do Markdown é o do CommonMark, e o leitor padrão do pandoc lê mais: `a)`, `(1)` e `iv.` no começo da linha abrem lista; `H~2~O` e `10^3^` são subscrito e sobrescrito no meio dela; `--` vira travessão e a aspa reta vira curva | `output.jl` | um valor com uma dessas formas chegar a um `.docx`. Registrado na D-070, conferido no pandoc 3.11: a reclamação nº 15 não tem nenhuma, e escapar `(` e `^` em todo Markdown encheria de barras o fonte de quem o lê no CommonMark |
 | Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
 | A cobertura mede só o núcleo; as quatro camadas não sobem `lcov` | `CI.yml` | quando uma camada crescer a ponto de a leitura do número dela dizer algo. Hoje diria pouco: o sinal deste projeto está nas invariantes, não no percentual |
 
@@ -840,20 +843,22 @@ Cheque contra esta lista antes de aceitar qualquer incremento:
 disso haverá acervo e cada erro de design vira permanente — e o corpus golden da versão 1
 passa a ter de renderizar byte a byte idêntico em todo motor `1.x`.
 
-Contagem: **14 de 15**. O que já foi escrito cobrou o suficiente para dar razão ao portão —
+Contagem: **15 de 15 — o portão está fechado.** O que foi escrito cobrou o suficiente para dar razão ao portão —
 o exemplo jurídico revelou três lacunas ao ser escrito na F0, e voltou a cobrar na F6 ao
 contradizer a D-013 que veio depois dele. A locação, o relatório, o certificado, o laudo, o
 edital, a doação, o ensaio, a verificação, a aula, os serviços, a procuração, a
-notificação e o atestado, escritos com o motor já pronto e a suíte verde, cobraram mais
-trinta e cinco (D-031 a D-035 e D-040 a D-069) — **a taxa de descoberta não caiu quando o
+notificação, o atestado e a reclamação, escritos com o motor já pronto e a suíte verde,
+cobraram mais trinta e seis (D-031 a D-035 e D-040 a D-070) — **a taxa de descoberta não caiu quando o
 código ficou bom; o décimo primeiro achou o motor inalcançável pela porta por onde o
 redator entra, o décimo segundo achou a porta ainda fechada atrás de uma correção dada
 como feita, o décimo terceiro achou a mesma porta fechada no editor, e o décimo quarto a
-achou fechada para o idioma — e, aberta, um documento errado sem aviso atrás dela.**
+achou fechada para o idioma — e, aberta, um documento errado sem aviso atrás dela. O
+décimo quinto passou por todas as portas do motor, e achou o documento errado depois da
+última: no leitor que transforma a saída no arquivo que o redator abre.**
 
 ### O que a implementação já mudou na especificação
 
-Cinquenta e uma decisões saíram de escrever o código, e vinte e cinco delas fecharam buracos
+Cinquenta e duas decisões saíram de escrever o código, e vinte e seis delas fecharam buracos
 que nenhuma releitura teria encontrado — o texto era internamente coerente em todos os
 casos:
 
@@ -884,6 +889,7 @@ casos:
 | **D-057** | a D-024 decidiu o que o rascunho faz com o **valor** que falta, e a §8.3 decidiu o que o plano faz com a **coleção** que falta; nenhuma das duas percebeu que o rascunho também monta plano |
 | **D-058** | a §12 descreve a linha de comando desde a F0 e a §5 descreve as camadas desde a F0, e nenhuma das duas disse como se carrega uma camada pela linha de comando |
 | **D-061** | a §12 dizia desde a F0 que o `ask` emite o JSON completo, a F9 o escreveu emitindo `chave = valor`, e nenhuma das duas percebeu que o formato escolhido não escreve metade dos tipos que o contrato declara |
+| **D-070** | a §4.1 deixou ao formato de saída decidir se a quebra de linha é rígida, e a F8 escreveu dois formatos sem decidir — o que, no Markdown e no Typst, é decidir pelo espaço |
 
 E uma na direção contrária, que é a primeira: a **D-043** não mudou a especificação —
 a §8.3 dizia desde a F0 que o caminho iterado denota o elemento corrente *"tanto no texto

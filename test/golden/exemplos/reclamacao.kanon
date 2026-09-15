@@ -1,0 +1,133 @@
+kanon 1 pt
+
+# Reclamação trabalhista — **modelo real nº 15** do portão da 1.0.
+#
+# A reclamação que a procuração nº 12 outorgou poderes para propor, pelo mesmo escritório,
+# contra a mesma empresa. Escolhida pela última porta documentada que nenhum documento
+# tinha atravessado: o escritório entrega a petição em **`.docx`**, para o advogado revisar
+# no editor de texto antes de protocolar, e o caminho é o que a ajuda da CLI dá —
+# `kanon render … --to markdown | pandoc -o reclamacao.docx`.
+#
+# Escrita para o `.docx`, e por isso com a marcação do Markdown na prosa: os títulos em
+# negrito, a citação da lei em bloco. A prosa é do autor e passa intacta (D-028).
+#
+# Cobrou uma coisa, e do tipo mais caro — o documento que sai errado sem aviso (D-070): o
+# fecho `Nestes termos,` / `pede deferimento.` e o bloco de assinatura saíam numa linha só
+# no `.docx`. No Markdown a quebra simples é espaço, e o formato não decidia nada. O texto
+# puro estava certo, e o Markdown era byte a byte o escrito à mão: o defeito só aparecia no
+# documento que o advogado abre.
+
+dados
+  reclamante       : pessoa   !
+  profissao        : texto    !
+  ctps             : texto    !
+  email_reclamante : texto
+  reclamada        : parte    !
+  admissao         : data     !
+  dispensa         : data     !
+  funcao           : texto    !
+  salario          : dinheiro !
+  jornada          : texto
+  saldo_salario    : dinheiro !
+  aviso_dias       : numero   !
+  aviso            : dinheiro !
+  decimo_terceiro  : dinheiro !
+  ferias           : dinheiro !
+  fgts             : dinheiro !
+  multa_477        : dinheiro !
+  horas_extras     : dinheiro
+  danos_morais     : dinheiro
+  gratuidade       : booleano !
+  valor_causa      : dinheiro !
+  advogado         : pessoa   !
+  oab              : texto    !
+  cidade           : texto    = "Petrolina"
+  emissao          : data     = hoje
+
+texto
+
+: enderecamento
+**EXCELENTÍSSIMO((A)) SENHOR((A)) JUIZ((A)) DA ___ VARA DO TRABALHO DE {cidade:upper}/PE**
+
+: qualificacao_reclamante <- reclamante
+**{nome:upper}**, {estado_civil}, {profissao}, portador(a) do CPF {cpf} e da CTPS nº {ctps}, residente e domiciliado(a) na {endereco}[, endereço eletrônico {email_reclamante}], por seu advogado infra-assinado, com procuração anexa, vem, respeitosamente, à presença de Vossa Excelência propor
+
+: acao
+**RECLAMAÇÃO TRABALHISTA**, pelo rito ordinário,
+
+: qualificacao_reclamada <- reclamada
+em face de **{nome:upper}**, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº {documento}, com sede na {endereco}, pelos fatos e fundamentos a seguir expostos.
+
+: titulo_fatos
+**I — DOS FATOS**
+
+: contrato <- reclamante
+O(A) reclamante foi admitido(a) pela reclamada em {admissao:corrente}, para exercer a função de {funcao}, com salário mensal de {salario} ({salario:extenso}), e foi dispensado(a) sem justa causa em {dispensa:corrente}.
+
+: jornada_cumprida
+Cumpria jornada {jornada}, sem receber as horas extraordinárias trabalhadas.
+
+: rescisao <- reclamante
+Dispensado(a), o(a) reclamante não recebeu as verbas rescisórias no prazo do art. 477, § 6º, da CLT, nem teve os depósitos do FGTS regularmente efetuados durante o contrato.
+
+: titulo_direito
+**II — DO DIREITO**
+
+: fundamento
+A dispensa sem justa causa assegura ao empregado o aviso prévio proporcional ao tempo de serviço, o décimo terceiro salário e as férias proporcionais, acrescidas do terço constitucional, além da indenização de 40% sobre os depósitos do FGTS. E o atraso no pagamento das verbas rescisórias sujeita o empregador à multa do art. 477, § 8º, da CLT:
+
+> § 8º A inobservância do disposto no § 6º deste artigo sujeitará o infrator à multa de 160 BTN, por trabalhador, bem assim ao pagamento da multa a favor do empregado, em valor equivalente ao seu salário, devidamente corrigido pelo índice de variação do BTN, salvo quando, comprovadamente, o trabalhador der causa à mora.
+
+: fundamento_gratuidade <- reclamante
+O(A) reclamante percebia salário inferior a 40% do limite máximo dos benefícios do Regime Geral de Previdência Social, e faz jus aos benefícios da justiça gratuita, nos termos do art. 790, § 3º, da CLT.
+
+: titulo_pedidos
+**III — DOS PEDIDOS**
+
+: pedidos
+Ante o exposto, requer a notificação da reclamada para, querendo, apresentar defesa, sob pena de revelia e confissão, e, ao final, a procedência dos pedidos, com a condenação da reclamada ao pagamento de:
+
+:: rescisorias
+saldo de salário, {saldo_salario}; aviso prévio indenizado de {aviso_dias} dias, {aviso}; décimo terceiro salário proporcional, {decimo_terceiro}; e férias vencidas e proporcionais, acrescidas de um terço, {ferias};
+
+:: fgts_pedido
+depósitos do FGTS não efetuados, acrescidos da indenização de 40%, {fgts};
+
+:: multa
+multa do art. 477, § 8º, da CLT, {multa_477};
+
+:: extras
+horas extraordinárias excedentes da 8ª diária e da 44ª semanal, com o adicional de 50% e reflexos em aviso prévio, férias com um terço, décimos terceiros e FGTS com 40%, {horas_extras};
+
+:: morais
+indenização por danos morais, {danos_morais};
+
+:: honorarios
+honorários advocatícios de sucumbência de 15% sobre o valor da condenação, nos termos do art. 791-A da CLT.
+
+: requer_gratuidade
+Requer, ainda, a concessão dos benefícios da justiça gratuita.
+
+: provas
+Protesta provar o alegado por todos os meios de prova em direito admitidos, em especial o depoimento pessoal do representante da reclamada, a oitiva de testemunhas e a juntada de documentos.
+
+: valor
+Dá-se à causa o valor de {valor_causa} ({valor_causa:extenso}).
+
+: fecho
+Nestes termos,
+pede deferimento.
+
+: local_data
+{cidade}, {emissao:corrente}.
+
+: assinatura <- advogado
+{nome:upper}
+OAB/PE {oab}
+
+regras
+  jornada_cumprida       quando jornada é presente
+  fundamento_gratuidade  quando gratuidade
+  extras                 quando horas_extras é presente
+  morais                 quando danos_morais é presente
+  requer_gratuidade      quando gratuidade

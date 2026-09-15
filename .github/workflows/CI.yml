@@ -62,6 +62,41 @@ jobs:
           julia --project=lib/Extenso lib/Extenso/test/runtests.jl
         shell: bash
 
+      # O pandoc de verdade, na versão em que o golden do `.docx` foi conferido: o modelo
+      # real nº 15 é entregue pelo caminho da ajuda da CLI, `kanon render … --to markdown
+      # | pandoc -o saida.docx`, e o teste roda essa cadeia num processo novo. Sem ele, o
+      # teste recusa rodar no CI em vez de se pular — a porta testada fora do lugar é
+      # como a D-070 passou.
+      #
+      # Do binário da release, e não da `pandoc/actions/setup`: ela instala o pacote
+      # x86_64 também no macOS arm64.
+      - name: pandoc
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PANDOC_VERSION: '3.11'
+        run: |
+          case "$RUNNER_OS-$RUNNER_ARCH" in
+            Linux-X64)   asset=linux-amd64.tar.gz ;;
+            macOS-ARM64) asset=arm64-macOS.zip ;;
+            macOS-X64)   asset=x86_64-macOS.zip ;;
+            Windows-X64) asset=windows-x86_64.zip ;;
+            *) echo "sem pandoc para $RUNNER_OS-$RUNNER_ARCH"; exit 1 ;;
+          esac
+          dir="$RUNNER_TEMP/pandoc"
+          mkdir -p "$dir"
+          gh release download "$PANDOC_VERSION" --repo jgm/pandoc \
+            --pattern "pandoc-$PANDOC_VERSION-$asset" --dir "$dir"
+          cd "$dir"
+          case "$asset" in
+            *.tar.gz) tar xzf "pandoc-$PANDOC_VERSION-$asset" ;;
+            *)        unzip -q "pandoc-$PANDOC_VERSION-$asset" ;;
+          esac
+          bin=$(find "$dir" -type f \( -name pandoc -o -name pandoc.exe \) | head -1)
+          if [ "$RUNNER_OS" = Windows ]; then bin=$(cygpath -w "$bin"); fi
+          "$bin" --version | head -1
+          echo "KANON_PANDOC=$bin" >> "$GITHUB_ENV"
+
       - name: KanonLegal
         run: |
           julia --project=lib/KanonLegal -e '

@@ -335,6 +335,13 @@ O conteúdo de um bloco é uma sequência de **parágrafos**, separados por uma 
 linhas em branco. Quebras de linha dentro de um parágrafo são preservadas na saída
 verbatim; a camada de saída (F8) decide se são quebras rígidas.
 
+**[acrescentado ao escrever o modelo real nº 15 — D-070]** Nos formatos de marcação a
+quebra é **rígida**: no Markdown e no Typst a linha sai com uma contrabarra no fim, porque
+nos dois uma quebra simples é espaço, e a assinatura de uma petição saía numa linha só no
+`.docx`. A regra vale para o trecho de linhas seguidas em que nenhuma abre construção de
+bloco do formato (título, lista, tabela, citação). A marcação que o autor escreveu passa
+intacta, e a pergunta é feita ao texto já escapado, onde um valor não abre nada.
+
 ### 4.2 Sujeito
 
 `: grantor <- seller` liga o bloco ao valor de `seller`. Dentro do bloco:

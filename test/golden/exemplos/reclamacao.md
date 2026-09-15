@@ -1,0 +1,51 @@
+**EXCELENTÍSSIMO(A) SENHOR(A) JUIZ(A) DA ___ VARA DO TRABALHO DE PETROLINA/PE**
+
+**MARTA REGINA SOARES**, casada, auxiliar de produção, portadora do CPF 111.222.333-44 e da CTPS nº 1234567, série 0012-PE, residente e domiciliada na Rua do Sol, 45, Centro, Petrolina/PE, endereço eletrônico marta\_soares@correio.com.br, por seu advogado infra-assinado, com procuração anexa, vem, respeitosamente, à presença de Vossa Excelência propor
+
+**RECLAMAÇÃO TRABALHISTA**, pelo rito ordinário,
+
+em face de **FRUTAS DO VALE EXPORTADORA LTDA.**, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 12.345.678/0001-90, com sede na Rodovia BR-428, km 12, Distrito Industrial, Petrolina/PE, pelos fatos e fundamentos a seguir expostos.
+
+**I — DOS FATOS**
+
+A reclamante foi admitida pela reclamada em 6 de março de 2023, para exercer a função de auxiliar de packing house, na seleção e embalagem de uvas para exportação, com salário mensal de R\$ 1.850,00 (mil oitocentos e cinquenta reais), e foi dispensada sem justa causa em 30 de junho de 2026.
+
+Cumpria jornada de segunda-feira a sábado, das 7h às 17h, com uma hora de intervalo, sem receber as horas extraordinárias trabalhadas.
+
+Dispensada, a reclamante não recebeu as verbas rescisórias no prazo do art. 477, § 6º, da CLT, nem teve os depósitos do FGTS regularmente efetuados durante o contrato.
+
+**II — DO DIREITO**
+
+A dispensa sem justa causa assegura ao empregado o aviso prévio proporcional ao tempo de serviço, o décimo terceiro salário e as férias proporcionais, acrescidas do terço constitucional, além da indenização de 40% sobre os depósitos do FGTS. E o atraso no pagamento das verbas rescisórias sujeita o empregador à multa do art. 477, § 8º, da CLT:
+
+> § 8º A inobservância do disposto no § 6º deste artigo sujeitará o infrator à multa de 160 BTN, por trabalhador, bem assim ao pagamento da multa a favor do empregado, em valor equivalente ao seu salário, devidamente corrigido pelo índice de variação do BTN, salvo quando, comprovadamente, o trabalhador der causa à mora.
+
+A reclamante percebia salário inferior a 40% do limite máximo dos benefícios do Regime Geral de Previdência Social, e faz jus aos benefícios da justiça gratuita, nos termos do art. 790, § 3º, da CLT.
+
+**III — DOS PEDIDOS**
+
+Ante o exposto, requer a notificação da reclamada para, querendo, apresentar defesa, sob pena de revelia e confissão, e, ao final, a procedência dos pedidos, com a condenação da reclamada ao pagamento de:
+
+1\. saldo de salário, R\$ 1.850,00; aviso prévio indenizado de 39 dias, R\$ 2.405,00; décimo terceiro salário proporcional, R\$ 1.233,33; e férias vencidas e proporcionais, acrescidas de um terço, R\$ 3.494,45;
+
+2\. depósitos do FGTS não efetuados, acrescidos da indenização de 40%, R\$ 8.288,00;
+
+3\. multa do art. 477, § 8º, da CLT, R\$ 1.850,00;
+
+4\. horas extraordinárias excedentes da 8ª diária e da 44ª semanal, com o adicional de 50% e reflexos em aviso prévio, férias com um terço, décimos terceiros e FGTS com 40%, R\$ 21.346,15;
+
+5\. honorários advocatícios de sucumbência de 15% sobre o valor da condenação, nos termos do art. 791-A da CLT.
+
+Requer, ainda, a concessão dos benefícios da justiça gratuita.
+
+Protesta provar o alegado por todos os meios de prova em direito admitidos, em especial o depoimento pessoal do representante da reclamada, a oitiva de testemunhas e a juntada de documentos.
+
+Dá-se à causa o valor de R\$ 40.466,93 (quarenta mil quatrocentos e sessenta e seis reais e noventa e três centavos).
+
+Nestes termos,\
+pede deferimento.
+
+Petrolina, 15 de setembro de 2026.
+
+PAULO HENRIQUE LINS\
+OAB/PE 12.345

@@ -184,6 +184,74 @@ label(f::Markdown, texto::AbstractString) = escape_value(f, texto, true)
 label(f::Typst, texto::AbstractString) = escape_value(f, texto, true)
 
 """
+    line_breaks(fmt, paragrafo) -> String
+
+As quebras de linha **dentro** de um parágrafo, que a §4.1 preserva e deixa ao formato
+decidir se são rígidas. Em texto puro a quebra já é a linha que o autor escreveu. No
+Markdown e no Typst, uma quebra simples é **espaço**, e o formato que não decidia nada
+decidia juntar: `Nestes termos,` e `pede deferimento.` saíam numa linha só no `.docx`, e o
+bloco de assinatura virava `PAULO HENRIQUE LINS OAB/PE 12.345` — sem aviso nenhum, com o
+texto puro do mesmo modelo certo (D-070, modelo real nº 15).
+
+A quebra rígida é a contrabarra no fim da linha, que o CommonMark, o leitor padrão do
+pandoc e o Typst leem igual — e que se vê no arquivo, ao contrário dos dois espaços que
+todo editor apaga. Só vai onde a quebra seria espaço: no trecho de linhas seguidas em que
+**nenhuma** abre construção de bloco. Uma lista, uma tabela ou um título escritos pelo
+autor são marcação dele e passam intactos (D-028), e a barra ali quebraria a tabela e
+sairia literal no fim do item.
+
+A pergunta é feita ao texto **já escapado**: um valor que começa a linha com `#` ou `1.`
+chega aqui como `\\#` e `1\\.`, e não abre nada — é o que torna a regra segura contra o
+dado.
+"""
+line_breaks(::OutputFormat, s::AbstractString) = String(s)
+line_breaks(f::Markdown, s::AbstractString) = hard_breaks(f, s)
+line_breaks(f::Typst, s::AbstractString) = hard_breaks(f, s)
+
+"""
+O que abre bloco no começo de uma linha de Markdown, no CommonMark **ou** no leitor padrão
+do pandoc — que é o que lê o `| pandoc -o saida.docx` da ajuda da CLI: título, citação,
+item de lista (inclusive `a)`, `(1)` e `iv.`, que só o pandoc lê), tabela, cerca de código,
+bloco de HTML, definição, nota de rodapé e linha horizontal. Errar para o lado de achar
+bloco onde não há só deixa a quebra como estava.
+"""
+const MARKDOWN_BLOCO = r"^ {0,3}(?:#{1,6}(?:\s|$)|>|[-*+](?:\s|$)|\d{1,9}[.)](?:\s|$)|[A-Za-z][.)](?:\s|$)|[ivxlcdmIVXLCDM]+[.)](?:\s|$)|\([0-9A-Za-z#@]+\)(?:\s|$)|#\.(?:\s|$)|\||```|~~~|:::|[:~](?:\s|$)|<|\[|=+\s*$|_{3,}\s*$)"
+
+"O mesmo no Typst: título, lista, enumeração, termo, código, matemática, rótulo e comentário."
+const TYPST_BLOCO = r"^\s*(?:=+(?:\s|$)|[-+](?:\s|$)|/\s|\d+\.(?:\s|$)|```|#|\$|<|//)"
+
+opens_block(::Markdown, linha::AbstractString) =
+    startswith(linha, "    ") || startswith(linha, '\t') || occursin(MARKDOWN_BLOCO, linha)
+opens_block(::Typst, linha::AbstractString) = occursin(TYPST_BLOCO, linha)
+
+function hard_breaks(f::OutputFormat, s::AbstractString)
+    occursin('\n', s) || return String(s)
+    linhas = split(s, '\n')
+    saida = String.(linhas)
+    n = length(linhas)
+    i = 1
+    while i <= n
+        if all(isspace, linhas[i])
+            i += 1
+            continue
+        end
+        j = i
+        while j < n && !all(isspace, linhas[j + 1])
+            j += 1
+        end
+        if j > i && !any(l -> opens_block(f, l), view(linhas, i:j))
+            for k in i:(j - 1)
+                # uma barra ímpar no fim já é quebra rígida; par é contrabarra escapada
+                barras = length(linhas[k]) - length(rstrip(==('\\'), linhas[k]))
+                iseven(barras) && (saida[k] *= "\\")
+            end
+        end
+        i = j + 1
+    end
+    join(saida, '\n')
+end
+
+"""
     document(fmt, paragrafos) -> String
 
 Junta os parágrafos. Todos os formatos que o núcleo conhece separam por linha em branco;
