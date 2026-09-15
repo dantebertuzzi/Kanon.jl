@@ -2525,3 +2525,106 @@ da 1.0 ela seria impossível, e o nome ficaria no acervo para sempre.
 
 **O que isto abre.** `K2009` é o primeiro diagnóstico de "nome que existe e não se declara".
 Se algum dia um tipo do núcleo passar a ser só comportamento, a mensagem já existe.
+
+---
+
+## D-072 — A marca que nomeia o sujeito fica reservada
+
+*2026-09-15 · aceita · segunda decisão da seção 1a, com o portão fechado*
+
+**O limite, visto duas vezes.** A locação nº 2 e a procuração nº 12 escreveram frases que
+concordam com **dois** sujeitos. Na procuração: *"os OUTORGANTES nomeia(m) seu bastante
+procurador o advogado…"* — o verbo concorda com os outorgantes, que são o sujeito do
+bloco, e `procurador(a)` teria de concordar com o advogado, que não é. A versão 1 tem um
+sujeito por bloco (§4.2), e os dois modelos contornaram nomeando a palavra pelo papel:
+`ao PROCURADOR`, `ao LOCATÁRIO`. Não é defeito — é limite.
+
+**Por que decidir agora, se a construção não entra.** Porque hoje ela **não é erro**. A
+§7.1 reconhece como marca uma a quatro letras entre parênteses coladas à palavra;
+`procurador(a:advogado)` não é marca nenhuma, e o parser a lê como prosa. O documento
+sairia com `procurador(a:advogado)` impresso, sem um único diagnóstico — a categoria de
+defeito que a linguagem existe para impedir. E uma versão futura que desse sentido à forma
+mudaria a saída de quem tivesse escrito isso, o que a §13 define como versão maior.
+
+**Decisão.** A forma `palavra(marca:caminho)`, colada à palavra, é **reservada** e recusada
+na versão 1 com o erro **`K1216`**. A mensagem diz o limite — a versão 1 tem um sujeito por
+bloco — e a dica dá as duas saídas de hoje: nomear a palavra pelo papel, ou pôr a frase num
+bloco cujo sujeito seja aquele. O escape por duplicação continua valendo: `portador((a:x))`
+é prosa, e não erro.
+
+**A forma escolhida, e por quê.** `(marca:caminho)` estende a notação que já existe em vez
+de criar outra: os parênteses já são a marca, e o `:` separa "o quê" de "por quem" como
+separa caminho e formatador em `{preco:extenso}`. Não colide com prosa: a marca precisa
+estar colada à palavra, e `nota(ver: anexo)` — com espaço, e com um caminho que não é
+identificador — continua prosa.
+
+**Alternativas.** (a) Implementar a flexão por sujeito nomeado agora: é um mecanismo novo
+no protocolo da camada de idioma (`flexionar` recebe hoje palavra, marca e **o** sujeito) e
+não há modelo real esperando por ele — os dois que o tocaram contornaram bem. (b) Não
+reservar nada: deixa a forma como prosa silenciosa e fecha a porta da adição aditiva. (c)
+Reservar com aviso, e não com erro: um aviso que o autor ignore vira o documento com a
+marca impressa. (d) Reservar com erro (escolhida).
+
+**Como se lê isto daqui a dois anos.** Se a construção entrar, ela entra numa versão menor,
+porque hoje o que ela ocuparia é erro. Se não entrar, o erro continua dizendo a verdade: a
+versão 1 tem um sujeito por bloco.
+
+---
+
+## D-073 — A série de trechos opcionais fica reservada; o reparo não muda
+
+*2026-09-15 · aceita · terceira decisão da seção 1a, com o portão fechado*
+
+**O limite, visto no atestado nº 14.** `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta —
+sem o `e` antes do último trecho presente. A conjunção depende de **qual trecho é o
+último**, e a gramática não tem como dizê-lo: o autor escreve a conjunção dentro de um
+grupo, e o grupo elide inteiro.
+
+**As duas saídas, e por que uma delas está descartada.** A correção "natural" é o reparo de
+emenda trocar a vírgula pela conjunção quando o último grupo elide. Ela **muda a saída** de
+todo modelo já escrito nessa forma — o atestado nº 14 do acervo inclusive —, e é versão
+maior pela definição operacional da §13. Pior que isso: o reparo é **local à emenda**
+(D-014), e essa troca exige olhar a frase inteira para saber qual vírgula virou a última.
+Seria o reparo global que a D-014 recusou, e o motor editando pontuação que não removeu.
+
+**Decisão.**
+
+1. O reparo de emenda **não muda**. Com `c` ausente, `{a}[, {b}][ e {c}]` continua saindo
+   `a, b`, e isso está escrito na §4.4 para que ninguém o descubra num documento.
+2. A **série** — um grupo cujas partes são grupos, `[[, {b}][ e {c}]]` — é a construção
+   reservada, recusada com o erro **`K2015`**. Numa versão futura, os trechos presentes da
+   série são juntados pelo **mesmo gancho de idioma que junta uma coleção**
+   (`register_list_joiner!`): `a, b e c` em português, `a, b and c` em inglês.
+3. Quem tem itens do mesmo tipo já tem a resposta hoje, e ela é melhor: um campo de coleção
+   (`itens : texto[]`) sai com a conjunção do idioma desde a F4.
+
+**Por que a forma é essa.** `[[…][…]]` já é erro hoje — um grupo sem interpolação direta
+nunca elide (`K2010`, D-021) —, então reservá-la não tira nada de ninguém e não muda
+documento nenhum. E ela diz o que faz: as partes da série são os trechos que podem sumir.
+A alternativa seria um marcador novo dentro do colchete, que gastaria um caractere do
+conjunto fechado por uma construção que ainda não existe.
+
+**O que a versão 1 perde, dito com precisão.** Uma frase com três quantitativos opcionais
+sai sem o `e` quando o último falta. O autor que não aceita isso escreve os casos como
+blocos com regra, ou aceita a vírgula. É o preço de o reparo ser local — e a D-014 já
+tinha escolhido esse preço por uma razão maior, que é o motor não editar prosa alheia.
+
+---
+
+## D-074 — A dica do colchete não fechado mandava escrever `[[`
+
+*2026-09-15 · aceita · achada ao reservar a série (D-073)*
+
+**A observação.** As dicas de `K1208` (grupo não fechado) e `K1209` (`]` sem abertura)
+diziam *"Para um colchete literal, escreva `[[`"* e *"escreva `]]`"*. Isso não funciona
+desde a **D-004**: colchete é o único delimitador que **não** escapa por duplicação, porque
+grupos aninham e `]]` é produzido pela própria linguagem. `[[` abre dois grupos — quem
+seguisse a dica levava **dois** `K1208` no lugar de um.
+
+**Decisão.** As duas dicas passam a dizer `\[` e `\]`, que é o que a §4.4 e a D-018
+estabelecem. A tabela de escapes já estava certa; o texto da dica tinha ficado para trás.
+
+**Por que estava ali.** A dica foi escrita na F1, com a convenção anterior à revisão da
+D-004, e nenhum teste afirma sobre a redação de mensagem — de propósito (o teste afirma o
+código). O que pega este tipo de defeito é ler a mensagem como o redator a lê, e foi ao
+escrever a recusa da série que ela apareceu na tela.

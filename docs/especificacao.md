@@ -417,6 +417,17 @@ quem escreve relatório científico (D-018).
 Colisão conhecida e assumida: `\[` e `\]` também são matemática em bloco no LaTeX. Num
 modelo Kanon produzem colchetes literais — não há saída, porque `[` é estrutural aqui.
 
+**Sintaxe reservada: a série [D-073].** Um grupo cujas partes são **grupos** —
+`[[, {b}][ e {c}]]` — é a enumeração que moveria a conjunção para o último trecho
+presente. Ela é **reservada**, e recusada com `K2015`. A versão 1 escreve os trechos lado
+a lado, `{a}[, {b}][ e {c}]`, e a conjunção fica onde está escrita: com `c` ausente sai
+`a, b`, sem o `e`. Quando os itens são do mesmo tipo, um campo de coleção já sai com a
+conjunção do idioma, que é o mecanismo que a série futura usaria (`register_list_joiner!`).
+
+A alternativa — o reparo de emenda trocar a vírgula pela conjunção quando o último grupo
+elide — foi descartada: ela **muda a saída** de todo modelo já escrito nessa forma, e o
+reparo é local à emenda por decisão (D-014), sem enxergar a frase que o autor escreveu.
+
 Uma **interpolação direta** de um grupo é uma interpolação de campo que está
 lexicalmente dentro dele e fora de qualquer grupo aninhado nele. Remissões `{::x}` não
 contam (nunca são nulas).
@@ -663,9 +674,31 @@ domiciliado(a)` vira `residentes e domiciliadas` **apenas se** ambas as palavras
 tiverem marca — `residente(s) e domiciliado(a)`. Escrever a marca é o consentimento do
 autor.
 
-### 7.3 Escape
+### 7.3 Sintaxe reservada: a marca que nomeia o sujeito **[D-072]**
 
-`((a))` produz `(a)` literal. Como o ponto de flexão exige colagem à palavra e a marca
+A versão 1 tem **um sujeito por bloco**, e uma frase pode concordar com dois: na
+procuração, o verbo concorda com os outorgantes e o substantivo com o advogado —
+`nomeia(m)` por um, `procurador(a)` por outro. A forma que resolveria isso é a marca que
+nomeia com quem a palavra concorda:
+
+```
+procurador(a:advogado)      reservada — erro K1216 na versão 1
+```
+
+Ela é **reservada**, e não implementada. O motivo de reservá-la agora é que, sem a recusa,
+ela não é erro nenhum: a §7.1 reconhece uma marca de uma a quatro letras, `(a:advogado)`
+não é marca, e a linha inteira sairia impressa no documento como prosa. Dar-lhe sentido
+depois mudaria a saída de quem tivesse escrito isso — que é versão maior pela §13. Com a
+recusa escrita na versão 1, a construção futura é aditiva.
+
+Na versão 1, as duas formas que exprimem a intenção: nomear a palavra pelo papel — `ao
+PROCURADOR`, como a locação faz com o LOCATÁRIO — ou pôr a frase num bloco cujo sujeito
+seja aquele.
+
+### 7.4 Escape
+
+`((a))` produz `(a)` literal — inclusive na forma reservada acima: `portador((a:x))` é
+prosa, e não erro. Como o ponto de flexão exige colagem à palavra e a marca
 tem de estar no conjunto registrado, a taxa de falso positivo é baixa; onde ela ocorrer
 (nome próprio, sigla — risco 16.3), o escape é por marca e é suficiente, porque o
 invariante 7.2 garante que nada além da marca é tocado.
@@ -968,6 +1001,12 @@ instalado no ambiente é erro de uso (código 3).
 
 **SemVer estrito** para o pacote; versão da **linguagem** independente, declarada no
 arquivo.
+
+**As três sintaxes reservadas da versão 1**, todas recusadas com erro para que a versão
+que lhes der sentido seja aditiva: o encadeamento de formatadores e o formatador com
+argumento, `{v:a:b}` e `{v:round(2)}` (§3.5, D-007); a marca que nomeia o sujeito da
+flexão, `procurador(a:advogado)` (§7.3, D-072); e a série de trechos opcionais,
+`[[, {b}][ e {c}]]` (§4.4, D-073).
 
 Pode mudar em **versão menor da linguagem** (aditivo):
 
