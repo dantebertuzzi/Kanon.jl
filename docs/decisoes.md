@@ -1032,7 +1032,7 @@ não reconhecer um caso é repetir a condição do pai no `when` do filho.
 
 ## D-033 — O tipo `list` do núcleo é inalcançável pelo plano de dados
 
-*2026-09-05 · **proposta**, aguarda decisão de versão · surgida ao escrever o modelo real nº 2*
+*2026-09-05 · **revista pela D-071** em 15 de setembro de 2026 · surgida ao escrever o modelo real nº 2*
 
 **A observação.** `moveis : lista` com uma lista de três itens é recusado por `K3002`:
 "`moveis` é um valor único, e veio uma lista de 3. Declare `moveis : lista[]` no modelo".
@@ -2474,3 +2474,54 @@ do pandoc lê mais do que ela: `a)`, `(1)` e `iv.` no começo da linha abrem lis
 `H~2~O` e `10^3^` são subscrito e sobrescrito no meio da linha; `--` vira travessão e a
 aspa reta vira curva. Nenhum valor desta reclamação tem essas formas, e o caso fica na
 tabela de dívidas, com o gatilho de um valor assim chegar a um `.docx`.
+
+---
+
+## D-071 — A coleção não é um tipo; é a cardinalidade
+
+*2026-09-15 · aceita · fecha a D-033, com o portão fechado*
+
+**O que estava aberto.** A D-033 achou, no modelo real nº 2, um tipo do núcleo que **existe
+e nenhum modelo pode declarar**: `moveis : lista` com uma lista de verdade viola a
+cardinalidade da §2.1, e `lista[]` é uma lista *de listas*. Ela corrigiu a mensagem e
+deixou a decisão de versão para o fim do portão, com um critério escrito: *"se nenhum dos
+treze modelos restantes precisar de `list`, a remoção está justificada por evidência em vez
+de por argumento."*
+
+**A evidência.** Nenhum dos **quinze** modelos reais declara `list`, em nenhuma das duas
+grafias. O que todos usam é a cardinalidade sobre o tipo do elemento — `texto[1..]`,
+`pessoa[1..]`, `dinheiro[]` —, que diz "vários" e diz também vários de quê.
+
+**A correção do enunciado, ao implementar.** "Remover o tipo" não era o que cabia fazer:
+`list` é o nome interno do **comportamento de coleção**. É por ele que `{entregas:count}`
+resolve, que `quando entregas é empty` resolve, e que a junção com `e` da camada de idioma
+alcança a lista — `resolve_formatter!` formata todo caminho de cardinalidade de lista *como
+lista* (D-043). Removê-lo removeria isso de todo campo `texto[]` do acervo. O que sobra da
+D-033, e é o defeito de verdade, é o **nome** estar no plano de dados.
+
+**Decisão.**
+
+1. `list` sai do conjunto de nomes **declaráveis**: não aparece em `typenames(env)`, nem na
+   lista de tipos disponíveis de um diagnóstico, nem na completação do editor.
+2. `x : list` — ou `x : lista`, pelo apelido do idioma — é erro de referência **`K2009`**,
+   dito uma vez na declaração, com a dica que ensina a forma que funciona:
+   *"Declare `x : texto[]` para uma lista de textos."*
+3. O comportamento de coleção continua inteiro, com o nome interno `COLLECTION_TYPENAME`.
+4. A mensagem de formatador deixa de chamar uma coleção de tipo: `{entregas:upper}` erra com
+   *"`upper` não existe para uma coleção. Formatadores de uma coleção: count."* — dizer
+   "o tipo `list`" mandaria o autor procurar um nome que ele não pode escrever.
+
+**Alternativas.** (a) Deixar como estava: o nome continuaria prometendo uma declaração que
+nunca funciona, e o portão fechou sem ninguém precisar dela. (b) Tornar `: lista` aceitável
+para uma lista: duas grafias para a mesma coisa, e a pior das duas — sem o tipo do elemento,
+`check` não teria o que verificar em cada item. (c) Remover o tipo de dentro do núcleo:
+removeria `count`, `empty` e a junção de idioma de toda coleção. (d) O nome sai do plano de
+dados e o comportamento fica (escolhida).
+
+**O que isto custa em compatibilidade.** Um modelo com `x : list` deixa de carregar. Antes
+ele carregava e falhava com dados — exceto num caso: campo **opcional** e ausente, onde
+`[{x}]` elidia para sempre. É mudança de versão maior pela §13, e por isso é agora: depois
+da 1.0 ela seria impossível, e o nome ficaria no acervo para sempre.
+
+**O que isto abre.** `K2009` é o primeiro diagnóstico de "nome que existe e não se declara".
+Se algum dia um tipo do núcleo passar a ser só comportamento, a mensagem já existe.

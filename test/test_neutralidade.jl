@@ -77,7 +77,7 @@ end
 
     @testset "os tipos do núcleo têm nome em inglês, e nenhum é de domínio" begin
         env = Environment()
-        @test typenames(env) == [:boolean, :date, :list, :money, :number, :text]
+        @test typenames(env) == [:boolean, :date, :money, :number, :text]
         for nome in (:pessoa, :imovel, :parte, :measure, :dinheiro, :texto, :data)
             @test typefor(env, nome) === nothing
         end

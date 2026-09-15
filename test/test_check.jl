@@ -176,25 +176,17 @@ end
         @test kcodes(d) == ["K3002"]
     end
 
-    @testset "a dica de um campo `list` não manda o autor para `list[]` (D-033)" begin
-        # `list[]` é uma lista **de listas**: seguir a sugestão renderia um `K3010` por
-        # elemento. O tipo `list` do núcleo não é alcançável pelo plano de dados, e o que
-        # o autor quer é a cardinalidade sobre o tipo do elemento.
-        m = load_string(ENVP, """
-        kanon 1
-
-        data
-          items : list
-
-        text
-
-        : b
-        Com [{items}].
-        """; name = "l.kanon")
-        x = only([d for d in check(m, Dict("items" => ["a", "b"]))])
-        @test x.code == "K3002"
-        @test occursin("items : text[]", x.hint)
-        @test !occursin("items : list[]", x.hint)
+    @testset "um campo `list` nem chega aqui: é recusado na análise (D-033, D-071)" begin
+        # Até a D-071 a dica daqui existia para não mandar o autor a `list[]`, uma lista de
+        # listas. Agora `x : list` não carrega, e o `check` só vê cardinalidades.
+        e = try
+            load_string(ENVP, "kanon 1\n\ndata\n  items : list\n\ntext\n\n: b\nCom [{items}].\n";
+                        name = "l.kanon")
+        catch err
+            err
+        end
+        @test e isa KanonReferenceError
+        @test only(e.diagnostics).code == "K2009"
     end
 
     @testset "a contagem exata" begin

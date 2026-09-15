@@ -398,12 +398,15 @@ end
 
     @testset "a sugestão de um tipo também sai na língua do arquivo" begin
         # O inverso do mesmo cuidado: `written_typename`. Sugerir `text[]` a quem escreve
-        # em português seria a D-027 ao contrário.
-        m = load_string(ENV_PT, "kanon 1 pt\n\ndados\n  itens : lista\n\ntexto\n\n: a\nCom [{itens}].\n";
-                        name = "pt.kanon")
-        x = only([d for d in check(m, Dict("itens" => ["a", "b"]))])
-        @test x.code == "K3002"
+        # em português seria a D-027 ao contrário. E `lista` é recusado na análise, com o
+        # nome que o autor escreveu (D-071).
+        a = Kanon.load_source(ENV_PT, "kanon 1 pt\n\ndados\n  itens : lista\n\ntexto\n\n: a\nCom [{itens}].\n";
+                              name = "pt.kanon")
+        x = only(a.diagnostics)
+        @test x.code == "K2009"
+        @test occursin("do tipo `lista`, que não se declara", x.message)
         @test occursin("itens : texto[]", x.hint)
+        @test !(:lista in typenames(ENV_PT))
         @test Kanon.written_typename(ENV_PT, :text) === :texto
         @test Kanon.written_typename(Environment(), :text) === :text
     end

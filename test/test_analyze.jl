@@ -109,6 +109,25 @@ modelo(corpo) = CONTRATO * corpo * "\n"
         @test rp.nullable == false
     end
 
+    @testset "`list` não se declara: a coleção é a cardinalidade (D-071)" begin
+        # Declarável e inalcançável desde a F2: com uma lista de verdade, `x : list`
+        # violava a cardinalidade, e nenhum dos quinze modelos reais o declarou (D-033).
+        src = "kanon 1\n\ndata\n  items : list\n\ntext\n\n: a\nWith [{items}].\n"
+        a = Kanon.load_source(Environment(), src; name = "l.kanon")
+        d = only(a.diagnostics)
+        @test d.code == "K2009"
+        @test occursin("`items` é declarado do tipo `list`, que não se declara", d.message)
+        @test occursin("`items : text[]`", d.hint)
+        # dito uma vez, na declaração, e não de novo em cada uso
+        src2 = "kanon 1\n\ndata\n  items : list !\n\ntext\n\n: a\nWith {items} and {items:count}.\n"
+        @test [x.code for x in Kanon.load_source(Environment(), src2; name = "l.kanon").diagnostics] == ["K2009"]
+        # e o nome não é oferecido entre os tipos, nem sugerido para um erro de digitação
+        src3 = "kanon 1\n\ndata\n  items : lst\n\ntext\n\n: a\nWith [{items}].\n"
+        d3 = only(Kanon.load_source(Environment(), src3; name = "l.kanon").diagnostics)
+        @test d3.code == "K2005"
+        @test !occursin("list", d3.hint)
+    end
+
     @testset "today é constante de data, não campo" begin
         t, a = anl2(modelo("Aos {today}."))
         rp = resolved(a, first_interp(t))
@@ -312,9 +331,11 @@ end
 
     @testset "um campo de lista é formatado como lista, não como o tipo do item" begin
         @test isempty(anl(modelo("{witnesses:count}")).diagnostics)
-        a = anl(modelo("{witnesses:formal}"))      # `formal` existe em `person`, não em `list`
+        a = anl(modelo("{witnesses:formal}"))      # `formal` existe em `person`, não na coleção
         @test [d.code for d in a.diagnostics] == ["K2020"]
-        @test occursin("list", a.diagnostics[1].message)
+        # a coleção não tem nome de tipo que o autor possa escrever (D-071)
+        @test occursin("não existe para uma coleção", a.diagnostics[1].message)
+        @test occursin("Formatadores de uma coleção: count", a.diagnostics[1].hint)
         # e o mesmo formatador vale no campo escalar do mesmo tipo
         @test isempty(anl(modelo("{seller:formal}")).diagnostics)
     end

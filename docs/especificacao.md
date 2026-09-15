@@ -256,7 +256,6 @@ Em Julia, cada componente é um método de uma função genérica do núcleo
 | `money` | `Money` (`Rational{Int128}` + moeda) | `symbol`, `code`, `plain` |
 | `date` | `Dates.Date` | `iso`, `numeric` |
 | `boolean` | `Bool` | — |
-| `list` | vetor homogêneo | `count` |
 
 Nenhum deles conhece idioma. `money:symbol` usa o símbolo declarado no ambiente, não
 uma convenção nacional embutida; `date:numeric` emite conforme o padrão de data do
@@ -266,15 +265,18 @@ substitui por `0,42` e `1.200`. Um tipo composto que formate números (como `mea
 obtém os separadores do contexto, nunca os embute. Por extenso, ordinal, mês por nome e junção de
 lista com conjunção são **da camada de idioma** — o núcleo não os tem.
 
-O formatador padrão de `list` junta os elementos formatados por `", "`. É a única
-convenção tipográfica no núcleo, está declarada aqui como tal, e é substituível pela
-camada de idioma.
+**A coleção não é um tipo desta tabela.** Um campo com cardinalidade de lista — `x :
+text[]`, `x : person[1..]` — tem o comportamento de coleção: formatador padrão que junta
+os elementos formatados por `", "`, o formatador `count` e o atributo `empty`. Esse `", "`
+é a única convenção tipográfica no núcleo, está declarada aqui como tal, e é substituível
+pela camada de idioma.
 
-> **Questão aberta (D-033, F10).** O tipo `list` **não é declarável no plano de dados**:
-> um campo `x : list` com uma lista de verdade viola a cardinalidade da §2.1. A forma que
-> funciona é a cardinalidade sobre o tipo do elemento — `x : text[]` —, que faz tudo o que
-> `list` promete e ainda diz de que são os elementos. A decisão entre remover o tipo
-> (versão maior) e torná-lo alcançável está aberta até o fim do portão da 1.0.
+**[decidido ao fim do portão — D-071]** O nome `list` **não se declara**, e não está entre
+os tipos que o ambiente oferece: `x : list` é erro de referência (`K2009`), com a
+cardinalidade na dica. Até aqui ele era declarável e inalcançável ao mesmo tempo (D-033) —
+`x : list` com uma lista de verdade violava a cardinalidade da §2.1 —, e a decisão esperava
+evidência: nenhum dos quinze modelos reais do portão o declarou. A cardinalidade diz
+"vários" e diz também vários de quê, que é mais do que `list` dizia.
 
 ### 3.4 Coerção
 
