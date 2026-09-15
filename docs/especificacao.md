@@ -921,6 +921,11 @@ comando ao `using` que um programa escreveria; um pragma no arquivo que nomeasse
 a carregar seria dado não confiável escolhendo o que o motor executa, e a §11 o proíbe.
 Camada que não esteja no ambiente é erro de **uso** (código 3).
 
+**[acrescentado ao escrever o modelo real nº 14 — D-068]** O pacote de um idioma se carrega
+pela mesma opção, quando nenhuma camada de domínio o traz:
+`kanon render atestado.kanon dados.json --locale pt --domain Extenso`. `--locale` com um
+idioma que nenhum pacote carregado define é erro de uso, e a mensagem diz o que digitar.
+
 Códigos de saída: `0` sucesso; `1` erro de contrato (dados); `2` erro de modelo
 (sintaxe ou referência); `3` erro de uso da CLI; `4` limite de recurso excedido.
 `kanon preview` sai com `0` e escreve o aviso no *stderr* mesmo com campos faltando —

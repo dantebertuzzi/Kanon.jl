@@ -219,6 +219,16 @@ end
         @test cli("check", MODELO_CLI, "--domain").codigo == Kanon.EXIT_USAGE
     end
 
+    @testset "idioma sem camada é erro de uso, e diz o que digitar (D-068)" begin
+        # "carregue o pacote" é a forma de quem está dentro de Julia; na linha de comando
+        # o pacote do idioma se carrega com `--domain`, como qualquer camada.
+        r = cli("check", MODELO_CLI, "--locale", "zz")
+        @test r.codigo == Kanon.EXIT_USAGE
+        @test occursin("o idioma `zz` não tem camada carregada", r.err)
+        @test occursin("--locale zz --domain NOME", r.err)
+        @test !occursin("Stacktrace", r.err)
+    end
+
     @testset "um módulo sem `configure!` carrega e não muda nada" begin
         # `Dates` é um módulo Julia que não é camada de Kanon: a §5 diz que o construtor
         # chama `configure!` de quem o define, e passa adiante quem não o define.

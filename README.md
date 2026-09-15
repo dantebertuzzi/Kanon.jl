@@ -143,7 +143,9 @@ kanon ask      template.kanon [data.json]  # asks for what is missing, one at a 
 ```
 
 Domain and language layers are loaded by the operator, never by the template:
-`--locale pt --domain KanonLegal`. `ask` checks every answer as it is typed, and writes
+`--locale pt --domain KanonLegal`, or `--locale pt --domain Extenso` for a Portuguese
+template with no domain layer. `ask` checks every answer as it is typed — a number written
+the way the document prints it, like `1.320`, is refused rather than guessed — and writes
 the data back in the shape it came in — JSON in, JSON out.
 
 `preview` is the only command that produces incomplete output, and it is always visibly

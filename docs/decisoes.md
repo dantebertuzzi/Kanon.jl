@@ -2317,3 +2317,93 @@ de uma linha se procura **no arquivo** do documento, como `at` já fazia.
 **O método.** A suíte do servidor usava um domínio de mentira para ficar independente das
 camadas, e por isso nunca teve um processo com `Extenso` carregado. Independência da suíte
 e realismo do processo são coisas diferentes, e a segunda é a que o redator tem.
+
+---
+
+## D-068 — O idioma sem camada de domínio chega à linha de comando
+
+*2026-09-14 · aceita · surgida ao escrever o modelo real nº 14*
+
+**A observação.** O atestado de capacidade técnica é um modelo `pt` sem camada de domínio,
+e foi o primeiro deles levado ao `bin/kanon`. Com o `Extenso` instalado no ambiente,
+`kanon ask atestado.kanon contrato.json --locale pt` saiu com *"o idioma `pt` não tem
+camada carregada. Carregue o pacote que define `Kanon.configure_locale!(b, ::Val{:pt})`"*
+— uma instrução para quem está dentro de Julia, e nada que o operador pudesse digitar.
+O `Extenso` só chegava à linha de comando como dependência de uma camada de domínio, e o
+certificado nº 4 e o edital nº 6 nunca tinham passado por ela.
+
+O contorno óbvio, `--domain Extenso`, saiu com outro erro, e esse mentia: *"o tipo `text`
+é registrado por `kanon` e por `Extenso`"*. O construtor do ambiente chamava
+`getfield(m, :configure!)` sempre que `isdefined(m, :configure!)`, e `isdefined` enxerga
+o que o módulo **importou**: o `Extenso` faz `using Kanon`, que exporta `configure!`, e o
+construtor rodava o registro do núcleo uma segunda vez, em nome da camada.
+
+**Por que passou.** As suítes do certificado e do edital constroem
+`Environment(locale = :pt)` num processo que já fez `using Extenso`. E toda camada de
+domínio do acervo define o seu `configure!`, então nenhuma chegou ao ramo do importado.
+
+**Decisão.**
+
+1. O `--domain` carrega também o pacote de idioma: `--locale pt --domain Extenso`. Ele
+   já era, pela D-058, o equivalente de linha de comando ao `using`, e um `using Extenso`
+   é o que o programa em Julia escreve. A ajuda diz as duas formas.
+2. O construtor chama o `configure!` **do próprio módulo**, e passa adiante o módulo que
+   só importou o do núcleo — que é o que a §5 sempre disse.
+3. `--locale` com um idioma que nenhum pacote carregado define é erro de **uso**, antes de
+   construir o ambiente, e a mensagem diz o que digitar: `--locale pt --domain NOME`. A
+   dica do `K1006` diz as duas formas, como a do `K2005` desde a D-058.
+
+**Alternativas.** (a) `--locale pt` carregar o `Extenso` sozinho: o núcleo teria de saber
+que o pacote de `pt` se chama `Extenso`, e a invariante 3 proíbe. (b) Descobrir o pacote
+varrendo as dependências do ambiente ativo: carregar o que o operador não pediu, pela
+mesma razão por que o modelo não pode pedir (invariante 4). (c) Uma opção nova, só para
+idioma: duas opções para o mesmo `using`, com a diferença de nome sustentando uma
+distinção que o construtor não faz — ele recebe módulos. (d) `--domain` para o pacote de
+idioma (escolhida). O nome da opção é o preço: `domain` diz menos do que ela faz.
+
+---
+
+## D-069 — O `ask` recusa o número escrito na forma do documento
+
+*2026-09-14 · aceita · surgida ao escrever o modelo real nº 14*
+
+**A observação.** No balcão do atestado, o fiscal digitou os quantitativos como o
+documento os escreve:
+
+| Resposta | O que acontecia |
+|---|---|
+| `1.320` (metros de drenagem) | o `ask` lia `1.32`, o `check` não tinha o que objetar, e o atestado dizia **`1,32 m de rede de drenagem pluvial`** — sem aviso nenhum |
+| `12.480,50` (m² de pavimentação) | recusado com *"o valor recebido não serve — esperava um numero"*, sem dizer a forma a escrever |
+
+A pergunta dizia "ponto decimal, sem separador de milhar" desde a D-061. Mas num idioma em
+que o ponto separa os milhares, `1.320` é um número válido **nas duas formas**, e a
+resposta ambígua passava. É o defeito mais caro da lista do portão: um atestado de
+capacidade técnica prova a experiência da empresa numa licitação pelos quantitativos, e
+este reduzia mil trezentos e vinte metros a pouco mais de um.
+
+**Por que passou.** A suíte do `ask` é em inglês canônico, sem idioma, onde não há
+separador de milhar e `1.320` só tem uma leitura. A dívida estava na tabela, com o
+gatilho "o primeiro modelo com `numero` preenchido pelo `ask`".
+
+**Decisão.**
+
+1. Num ambiente cujo separador de milhar é o ponto, a resposta com a forma de um número
+   de **um** grupo — `1.320`, `12.480`, `-1.320`, sem zero à esquerda — é **recusada**, e
+   a pergunta se repete com as duas leituras escritas: *"Escreva `1320` se é o número
+   inteiro, ou `1.32` se é decimal."*
+2. A resposta que só é número na forma do documento (`12.480,50`, `87,25`, `1.234.567`)
+   é recusada com a forma pronta: *"a resposta se escreve com ponto decimal e sem separador de
+   milhar: `12480.50`."*
+3. O `check` recusa um número vindo como cadeia com a forma, como já fazia com a data:
+   *"o número se escreve com ponto decimal e sem separador de milhar na entrada."*
+
+**Alternativas.** (a) Aceitar a forma do documento no `ask`: é um segundo formato de
+entrada — o que o `ask` recusa para `dinheiro` —, e a ambiguidade de `1.320` continuaria
+sem resposta, só trocada de lado. (b) Mudar a pergunta: ela já dizia a forma, e o fiscal
+digitou como o documento escreve mesmo assim. (c) Recusar e dizer as duas leituras
+(escolhida): a pergunta a mais custa uma linha, e o documento errado custa a licitação.
+
+**O que não mudou.** O arquivo `chave = valor` escrito à mão tem a mesma ambiguidade —
+`drenagem = 1.320` é lido `1.32` — e o JSON não, porque lá o número é da gramática do
+JSON. Nenhum modelo chegou a um arquivo de dados digitado com número agrupado, e fica na
+tabela de dívidas com esse gatilho.

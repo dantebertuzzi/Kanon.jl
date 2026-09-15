@@ -48,8 +48,12 @@ com camada se testa pelo `bin/kanon`, num processo à parte (D-059, D-060).
     kanon outline  modelo.kanon
     kanon ask      modelo.kanon [dados] [-o dados.json]
 
-Com camada de domínio: `--locale pt --domain KanonLegal`. O `ask` pergunta todo campo
-escalar que falta, confere cada resposta pelo `check`, e emite os dados na forma em que
-vieram — JSON se a entrada era JSON ou se `-o` termina em `.json` (D-061).
+Com camada de domínio: `--locale pt --domain KanonLegal`. Em português sem camada de
+domínio, o pacote do idioma se carrega do mesmo jeito: `--locale pt --domain Extenso`
+(D-068). O `ask` pergunta todo campo escalar que falta, confere cada resposta pelo
+`check`, e emite os dados na forma em que vieram — JSON se a entrada era JSON ou se `-o`
+termina em `.json` (D-061). Um número escrito na forma do documento é recusado com a forma
+da resposta, e o ambíguo — `1.320`, num idioma em que o ponto separa milhares — com as
+duas leituras (D-069).
 
 Códigos de saída: `0` sucesso, `1` contrato, `2` modelo, `3` uso, `4` recurso.

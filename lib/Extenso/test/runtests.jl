@@ -1,5 +1,6 @@
 using Test
 using Tables
+using JSON3   # só a suíte: o atestado lê o contrato de um JSON
 using Dates
 using Kanon
 using Extenso
@@ -13,3 +14,4 @@ include("test_flexao.jl")
 include("test_camada.jl")
 include("test_certificado.jl")
 include("test_edital.jl")
+include("test_atestado.jl")

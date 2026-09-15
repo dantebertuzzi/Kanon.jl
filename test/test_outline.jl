@@ -190,6 +190,26 @@ text
         @test occursin("true ou false", r.err)
     end
 
+    @testset "o número na forma do documento é recusado pelo ask (D-069)" begin
+        # Num idioma em que o ponto separa os milhares, `1.320` tem duas leituras: o
+        # documento escreve assim mil trezentos e vinte, e a resposta lia `1.32`. O
+        # atestado nº 14 saía com `1,32 m` de drenagem, sem aviso nenhum.
+        env = Environment(locale = :xx)
+        f = only(load_string(env, "kanon 1 xx\n\ndados\n  n : number !\n\ntexto\n\n: b\n{n}.\n";
+                             name = "n.kanon").template.data.fields)
+        @test occursin("`1.320` é ambíguo", Kanon.recusa_da_forma(env, f, "1.320"))
+        @test occursin("`12480.50`", Kanon.recusa_da_forma(env, f, "12.480,50"))
+        @test Kanon.recusa_da_forma(env, f, "1320") === nothing
+        @test Kanon.recusa_da_forma(env, f, "1.32") === nothing
+        # sem idioma não há separador de milhar, e `1.320` só tem uma leitura
+        neutro = Environment()
+        @test Kanon.recusa_da_forma(neutro, f, "1.320") === nothing
+        @test Kanon.recusa_da_forma(neutro, f, "12,5") === nothing   # fica para o check
+        # e o check, que é quem recusa `12,5` no ambiente neutro, diz a forma
+        r = ask("Ana\n12,5\n40\ntrue\n")
+        @test occursin("ponto decimal e sem separador de milhar na entrada", r.err)
+    end
+
     @testset "sem entrada, o ask termina, e não pergunta para sempre" begin
         r = ask("Ana\nquarenta\n")
         @test r.codigo == Kanon.EXIT_CONTRACT
