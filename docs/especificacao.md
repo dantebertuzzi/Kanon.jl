@@ -379,6 +379,9 @@ ref_bloco  = "::" , ident ;
 - `{::bloco}` — remissão a bloco numerado (seção 6).
 - `{{` e `}}` produzem `{` e `}` literais.
 
+O valor entra no texto como veio; o que acontece na fronteira entre ele e a prosa está na
+§5.4 — um terminador de frase duplicado ali vira um só.
+
 **Um formatador por interpolação na versão 1** (questão 15.7, decisão D-007). A sintaxe
 `{v:a:b}` e a sintaxe `{v:round(2)}` são **reservadas**: o lexer as reconhece e emite
 erro "encadeamento de formatadores não existe na versão 1", em vez de aceitá-las com
@@ -502,7 +505,9 @@ Chame **separador** um de `, ; :` e **terminador** um de `. ! ?`.
 - **R5 — separador no início.** Separador que ficou como primeiro caractere não-branco
   de uma linha por causa da emenda é removido, e aplica-se R1.
 
-**Terminador nunca é removido**, por nenhuma regra.
+**Terminador nunca é removido** por nenhuma regra de reparo (R1–R5): a frase nunca fica
+sem o fim que o autor lhe deu. A costura da §5.5 não é regra de reparo e não contradiz
+isto — ela funde dois terminadores **iguais** em um, e a frase continua terminando.
 
 ### 5.3 Os casos normativos
 
@@ -526,7 +531,41 @@ Todos viram arquivo em `test/golden/emenda/` **antes** da implementação (risco
 
 Os casos 11 e 12 são os que fixam a regra de aninhamento e devem ser escritos primeiro.
 
-### 5.4 Gancho de idioma
+### 5.4 A costura da interpolação **[D-075]**
+
+Um problema vizinho do reparo, e que não é dele: o terminador que **o valor traz**
+encontrando o terminador que **o autor escreveu**.
+
+```
+A parte é {cliente}.        cliente = "Usina Bom Jesus S.A."   ⟶   A parte é Usina Bom Jesus S.A.
+```
+
+Sai **um** ponto, e não dois. A ortografia das escritas latinas diz que o ponto da
+abreviatura e o ponto da frase são o mesmo, e nenhuma delas escreve `S.A..`.
+
+Não é reparo de emenda por duas razões, e as duas importam: acontece **sem elisão
+nenhuma** — não há emenda onde aplicar —, e o reparo é local à emenda por decisão
+(D-014). É uma regra da **costura entre o valor e a prosa**, e vale onde os três valem ao
+mesmo tempo:
+
+1. o último caractere emitido veio de um **valor** interpolado;
+2. o primeiro caractere da prosa seguinte é **o mesmo** terminador (`.`, `!` ou `?`);
+3. estão **colados**, sem espaço entre eles.
+
+Funde **um** caractere. O que fica de fora, de propósito:
+
+- **separadores não se fundem.** `{a},` com `a` terminando em vírgula sai com as duas: a
+  vírgula dupla é erro visível de quem escreveu, e não uma regra de ortografia.
+- **terminadores diferentes ficam.** `A {x}?` com `x = "Ltda."` sai `Ltda.?`, que é a
+  forma correta de perguntar sobre uma abreviatura.
+- **prosa com prosa não se toca** (D-014), e **valor com valor** também não (D-028):
+  `Fim..` escrito pelo autor e `Ltda..` vindo do dado saem como vieram.
+
+O grupo elidido no meio não interrompe a costura — ele não emitiu nada —, e é isso que
+faz `[ em face de {reu}][, nos autos do processo nº {processo}].` terminar em um ponto só
+quando o processo falta.
+
+### 5.5 Gancho de idioma
 
 O núcleo repara pontuação latina. Uma camada de idioma pode registrar
 `repair_hook(idioma)` para (a) recapitalizar a primeira palavra de uma frase cujo

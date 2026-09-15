@@ -152,33 +152,70 @@ end
 
 # --- travessia ---------------------------------------------------------------
 
+"Os terminadores de frase da §5.2. A costura da §5.5 só funde dois **iguais**."
+const TERMINATORS = ('.', '!', '?')
+
+"""
+A **costura da interpolação** (§5.5, D-075): o terminador que o valor trouxe encontrando o
+terminador que o autor escreveu.
+
+`{reu}` valendo `Frutas do Vale Exportadora Ltda.` no fim da frase saía `Ltda..` — a
+ortografia diz que o ponto da abreviatura e o ponto da frase são um só, e nenhuma
+ortografia de escrita latina escreve dois. Não é reparo de emenda: acontece sem elisão
+nenhuma, e o reparo é local à emenda por decisão (D-014).
+
+Funde **um** caractere, e só quando os três valem ao mesmo tempo: o último caractere veio
+de um **valor**, o primeiro da prosa que segue é **o mesmo** terminador, e estão colados.
+Dois separadores na mesma costura — `{a},` com `a` terminando em vírgula — ficam como
+estão: vírgula dupla é erro visível de quem escreveu, e não uma regra de ortografia.
+"""
+function seam_collapse(out::Vector{Char}, from_value::Bool, t::AbstractString)
+    (from_value && !isempty(out) && !isempty(t)) || return t
+    (out[end] in TERMINATORS && first(t) == out[end]) || return t
+    return SubString(t, nextind(t, firstindex(t)))
+end
+
 """
 Emite os nós de um parágrafo num buffer, registrando uma **emenda** na posição de cada
 grupo elidido.
 
 A emenda é a posição no texto resultante, e é toda a informação que o reparo recebe: ele
 nunca varre o parágrafo (D-014).
+
+`from_value` acompanha a costura da §5.5: ele diz se o último caractere do buffer veio de
+um valor. Um grupo elidido não o muda, porque não emitiu nada — é o que faz
+`{reu}[, nos autos do processo nº {processo}].` funcionar quando o processo falta.
 """
-function emit_nodes!(ctx::RenderCtx, out::Vector{Char}, seams::Vector{Int}, nodes)
+function emit_nodes!(ctx::RenderCtx, out::Vector{Char}, seams::Vector{Int}, nodes,
+                     from_value::Base.RefValue{Bool} = Ref(false))
     for n in nodes
         spend!(ctx)
         if n isa TextLit
-            append!(out, n.value)
+            t = seam_collapse(out, from_value[], n.value)
+            append!(out, t)
+            isempty(t) || (from_value[] = false)
         elseif n isa Interp
             v = path_value(ctx, n)
-            v === nothing || append!(out, interp_text(ctx, n, v, at_start(out)))
+            if v !== nothing
+                t = interp_text(ctx, n, v, at_start(out))
+                append!(out, t)
+                isempty(t) || (from_value[] = true)
+            end
         elseif n isa FlexPoint
             # O núcleo não sabe flexionar. Marca não registrada volta a ser prosa
             # literal, que é o que ela era antes de a camada de idioma existir.
-            append!(out, hasmark(model(ctx).env, n.mark) ? inflect_text(ctx, n) :
-                         n.word * n.mark)
+            t = hasmark(model(ctx).env, n.mark) ? inflect_text(ctx, n) : n.word * n.mark
+            append!(out, t)
+            isempty(t) || (from_value[] = false)
         elseif n isa BlockRef
-            append!(out, blockref_text(ctx, n))
+            t = blockref_text(ctx, n)
+            append!(out, t)
+            isempty(t) || (from_value[] = false)
         elseif n isa Group
             if elides(ctx, n)
                 push!(seams, length(out) + 1)
             else
-                emit_nodes!(ctx, out, seams, n.children)
+                emit_nodes!(ctx, out, seams, n.children, from_value)
             end
         end
     end

@@ -2628,3 +2628,66 @@ estabelecem. A tabela de escapes já estava certa; o texto da dica tinha ficado 
 D-004, e nenhum teste afirma sobre a redação de mensagem — de propósito (o teste afirma o
 código). O que pega este tipo de defeito é ler a mensagem como o redator a lê, e foi ao
 escrever a recusa da série que ela apareceu na tela.
+
+---
+
+## D-075 — O ponto que o valor traz e o ponto do autor viram um
+
+*2026-09-15 · aceita · quarta decisão da seção 1a, com o portão fechado*
+
+**A observação, vista duas vezes.** `{cliente}` valendo `Usina Bom Jesus S.A.` no fim da
+frase sai `S.A..`. O certificado nº 8 topou nisso e reescreveu a frase; a procuração nº 12
+mostrou o caso que **não se contorna reescrevendo**, porque o fim da frase depende da
+elisão: em `[ em face de {reu}][, nos autos do processo nº {processo}].` a frase termina no
+réu — e o réu é uma empresa, cujo nome termina em `Ltda.` — apenas quando o processo falta.
+O autor só escapava pondo prosa fixa depois do último grupo, e foi o que os dois fizeram.
+
+**Por que não era caso de reparo de emenda.** Duas razões, e as duas importam:
+
+1. Acontece **sem elisão nenhuma**. `A parte é {cliente}.` já sai com dois pontos, e ali não
+   há emenda onde aplicar regra alguma.
+2. O reparo é **local à emenda** por decisão (D-014). Estendê-lo para varrer a frase atrás
+   de pontuação duplicada seria o reparo global que aquela decisão recusou — o motor
+   editando pontuação que ele não removeu.
+
+**Decisão.** Existe uma **costura da interpolação** (§5.4), distinta da emenda: quando o
+último caractere emitido veio de um **valor**, e o primeiro da prosa seguinte é **o mesmo**
+terminador (`.`, `!` ou `?`), colados, sai um só. Funde um caractere, e nada além disso:
+
+- separador não funde — `{a},` com `a` terminando em vírgula sai com as duas, porque
+  vírgula dupla é erro visível de quem escreveu, e não regra de ortografia;
+- terminador diferente não funde — `A {x}?` com `x = "Ltda."` sai `Ltda.?`, que é a forma
+  correta de perguntar sobre uma abreviatura;
+- prosa com prosa não se toca (D-014) e valor com valor não se toca (D-028): `Fim..`
+  escrito pelo autor e `Ltda..` vindo do dado saem como vieram.
+
+O grupo elidido no meio não interrompe a costura, porque não emitiu nada — e é isso que
+resolve o caso da procuração.
+
+**Por que isto não fere as invariantes que parecem feridas.**
+
+- *"Terminador nunca é removido"* (§5.2) é regra do **reparo**, e o que ela garante é que a
+  frase não fica sem fim. A costura funde dois terminadores iguais em um, e a frase continua
+  terminando — a garantia sai intacta. O texto da §5.2 passa a dizer isso.
+- *"O valor nunca altera a estrutura"* (D-028) continua valendo: o valor não passou a abrir
+  nem fechar construção nenhuma. O que mudou é um caractere de pontuação na fronteira, que
+  é onde as duas metades se encontram e nenhuma das duas manda sozinha.
+
+**Alternativas.** (a) Deixar como está e documentar: é o que valia até aqui, e o preço é o
+autor ter de pôr prosa fixa depois do último grupo — uma regra de escrita que existe por
+limitação do motor, e que o redator descobre num documento assinado. (b) Normalizar o dado,
+tirando o ponto final do valor na entrada: `Ltda.` é o nome da empresa, e o motor não edita
+dado. (c) Um formatador que tire o ponto — `{cliente:sem_ponto}` —, que teria de existir em
+todo tipo cujo valor possa terminar em abreviatura, e que joga no redator uma decisão de
+ortografia. (d) Estender o reparo de emenda: contradiz a D-014 e não cobre o caso sem
+elisão. (e) A costura da interpolação (escolhida): uma regra nova, num lugar novo e
+nomeado, que não mexe no reparo.
+
+**O que isto custa em compatibilidade.** É versão maior pela definição operacional da §13 —
+um documento com essa forma muda de byte. **Nenhum golden do acervo mudou**, porque os dois
+modelos que tocaram no caso o contornaram. É a última janela em que essa correção é barata.
+
+**O que fica registrado como limite.** A regra supõe que `.` termina frase, que é a
+convenção das escritas latinas. Um idioma em que isso não valha precisaria de um gancho —
+hoje o de reparo (§5.5) só recebe as emendas da elisão. Nenhum documento pediu, e a decisão
+de estender o gancho espera um que peça.

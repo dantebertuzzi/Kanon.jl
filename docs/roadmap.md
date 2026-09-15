@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 15 de setembro de 2026 (o portão fechado; três das cinco decisões da seção 1a feitas). Escrito para retomar sem depender de memória.
+> Estado em 15 de setembro de 2026 (o portão fechado; quatro das cinco decisões da seção 1a feitas). Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -22,7 +22,7 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.679 testes** ao todo — 1.641 no núcleo (~50 s com Aqua), 330 em `Extenso`,
+Suíte: **2.693 testes** ao todo — 1.655 no núcleo (~50 s com Aqua), 330 em `Extenso`,
 308 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
@@ -67,10 +67,10 @@ para um pandoc, ou o teste avisa e fica marcado como pulado.
 1. **A seção 1a**, uma decisão de cada vez, cada uma registrada em `decisoes.md`. Com o
    portão fechado ela deixa de ser lista e vira o trabalho: é o que separa o acervo de uma
    sintaxe congelada. Feitas: o tipo `list` (**D-071**), a marca que nomeia o sujeito
-   (**D-072**) e a série de trechos opcionais (**D-073**) — as duas últimas reservadas com
-   erro, e o reparo de emenda intocado. **Restam duas**: o **ponto final duplicado**, que
-   muda saída de documento publicado e por isso vem antes, e os **apelidos de atributo e
-   formatador**, que só acrescentam e podem ser os últimos.
+   (**D-072**), a série de trechos opcionais (**D-073**) — as duas reservadas com erro, e o
+   reparo de emenda intocado — e o ponto final duplicado (**D-075**), resolvido por uma
+   **costura da interpolação** que não é reparo de emenda. **Resta uma**: os **apelidos de
+   idioma para atributos e formatadores**, que só acrescentam.
 2. Só então a `0.1.0` e o registro no General (item 2), que é decisão sua.
 
 Isto não foi burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada
@@ -189,19 +189,21 @@ O que procurar no que falta:
 O portão existe para que estas perguntas sejam respondidas **antes** da 1.0: depois dela,
 cada resposta muda a saída de documento publicado ou a gramática, e vira versão maior.
 Com o portão fechado, **são o próximo trabalho**: todas precisam de resposta antes do
-congelamento. Três saíram em 15 de setembro de 2026 — o tipo `list` (D-071), que a
-evidência dos quinze modelos decidiu, e as duas de sintaxe reservada (D-072 e D-073),
-decididas juntas porque pediam a mesma coisa. **Restam duas.**
+congelamento. Quatro saíram em 15 de setembro de 2026 — o tipo `list` (D-071), que a
+evidência dos quinze modelos decidiu; as duas de sintaxe reservada (D-072 e D-073),
+decididas juntas porque pediam a mesma coisa; e o ponto final duplicado (D-075). **Resta
+uma.**
 
 | Decisão | Por que agora | Tocada por |
 |---|---|---|
-| **O ponto final duplicado** — `{reu}` valendo `… Ltda.` no fim da frase sai `Ltda..` | o fim da frase depende da elisão, e o autor só escapa pondo prosa fixa depois do último grupo. Corrigir a emenda depois da 1.0 muda documento publicado | nº 8, nº 12 |
 | **Apelido de idioma para atributos e formatadores** — `quando x é precise`, `{nome:upper}` num modelo `pt` | aditivo, e por isso não bloqueia; mas o nome em português que entrar depois convive para sempre com o inglês | nº 8, nº 9, nº 10, nº 12 |
 
 **Decididas em 15 de setembro de 2026**, e fora da tabela: o tipo `list` (D-071); a marca
-que nomeia o sujeito, `procurador(a:advogado)`, **reservada** com o erro `K1216` (D-072); e
-a série de trechos opcionais, `[[, {b}][ e {c}]]`, **reservada** com o erro `K2015`, com o
-reparo de emenda intocado (D-073). As duas reservas custam um erro cada e compram a adição
+que nomeia o sujeito, `procurador(a:advogado)`, **reservada** com o erro `K1216` (D-072); a
+série de trechos opcionais, `[[, {b}][ e {c}]]`, **reservada** com o erro `K2015`, com o
+reparo de emenda intocado (D-073); e o ponto final duplicado, resolvido pela **costura da
+interpolação** da §5.4 — o terminador que o valor traz e o do autor viram um, e o reparo de
+emenda continua local à emenda (D-075). As duas reservas custam um erro cada e compram a adição
 aditiva: hoje a primeira seria prosa impressa no documento, e a segunda já era erro por
 outro nome.
 
@@ -819,7 +821,6 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | O orçamento não é configurável pela CLI | `cli.jl` | um documento legítimo estourar o padrão |
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
-| **Um valor que traz o próprio ponto final emenda mal no fim da frase** — `{cliente}` valendo `Usina … S.A.` fecha o parágrafo com `S.A..` | `elide.jl`, `render.jl` | **tocada pelos modelos nº 8 e nº 12**, e os dois a contornaram reescrevendo. A procuração mostra o que o nº 8 não mostrava: o fim da frase **depende da elisão** — `[ em face de {reu}][, nos autos do processo nº {processo}].` termina no réu (`Ltda.`) só quando o processo falta —, e o autor só escapa pondo prosa fixa depois do último grupo. É decisão para antes do congelamento: depois dele, mudar a emenda muda a saída de documento publicado. O reparo de emenda existe para a costura que a **elisão** abre, e estender-lhe a mão para o texto do valor é edição de prosa alheia — o motor não faz, e a decisão de fazer é de versão maior |
 | O arquivo `chave = valor` escrito à mão lê `drenagem = 1.320` como `1.32` | `cli.jl` | o `ask` recusa a resposta ambígua desde a D-069, e o arquivo digitado não passa por ele: `parse_data_value` não conhece o ambiente. O JSON não tem o problema, porque lá o número é da gramática do JSON. Gatilho: o primeiro modelo com dados digitados à mão em `chave = valor` com número agrupado |
 | Os formatadores de `texto` são `upper`, `lower` e `title` num modelo `pt`, e o de `pessoa` é `maiusculo` | `core_types.jl`, `KanonLegal` | a mesma dívida dos atributos, pela outra porta: a procuração escreveu `{nome:maiusculo}` dentro do bloco `<- outorgado` e levou `K2020`: ali `nome` é `texto`, cujo formatador é `upper`, e `maiusculo` é o de `pessoa` — duas palavras, em duas línguas, para a mesma coisa |
 | O escape do Markdown é o do CommonMark, e o leitor padrão do pandoc lê mais: `a)`, `(1)` e `iv.` no começo da linha abrem lista; `H~2~O` e `10^3^` são subscrito e sobrescrito no meio dela; `--` vira travessão e a aspa reta vira curva | `output.jl` | um valor com uma dessas formas chegar a um `.docx`. Registrado na D-070, conferido no pandoc 3.11: a reclamação nº 15 não tem nenhuma, e escapar `(` e `^` em todo Markdown encheria de barras o fonte de quem o lê no CommonMark |
@@ -865,7 +866,7 @@ décimo quinto passou por todas as portas do motor, e achou o documento errado d
 
 ### O que a implementação já mudou na especificação
 
-Cinquenta e seis decisões saíram de escrever o código e os documentos, e vinte e seis delas fecharam buracos
+Cinquenta e sete decisões saíram de escrever o código e os documentos, e vinte e seis delas fecharam buracos
 que nenhuma releitura teria encontrado — o texto era internamente coerente em todos os
 casos:
 
