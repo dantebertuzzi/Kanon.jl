@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="Kanon" width="220">
+</p>
+
 # Kanon
 
 [![CI](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/dantebertuzzi/Kanon.jl/actions/workflows/CI.yml)
