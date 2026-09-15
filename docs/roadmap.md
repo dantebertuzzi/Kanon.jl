@@ -44,35 +44,41 @@ tempo), `edital.kanon` (três níveis de numeração, e a primeira saída Typst)
 `verificacao.kanon` (um certificado por registro de um CSV de verdade, com as medições em
 colunas), `aula.kanon` (fragmento incluído em português), `servicos.kanon` (o contrato em
 minuta, pelo rascunho e pela CLI), `procuracao.kanon` (as partes de um JSON, o resto
-digitado no `kanon ask`, e a saída em Typst, pelo `bin/kanon` num processo novo) e
+digitado no `kanon ask`, e a saída em Typst, pelo `bin/kanon` num processo novo),
 `notificacao.kanon` (escrita no editor pelo `kanon-lsp`, com um fragmento que a procuração
 também inclui) e `atestado.kanon` (português sem camada de domínio pelo `bin/kanon`, com os
 quantitativos digitados no `kanon ask`). O portão para a 1.0 pede quinze.
 
-**Onde está cada um.** Os doze primeiros estão na `main` — o nº 12 pelo PR #5. O nº 13
-foi mergeado pelo PR #6, mas o #6 estava empilhado sobre o #5 e entrou no branch
-`modelo-real-12`, não na `main`: chega a ela pelo PR do branch `modelo-real-13`. PR
-empilhado não se reaponta sozinho quando o de baixo é mergeado; a partir daqui, cada
-modelo abre o PR contra a `main` depois que o anterior entrou. O nº 14 está no branch
-`modelo-real-14`, que parte do `modelo-real-13`; o PR dele vai à `main` depois do #7.
+**Onde está cada um.** Os catorze estão na `main`: o nº 13 pelo PR #7 e o nº 14 pelo
+PR #8, mergeados em 15 de setembro de 2026. O #6 tinha levado o nº 13 ao branch
+`modelo-real-12`, e não à `main`, porque estava empilhado sobre o #5 e PR empilhado não se
+reaponta sozinho quando o de baixo é mergeado. Por isso cada modelo abre o PR **contra a
+`main`**, depois que o anterior entrou.
 
-**Ao retomar (fim de 14 de setembro de 2026), nesta ordem:**
+**O CI da `main` ficou vermelho no Julia 1.10** depois desses merges, no teste do
+`kanon-lsp` em processo novo (nº 13). O teste lia o stderr por `read(pipeline(...),
+String)`, que volta quando o stdout fecha, sem esperar a cópia do stderr: no 1.10 as
+mensagens saíam **vazias** — as asserções `!occursin("Stacktrace", ...)` passavam sem ter
+lido nada — e o buffer reaproveitado recusava escrita. O teste passa a usar `run` com os
+dois fluxos em buffers, um por processo. Conferido no 1.10 e no 1.13, localmente.
 
-1. **Merge do PR #7** (`modelo-real-13` → `main`), pelo GitHub. Conferir com
-   `git fetch && git branch -r --contains 27a2777` que o nº 13 está na `origin/main`.
-2. **Abrir o PR do nº 14** — `modelo-real-14` enviado, com o commit `a5d119f` e esta
-   atualização — com base na **`main`**, e não em `modelo-real-13`.
-3. **Escrever o nº 15**, partindo de `modelo-real-14`. A recomendação: um documento que o
-   escritório entrega em **`.docx`**, pelo caminho que a ajuda da CLI documenta —
-   `kanon render … --to markdown | pandoc -o saida.docx`. É a última porta documentada
-   que nenhum modelo atravessou: nenhum teste passa pelo pandoc, e o Markdown do acervo
-   (`servicos.md`) foi conferido como texto, não como o `.docx` que o redator abre. Pela
-   lição dos nº 12 a nº 14, o teste roda o pandoc de verdade, num processo à parte (o
-   pandoc não está instalado nesta máquina; o CI também precisará dele).
-4. Com o nº 15, o portão fecha, e a seção 1a deixa de ser lista e vira decisão.
+**Ao retomar, nesta ordem:**
 
-Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada um
-o que falta vai cobrar alguma coisa — como os catorze primeiros cobraram. **Nenhuma
+1. **Merge do PR da correção do CI** (branch `ci-lsp-julia-110`, que traz também esta
+   atualização do roadmap), e conferir que o CI da `main` volta a verde nas seis
+   configurações.
+2. **Escrever o nº 15**, num branch `modelo-real-15` que parte da `main`. A recomendação:
+   um documento que o escritório entrega em **`.docx`**, pelo caminho que a ajuda da CLI
+   documenta — `kanon render … --to markdown | pandoc -o saida.docx`. É a última porta
+   documentada que nenhum modelo atravessou: nenhum teste passa pelo pandoc, e o Markdown
+   do acervo (`servicos.md`) foi conferido como texto, não como o `.docx` que o redator
+   abre. Pela lição dos nº 12 a nº 14, o teste roda o pandoc de verdade, num processo à
+   parte (o pandoc não está instalado nesta máquina; o CI também precisará dele). E todo
+   stderr capturado de processo filho passa por `run`, pela razão acima.
+3. Com o nº 15, o portão fecha, e a seção 1a deixa de ser lista e vira decisão.
+
+Isto não é burocracia. Uma linguagem de modelos é julgada por escrever modelos, e o
+que falta vai cobrar alguma coisa — como os catorze primeiros cobraram. **Nenhuma
 outra atividade tem a mesma taxa de descoberta por hora**, e os treze últimos mediram
 isso: escritos com o motor pronto e a suíte verde, produziram **trinta e cinco defeitos**,
 dois limites do idioma, um da gramática e as decisões que a seção 1a reúne para antes do

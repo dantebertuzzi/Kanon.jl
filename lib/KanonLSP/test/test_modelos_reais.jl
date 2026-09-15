@@ -227,9 +227,14 @@ end
             print(entrada, "Content-Length: ", ncodeunits(corpo), "\r\n\r\n", corpo)
         end
         seekstart(entrada)
-        erro = IOBuffer()
-        saida = read(pipeline(ignorestatus(`$julia $lancador --locale pt --domain KanonLegal`);
-                              stdin = entrada, stderr = erro), String)
+        # `run` com os dois fluxos em buffers, e não `read(pipeline(...), String)`: o `read`
+        # volta quando o stdout fecha, sem esperar a cópia do stderr. No Julia 1.10 o
+        # `mensagens` saía vazio — as duas asserções abaixo passavam sem ter lido nada —, e
+        # o `take!` fechava o buffer enquanto a cópia ainda escrevia nele.
+        fluxo, erro = IOBuffer(), IOBuffer()
+        run(pipeline(ignorestatus(`$julia $lancador --locale pt --domain KanonLegal`);
+                     stdin = entrada, stdout = fluxo, stderr = erro))
+        saida = String(take!(fluxo))
         mensagens = String(take!(erro))
         @test !occursin("não tem camada carregada", mensagens)
         @test !occursin("Stacktrace", mensagens)
@@ -237,10 +242,11 @@ end
         @test resposta(msgs, 1).result.serverInfo.name == "kanon-lsp"
         @test publicado(msgs, a.notificacao) == []          # e não oito `K2001`
 
+        erro_inventado = IOBuffer()
         r = run(pipeline(ignorestatus(`$julia $lancador --domain KanonInventado`);
-                         stdin = IOBuffer(), stderr = erro))
+                         stdin = IOBuffer(), stderr = erro_inventado))
         @test r.exitcode == 3
-        texto = String(take!(erro))
+        texto = String(take!(erro_inventado))
         @test occursin("não está disponível", texto)
         @test !occursin("Stacktrace", texto)
     end
