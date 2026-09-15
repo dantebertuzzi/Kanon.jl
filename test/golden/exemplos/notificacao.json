@@ -1,0 +1,23 @@
+{
+  "notificante": [
+    {"nome": "Marta Regina Soares", "genero": "f", "estado_civil": "casada", "cpf": "111.222.333-44", "endereco": "Rua do Sol, 45, Centro, Petrolina/PE"},
+    {"nome": "José Carlos Soares", "genero": "m", "estado_civil": "casado", "cpf": "555.666.777-88", "endereco": "Rua do Sol, 45, Centro, Petrolina/PE"}
+  ],
+  "notificado": {
+    "nome": "Frutas do Vale Exportadora Ltda.",
+    "genero": "f",
+    "documento": "12.345.678/0001-90",
+    "endereco": "Rodovia BR-428, km 12, Distrito Industrial, Petrolina/PE",
+    "empresa": true,
+    "representante": {"nome": "Rogério Amaral Nunes", "genero": "m", "estado_civil": "casado", "cpf": "222.333.444-55", "endereco": "Rua das Acácias, 90, Petrolina/PE"}
+  },
+  "advogado": {"nome": "Paulo Henrique Lins", "genero": "m", "estado_civil": "casado", "cpf": "999.888.777-66", "endereco": "Avenida Cardoso de Sá, 210, sala 3, Petrolina/PE"},
+  "oab": "12.345",
+  "email": "paulo_lins@lins.adv.br",
+  "contrato": "contrato de fornecimento de embalagens nº 88/2025",
+  "celebracao": "2025-11-03",
+  "valor": {"amount": "18750.00", "currency": "BRL"},
+  "vencimento": "2026-07-31",
+  "prazo": 10,
+  "conta": "conta corrente nº 45.210-7, agência 0321, do Banco do Brasil, de titularidade da primeira notificante"
+}

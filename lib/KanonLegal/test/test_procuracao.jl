@@ -79,7 +79,7 @@ desescapa_typst(s) = replace(s, r"\\(.)" => s"\1")
         @test r.out == read(exemplo_p("procuracao.json"), String)
         # a entrada era JSON, e a saída também: a `pessoa` sai como objeto
         @test !occursin("Dict{", r.out)
-        @test occursin("\"outorgado\": {", r.out)
+        @test occursin("\"advogado\": {", r.out)
     end
 
     @testset "o ask pergunta o opcional, e diz a forma da resposta (D-061)" begin
@@ -93,7 +93,11 @@ desescapa_typst(s) = replace(s, r"\\(.)" => s"\1")
         @test occursin("Enter mantém \"Petrolina\"", r.err)
         @test occursin("Enter mantém hoje", r.err)
         # o que já veio do cadastro não se pergunta
-        @test !occursin("outorgado —", r.err)
+        @test !occursin("advogado —", r.err)
+        # e o campo que veio do fragmento diz de que arquivo é a linha: `linha 17` sozinho
+        # mandava o redator à linha 17 da procuração, onde está outra coisa (D-064)
+        @test occursin("oab — texto, " * joinpath("fragmentos", "procurador.kanon") * ", linha 17",
+                       r.err)
         # e o processo, deixado em branco, não entra nos dados
         @test !occursin("\"processo\"", r.out)
     end

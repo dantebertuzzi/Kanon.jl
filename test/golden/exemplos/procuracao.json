@@ -1,4 +1,11 @@
 {
+  "advogado": {
+    "cpf": "999.888.777-66",
+    "endereco": "Avenida Cardoso de Sá, 210, sala 3, Petrolina/PE",
+    "estado_civil": "casado",
+    "genero": "m",
+    "nome": "Paulo Henrique Lins"
+  },
   "email": "paulo_lins@lins.adv.br",
   "especiais": [
     "receber citação",
@@ -10,13 +17,6 @@
   ],
   "finalidade": "propor reclamação trabalhista",
   "oab": "12.345",
-  "outorgado": {
-    "cpf": "999.888.777-66",
-    "endereco": "Avenida Cardoso de Sá, 210, sala 3, Petrolina/PE",
-    "estado_civil": "casado",
-    "genero": "m",
-    "nome": "Paulo Henrique Lins"
-  },
   "outorgante": [
     {
       "cpf": "111.222.333-44",

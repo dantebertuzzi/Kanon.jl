@@ -1,0 +1,61 @@
+kanon 1 pt
+
+# Notificação extrajudicial de cobrança — **modelo real nº 13** do portão da 1.0.
+#
+# Escolhida pela porta que nenhum documento real tinha atravessado: o **servidor de
+# linguagem**. Este modelo foi escrito no editor, com o `kanon-lsp --locale pt --domain
+# KanonLegal` iniciado como um editor o inicia. E pelo que a inclusão existe para fazer e
+# nunca tinha feito: a qualificação do advogado mora em `fragmentos/procurador.kanon`, que
+# a procuração nº 12 também inclui.
+#
+# Três coisas só aparecem aqui:
+#
+#   1. **Um fragmento com dois hospedeiros**, os dois abertos no editor ao mesmo tempo.
+#   2. **Uma `parte` empresa**, feminina, com o representante num grupo opcional — a
+#      flexão pelo gênero da parte, e não da pessoa, em `NOTIFICADO(A)` e `constituído(a)`.
+#   3. **Um valor por extenso com centenas depois do milhar**, que nenhum modelo em
+#      português sem erro tinha: `dezoito mil setecentos e cinquenta reais`.
+#
+# Cobrou cinco coisas, e quatro são do servidor (D-063 a D-067, em `decisoes.md`). A mais
+# cara: corrigido o servidor que morria ao iniciar, ele subia e sublinhava em vermelho,
+# campo por campo, este modelo — que o motor aceita limpo.
+
+dados
+  notificante : pessoa[1..] !
+  notificado  : parte       !
+  contrato    : texto       !
+  celebracao  : data        !
+  valor       : dinheiro    !
+  vencimento  : data        !
+  prazo       : numero      !
+  conta       : texto
+  cidade      : texto       = "Petrolina"
+  emissao     : data        = hoje
+
+texto
+
+: titulo
+NOTIFICAÇÃO EXTRAJUDICIAL
+
+: qualificacao_notificante <- notificante
+NOTIFICANTE: {nome}, {estado_civil}, portador(a) do CPF {cpf}, residente e domiciliado(a) na {endereco}.
+
+: qualificacao_notificado <- notificado
+NOTIFICADO(A): {nome}, inscrito(a) no CNPJ sob o nº {documento}, com sede na {endereco}[, neste ato na pessoa de seu representante legal, {representante}].
+
+incluir "fragmentos/procurador.kanon"
+
+: cobranca <- notificante
+Pelo presente instrumento, o(s) NOTIFICANTE(S), por intermédio de seu procurador, notifica(m) Vossa Senhoria de que se encontra vencida e não paga, desde {vencimento:corrente}, a importância de {valor} ({valor:extenso}), devida em razão do {contrato}, celebrado em {celebracao:corrente}.
+
+: prazo_pagamento <- notificado
+Fica Vossa Senhoria constituído(a) em mora e notificado(a) a efetuar o pagamento no prazo de {prazo:extenso} dias, contados do recebimento desta[, mediante depósito na {conta}], sob pena de adoção das medidas judiciais cabíveis, com a cobrança de juros, correção monetária e honorários advocatícios.
+
+: ciencia
+A presente notificação serve como prova inequívoca da ciência de Vossa Senhoria quanto ao débito e ao prazo acima.
+
+: fecho
+{cidade}, {emissao:corrente}.
+
+regras
+  qualificacao_notificante  um para cada notificante
