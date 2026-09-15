@@ -193,4 +193,25 @@ end
         t = ok(withtext("nota(observação)"))
         @test length(nodes1(t)) == 1
     end
+
+    @testset "a marca que nomeia o sujeito é recusada, e não vira prosa (D-072)" begin
+        # A procuração nº 12 concorda com dois sujeitos na mesma frase: o verbo com os
+        # outorgantes, o substantivo com o advogado. A forma fica **reservada**: sem a
+        # recusa ela seria prosa, e o documento sairia com `procurador(a:advogado)`
+        # impresso — e dar-lhe sentido depois mudaria a saída de quem escreveu isso.
+        ds = collect(diags(withtext("nomeia(m) seu procurador(a:advogado), na forma")))
+        @test [d.code for d in ds] == ["K1216"]
+        @test occursin("`(a:advogado)` nomeia o sujeito da flexão", ds[1].message)
+        @test occursin("um sujeito por bloco", ds[1].message)
+        @test occursin("reservada", ds[1].hint)
+        @test occursin("`((` e `))`", ds[1].hint)
+        # o caminho pode descer, e a recusa é a mesma
+        @test [d.code for d in diags(withtext("procurador(a:parte.advogado)"))] == ["K1216"]
+        # e o que não tem a forma continua como estava: prosa, ou marca de uma a quatro letras
+        @test isempty(diags(withtext("nota(ver: anexo)")))
+        @test isempty(diags(withtext("item (a:b) da lista")))
+        @test isempty(diags(withtext("portador((a:advogado))")))
+        @test (nodes1(ok(withtext("portador((a:advogado))")))[1]::TextLit).value ==
+              "portador(a:advogado)"
+    end
 end

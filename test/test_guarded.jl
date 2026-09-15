@@ -119,8 +119,23 @@ end
         @test gcodes("[{price} [{notes}]]") == ["K2011"]
         # invertido: agora o culpado é o interno
         @test gcodes("[{notes} [{price}]]") == ["K2011"]
-        # e um grupo que só contém outro grupo não tem direta nenhuma
-        @test gcodes("[[{notes}]]") == ["K2010"]
+        # e um grupo que só contém outro grupo é a série reservada da D-073
+        @test gcodes("[[{notes}]]") == ["K2015"]
+    end
+
+    @testset "a série de trechos opcionais é recusada por nome (D-073)" begin
+        # `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta — sem o `e` antes do último
+        # presente, porque a conjunção depende de qual trecho é o último (modelo nº 14).
+        # A construção que moveria a conjunção fica reservada: hoje ela cai no K2010,
+        # que fala de outra coisa.
+        ds = [d for d in anl(mod_g("{price}[[, {notes}][ e {buyer.name}]]")).diagnostics]
+        @test [d.code for d in ds] == ["K2015"]
+        @test occursin("feito de grupos", ds[1].message)
+        @test occursin("reservada", ds[1].message)
+        @test occursin("`{a}[, {b}][ e {c}]`", ds[1].hint)
+        @test occursin("coleção", ds[1].hint)
+        # o grupo sem interpolação nenhuma e sem grupo dentro continua sendo K2010
+        @test gcodes("Texto [fixo] aqui.") == ["K2010"]
     end
 
     @testset "remissão a bloco não conta como interpolação direta" begin

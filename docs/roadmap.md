@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 15 de setembro de 2026 (o portão fechado; a primeira decisão da seção 1a feita). Escrito para retomar sem depender de memória.
+> Estado em 15 de setembro de 2026 (o portão fechado; três das cinco decisões da seção 1a feitas). Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -22,7 +22,7 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.663 testes** ao todo — 1.625 no núcleo (~50 s com Aqua), 330 em `Extenso`,
+Suíte: **2.679 testes** ao todo — 1.641 no núcleo (~50 s com Aqua), 330 em `Extenso`,
 308 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
@@ -66,11 +66,11 @@ para um pandoc, ou o teste avisa e fica marcado como pulado.
 
 1. **A seção 1a**, uma decisão de cada vez, cada uma registrada em `decisoes.md`. Com o
    portão fechado ela deixa de ser lista e vira o trabalho: é o que separa o acervo de uma
-   sintaxe congelada. A primeira, o tipo `list`, está feita (**D-071**); restam quatro.
-   A recomendação de ordem: **a flexão por dois sujeitos e a enumeração de trechos
-   opcionais juntas**, porque as duas pedem a mesma coisa — que sintaxe fica reservada
-   antes de congelar —, depois o **ponto final duplicado**, que muda saída de documento
-   publicado, e por último os **apelidos de atributo e formatador**, que só acrescentam.
+   sintaxe congelada. Feitas: o tipo `list` (**D-071**), a marca que nomeia o sujeito
+   (**D-072**) e a série de trechos opcionais (**D-073**) — as duas últimas reservadas com
+   erro, e o reparo de emenda intocado. **Restam duas**: o **ponto final duplicado**, que
+   muda saída de documento publicado e por isso vem antes, e os **apelidos de atributo e
+   formatador**, que só acrescentam e podem ser os últimos.
 2. Só então a `0.1.0` e o registro no General (item 2), que é decisão sua.
 
 Isto não foi burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada
@@ -115,10 +115,10 @@ congelamento.
 | **D-065** | o `kanon-lsp --locale pt --domain KanonLegal` **morria ao iniciar** — a D-059 no outro lançador —; e, corrigido isso, **subia e mentia**: todo campo de sujeito da notificação saía como `o contrato não declara \`nome\``, num modelo que o motor aceita limpo. A suíte do servidor nunca tinha executado o lançador | notificação |
 | **D-066** | o fragmento de dois documentos abertos recebia a lista de diagnósticos de quem falou por último: **abrir a procuração apagava o erro que a notificação ainda tinha**. E salvar o fragmento não mudava hospedeiro nenhum | notificação |
 | **D-067** | a completação resolvia o caminho por conta própria: `{notificado.` oferecia os campos de `pessoa`, `{nome:` no bloco do sujeito não oferecia nada, `{especiais:` oferecia os formatadores de `texto` para uma lista, e num ambiente sem idioma `{preco:` oferecia `extenso` | notificação |
-| — | **e um limite do idioma, que não é defeito**: a flexão tem um sujeito por bloco, e a frase central de uma procuração concorda com dois — o verbo com os outorgantes, o substantivo com o advogado. `nomeia(m)` flexiona; `procurador(a)` teria de flexionar por outro sujeito na mesma frase. O modelo nomeia o OUTORGADO pelo papel, como a locação já fazia com o LOCATÁRIO — e a locação nº 2 escreve `ao LOCATÁRIO` para a Helena sem que ninguém tivesse registrado por quê | procuração |
+| — | **e um limite do idioma, que não é defeito**: a flexão tem um sujeito por bloco, e a frase central de uma procuração concorda com dois — o verbo com os outorgantes, o substantivo com o advogado. `nomeia(m)` flexiona; `procurador(a)` teria de flexionar por outro sujeito na mesma frase. O modelo nomeia o OUTORGADO pelo papel, como a locação já fazia com o LOCATÁRIO — e a locação nº 2 escreve `ao LOCATÁRIO` para a Helena sem que ninguém tivesse registrado por quê. **D-072**: a forma `procurador(a:advogado)` fica reservada, com erro | procuração |
 | **D-068** | **nenhum modelo em português sem camada de domínio passava pelo `bin/kanon`**: `--locale pt` dizia que o idioma não tinha camada, com o `Extenso` instalado, e mandava "carregar o pacote" — que não é coisa que se digite. E o `--domain Extenso` tentado em seguida **acusava a camada** de registrar `text` de novo: o construtor chamava o `configure!` do núcleo, que ela importa com `using Kanon` | atestado |
 | **D-069** | o fiscal digitou `1.320` metros de drenagem, o `ask` leu `1.32`, e o atestado saiu com **`1,32 m`** — sem aviso nenhum, num documento que prova experiência numa licitação pelos quantitativos. E `12.480,50` era recusado com "esperava um numero", sem a forma a escrever | atestado |
-| — | **e um limite da gramática, que não é defeito**: a enumeração de trechos opcionais. `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta — sem o `e` antes do último presente, porque a conjunção depende de qual trecho é o último, e a gramática não tem como dizê-lo | atestado |
+| — | **e um limite da gramática, que não é defeito**: a enumeração de trechos opcionais. `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta — sem o `e` antes do último presente, porque a conjunção depende de qual trecho é o último, e a gramática não tem como dizê-lo. **D-073**: a série `[[…][…]]` fica reservada, e o reparo de emenda não muda | atestado |
 | **D-070** | o fecho `Nestes termos,` / `pede deferimento.` e o bloco de assinatura saíam **numa linha só** no `.docx`, sem aviso nenhum. No Markdown e no Typst a quebra simples é espaço, e a §4.1 deixava ao formato decidir se ela é rígida — o formato não decidia nada. O texto puro do mesmo modelo estava certo, e o Markdown era byte a byte o escrito à mão | reclamação |
 
 **O padrão vale mais que os defeitos um a um: o buraco estava sempre na interseção de duas
@@ -189,15 +189,21 @@ O que procurar no que falta:
 O portão existe para que estas perguntas sejam respondidas **antes** da 1.0: depois dela,
 cada resposta muda a saída de documento publicado ou a gramática, e vira versão maior.
 Com o portão fechado, **são o próximo trabalho**: todas precisam de resposta antes do
-congelamento. A primeira saiu em 15 de setembro de 2026 — o tipo `list` (D-071), que a
-evidência dos quinze modelos decidiu. Restam quatro.
+congelamento. Três saíram em 15 de setembro de 2026 — o tipo `list` (D-071), que a
+evidência dos quinze modelos decidiu, e as duas de sintaxe reservada (D-072 e D-073),
+decididas juntas porque pediam a mesma coisa. **Restam duas.**
 
 | Decisão | Por que agora | Tocada por |
 |---|---|---|
 | **O ponto final duplicado** — `{reu}` valendo `… Ltda.` no fim da frase sai `Ltda..` | o fim da frase depende da elisão, e o autor só escapa pondo prosa fixa depois do último grupo. Corrigir a emenda depois da 1.0 muda documento publicado | nº 8, nº 12 |
-| **Flexão por mais de um sujeito na mesma frase** — `nomeia(m)` pelos outorgantes e `procurador(a)` pelo advogado | se um dia existir, a sintaxe (uma marca que nomeia o sujeito) precisa estar **reservada** antes: hoje ela seria prosa, e dar-lhe sentido depois muda a saída | nº 2, nº 12 |
 | **Apelido de idioma para atributos e formatadores** — `quando x é precise`, `{nome:upper}` num modelo `pt` | aditivo, e por isso não bloqueia; mas o nome em português que entrar depois convive para sempre com o inglês | nº 8, nº 9, nº 10, nº 12 |
-| **A enumeração de trechos opcionais** — `{a}[, {b}][ e {c}]` sai `a, b` quando `c` falta | a correção natural é o reparo de emenda trocar a vírgula pelo `e` quando o último grupo elide, e isso **muda a saída** de todo modelo escrito nessa forma. A outra, uma construção de enumeração, precisa da sintaxe reservada antes, pela razão da flexão por dois sujeitos | nº 14 |
+
+**Decididas em 15 de setembro de 2026**, e fora da tabela: o tipo `list` (D-071); a marca
+que nomeia o sujeito, `procurador(a:advogado)`, **reservada** com o erro `K1216` (D-072); e
+a série de trechos opcionais, `[[, {b}][ e {c}]]`, **reservada** com o erro `K2015`, com o
+reparo de emenda intocado (D-073). As duas reservas custam um erro cada e compram a adição
+aditiva: hoje a primeira seria prosa impressa no documento, e a segunda já era erro por
+outro nome.
 
 E um limite, registrado e não dívida: **o fragmento fixa os nomes dos campos**. A
 qualificação do advogado só serve à procuração e à notificação porque as duas chamam o
@@ -859,7 +865,7 @@ décimo quinto passou por todas as portas do motor, e achou o documento errado d
 
 ### O que a implementação já mudou na especificação
 
-Cinquenta e três decisões saíram de escrever o código e os documentos, e vinte e seis delas fecharam buracos
+Cinquenta e seis decisões saíram de escrever o código e os documentos, e vinte e seis delas fecharam buracos
 que nenhuma releitura teria encontrado — o texto era internamente coerente em todos os
 casos:
 

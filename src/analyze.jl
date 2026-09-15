@@ -465,10 +465,25 @@ function check_group!(ctx::AnalysisCtx, g::Group)
     diretas = direct_interps(g)
 
     if isempty(diretas)
-        err!(ctx, "K2010", g.span,
-             "este grupo opcional não tem nenhuma interpolação direta, e por isso nunca elide.";
-             hint = "Um grupo elide quando um valor seu falta. Sem valor dentro, " *
-                    "escreva o texto sem os colchetes.")
+        if any(n -> n isa Group, g.children)
+            # A forma reservada da D-073: o grupo cujas partes são grupos é a série que
+            # trocaria a vírgula pela conjunção quando o último presente muda. Hoje ela
+            # cai no K2010 — um grupo que nunca elide —, e a versão 1 a recusa por nome,
+            # para que a construção futura seja aditiva.
+            err!(ctx, "K2015", g.span,
+                 "este grupo é feito de grupos, e a série — a enumeração que move a " *
+                 "conjunção para o último trecho presente — está reservada para uma " *
+                 "versão futura.";
+                 hint = "Na versão 1, escreva os trechos lado a lado, sem o grupo de " *
+                        "fora: `{a}[, {b}][ e {c}]` — a conjunção fica onde está escrita. " *
+                        "Quando os itens são do mesmo tipo, um campo de coleção " *
+                        "(`itens : text[]`) já sai com a conjunção do idioma.")
+        else
+            err!(ctx, "K2010", g.span,
+                 "este grupo opcional não tem nenhuma interpolação direta, e por isso nunca elide.";
+                 hint = "Um grupo elide quando um valor seu falta. Sem valor dentro, " *
+                        "escreva o texto sem os colchetes.")
+        end
     else
         resolvidas = [rp for rp in (ctx.out.paths[id(n)] for n in diretas) if rp !== nothing]
         # Nenhuma resolveu: o erro já foi dito no caminho, não se diz de novo aqui.

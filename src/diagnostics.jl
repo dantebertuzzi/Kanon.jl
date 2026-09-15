@@ -88,6 +88,7 @@ const CODE_TITLES = Dict{String,String}(
     "K1212" => "nível de bloco acima do teto da versão 1",
     "K1214" => "linha de inclusão malformada",
     "K1215" => "linha com forma de inclusão, lida como prosa",
+    "K1216" => "marca de flexão com sujeito nomeado, reservada",
     # --- plano das regras ---
     "K1301" => "regra malformada",
     "K1302" => "expressão malformada",
@@ -108,6 +109,7 @@ const CODE_TITLES = Dict{String,String}(
     "K2012" => "valor que pode faltar, fora de grupo opcional",
     "K2013" => "parênteses que não fecham dentro do grupo",
     "K2014" => "aspas que não fecham dentro do grupo",
+    "K2015" => "série de trechos opcionais, reservada",
     # --- referência: blocos, níveis, remissões e regras ---
     "K2030" => "marcador de bloco sem estilo neste ambiente",
     "K2031" => "nível de bloco sem o nível anterior",

@@ -337,7 +337,7 @@ function scan_run!(ctx::ParseCtx, c::Cursor, stop_at_bracket::Bool)
             if !inner_closed
                 err!(ctx, "K1208", Span(ctx.fileidx, pl, pc),
                      "este grupo opcional não foi fechado antes do fim do parágrafo.";
-                     hint = "Feche com `]`. Para um colchete literal, escreva `[[`.")
+                     hint = "Feche com `]`. Para um colchete literal, escreva `\\[`.")
             end
             push!(children, Group(newid!(ctx), inner, Span(ctx.fileidx, pl, pc, el, ec)))
 
@@ -350,10 +350,30 @@ function scan_run!(ctx::ParseCtx, c::Cursor, stop_at_bracket::Bool)
             end
             err!(ctx, "K1209", Span(ctx.fileidx, pl, pc),
                  "este `]` fecha um grupo que nunca foi aberto.";
-                 hint = "Para um colchete literal, escreva `]]`.")
+                 hint = "Para um colchete literal, escreva `\\]`.")
             advance!(c)
 
         elseif ch === '('
+            # A forma reservada da D-072: a marca que nomeia o sujeito com que a palavra
+            # concorda, `procurador(a:advogado)`. Não é marca hoje — a §7.1 reconhece uma
+            # a quatro letras —, e por isso sairia impressa no documento como prosa. A
+            # versão 1 recusa, para que dar-lhe sentido depois seja aditivo.
+            r = match(r"^\(([\p{L}]{1,4}):([\p{L}][\p{L}\p{N}_]*(?:\.[\p{L}][\p{L}\p{N}_]*)*)\)",
+                      rest(c))
+            if r !== nothing && !isempty(buf) && isletter(buf[end])
+                err!(ctx, "K1216", Span(ctx.fileidx, pl, pc),
+                     "`$(r.match)` nomeia o sujeito da flexão, e a versão 1 tem " *
+                     "um sujeito por bloco.";
+                     hint = "A forma está reservada para uma versão futura. Na versão 1, " *
+                            "escreva a palavra no papel — `ao PROCURADOR` — ou ponha a " *
+                            "frase num bloco cujo sujeito seja `$(r.captures[2])`. " *
+                            "Para o texto literal, escreva `((` e `))`.")
+                advance_n!(c, length(r.match))
+                for x in r.match
+                    push_char!(x, pl, pc)
+                end
+                continue
+            end
             m = match(r"^\(([\p{L}]{1,4})\)", rest(c))
             if m !== nothing && !isempty(buf) && isletter(buf[end])
                 k = length(buf)
