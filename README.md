@@ -214,6 +214,10 @@ composition belongs to something that knows how to do it:
 kanon render deed.kanon data.json --to markdown | pandoc -o deed.docx
 ```
 
+A line break inside a paragraph stays a line break: in Markdown and Typst a plain newline
+is a space, so the engine ends the line with a backslash — otherwise a signature block
+would reach the `.docx` as one line. A list or table the author wrote is left untouched.
+
 ## Reuse and ingestion
 
 A template includes fragments, and the fragment's contract is **unified** with the host's
@@ -257,9 +261,12 @@ and a CLI.
 | F9 Editor | partial — `outline` and `ask` shipped; the GUI is an application |
 | F10 Publishing | CI, Aqua and Documenter done; General registration pending |
 
-**Syntax is not frozen.** The gate to 1.0 is fifteen real templates rewritten in the
-language — after that there is a corpus, every design mistake becomes permanent, and the
-golden suite must render byte-identical on every `1.x` engine.
+**Syntax is not frozen.** The gate to 1.0 was fifteen real templates rewritten in the
+language, and all fifteen are written — the last one delivered as `.docx` through the
+pandoc pipeline below. What remains before freezing are the decisions those templates
+left open (`docs/roadmap.md`, section 1a): after that there is a corpus, every design
+mistake becomes permanent, and the golden suite must render byte-identical on every `1.x`
+engine.
 
 ## A note on language
 

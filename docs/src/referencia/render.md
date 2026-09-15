@@ -22,6 +22,7 @@ Typst
 output_format
 Kanon.escape_value
 Kanon.heading
+Kanon.line_breaks
 ```
 
 ## Elisão e reparo de emenda

@@ -1,0 +1,42 @@
+{
+  "reclamante": {
+    "nome": "Marta Regina Soares",
+    "genero": "f",
+    "estado_civil": "casada",
+    "cpf": "111.222.333-44",
+    "endereco": "Rua do Sol, 45, Centro, Petrolina/PE"
+  },
+  "profissao": "auxiliar de produção",
+  "ctps": "1234567, série 0012-PE",
+  "email_reclamante": "marta_soares@correio.com.br",
+  "reclamada": {
+    "nome": "Frutas do Vale Exportadora Ltda.",
+    "genero": "f",
+    "documento": "12.345.678/0001-90",
+    "endereco": "Rodovia BR-428, km 12, Distrito Industrial, Petrolina/PE",
+    "empresa": true
+  },
+  "admissao": "2023-03-06",
+  "dispensa": "2026-06-30",
+  "funcao": "auxiliar de packing house, na seleção e embalagem de uvas para exportação",
+  "salario": { "amount": "1850.00", "currency": "BRL" },
+  "jornada": "de segunda-feira a sábado, das 7h às 17h, com uma hora de intervalo",
+  "saldo_salario": { "amount": "1850.00", "currency": "BRL" },
+  "aviso_dias": 39,
+  "aviso": { "amount": "2405.00", "currency": "BRL" },
+  "decimo_terceiro": { "amount": "1233.33", "currency": "BRL" },
+  "ferias": { "amount": "3494.45", "currency": "BRL" },
+  "fgts": { "amount": "8288.00", "currency": "BRL" },
+  "multa_477": { "amount": "1850.00", "currency": "BRL" },
+  "horas_extras": { "amount": "21346.15", "currency": "BRL" },
+  "gratuidade": true,
+  "valor_causa": { "amount": "40466.93", "currency": "BRL" },
+  "advogado": {
+    "nome": "Paulo Henrique Lins",
+    "genero": "m",
+    "estado_civil": "casado",
+    "cpf": "999.888.777-66",
+    "endereco": "Avenida Cardoso de Sá, 210, sala 3, Petrolina/PE"
+  },
+  "oab": "12.345"
+}

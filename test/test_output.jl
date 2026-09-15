@@ -105,7 +105,8 @@ Matrícula {b} da comarca.
 """; name = "p.kanon")
         s = render(m, Dict("a" => "12.345", "b" => "12.345"); to = :markdown)
         linhas = split(s, "\n")
-        @test linhas[1] == "12\\.345"                  # começo de linha: pode abrir lista
+        # a barra final é a quebra rígida da D-070, e não escape
+        @test linhas[1] == "12\\.345\\"                # começo de linha: pode abrir lista
         @test linhas[2] == "Matrícula 12.345 da comarca."   # no meio: não é marcação
     end
 
@@ -176,6 +177,90 @@ Aninhado com {a}.
         # ser candidata. O segundo ponto sai limpo, e é o que o leitor quer ver.
         @test occursin("1\\.1. Aninhado com x.", s)
         @test !startswith(s, "1. ")
+    end
+end
+
+@testset "a linha que o autor quebrou continua quebrada (D-070)" begin
+    # Achado pelo modelo real nº 15, a reclamação trabalhista entregue em `.docx`: no
+    # Markdown e no Typst a quebra simples é espaço, e o fecho `Nestes termos,` /
+    # `pede deferimento.` e o bloco de assinatura saíam numa linha só no documento — com o
+    # texto puro do mesmo modelo certo, e sem aviso nenhum. Conferido contra o pandoc 3.11
+    # (leitores `markdown`, `commonmark` e `gfm`) e o Typst 0.15.1.
+    fecho = load_string(Environment(), """
+kanon 1
+
+data
+  advogado : text !
+  oab      : text !
+
+text
+
+: fecho
+Nestes termos,
+pede deferimento.
+
+: assinatura
+{advogado}
+OAB/PE {oab}
+"""; name = "f.kanon")
+    d = Dict("advogado" => "PAULO HENRIQUE LINS", "oab" => "12.345")
+
+    @testset "texto puro: a linha já é a linha" begin
+        @test render(fecho, d) ==
+              "Nestes termos,\npede deferimento.\n\nPAULO HENRIQUE LINS\nOAB/PE 12.345"
+    end
+
+    @testset "markdown e typst: contrabarra no fim, que os dois leem como quebra rígida" begin
+        esperado = "Nestes termos,\\\npede deferimento.\n\nPAULO HENRIQUE LINS\\\nOAB/PE 12.345"
+        @test render(fecho, d; to = :markdown) == esperado
+        @test render(fecho, d; to = :typst) == esperado
+        # a última linha do parágrafo não leva barra: no fim do bloco ela sai literal
+        @test !endswith(render(fecho, d; to = :markdown), "\\")
+    end
+
+    lb(f, s) = Kanon.line_breaks(f, s)
+    md, ty = Kanon.Markdown(), Kanon.Typst()
+
+    @testset "a marcação de bloco do autor passa intacta" begin
+        # a barra ali quebraria a tabela e sairia literal no fim do item e do título
+        # (conferido no pandoc): lista, tabela e título são do autor (D-028)
+        for s in ("- a\n- b", "1. a\n2. b", "a) um\nb) dois", "(1) um\n(2) dois",
+                  "| x | y |\n|---|---|\n| 1 | 2 |", "## Título\ntexto",
+                  "> cita\n> segue", "    código\n    mais", "```\nx\n```",
+                  "Termo\n: definição", "título\n===", "<div>\nx\n</div>")
+            @test lb(md, s) == s
+        end
+        for s in ("- a\n- b", "+ a\n+ b", "= Título\ntexto", "/ Termo: x\nmais",
+                  "1. a\n2. b", "#set text(size: 12pt)\ntexto", "linha\n// comentário")
+            @test lb(ty, s) == s
+        end
+        # e só o trecho que tem a marcação: o parágrafo de prosa ao lado ganha a quebra
+        @test lb(md, "a\nb\n\n- c\n- d") == "a\\\nb\n\n- c\n- d"
+    end
+
+    @testset "o que o escape já desarmou não conta como bloco" begin
+        # um valor que começa a linha com `#` ou `1.` chega escapado e não abre nada,
+        # e a linha seguinte continua sendo a linha seguinte
+        m = load_string(Environment(), "kanon 1\n\ndata\n  a : text !\n\ntext\n\n: b\n{a}\nfim.\n";
+                        name = "e.kanon")
+        @test render(m, Dict("a" => "# não é título"); to = :markdown) ==
+              "\\# não é título\\\nfim."
+        @test render(m, Dict("a" => "1. não é item"); to = :markdown) ==
+              "1\\. não é item\\\nfim."
+        @test render(m, Dict("a" => "1. não é item"); to = :typst) ==
+              "\\1. não é item\\\nfim."
+    end
+
+    @testset "a linha em branco que um valor traz continua separando parágrafos" begin
+        s = render(M_OUT, Dict("nome" => "X\n\n# Cláusula falsa\n\nAssinado por outro");
+                   to = :markdown)
+        @test occursin("é que X\n\n\\# Cláusula falsa\n\nAssinado por outro assine.", s)
+    end
+
+    @testset "a contrabarra no fim: ímpar já é quebra, par é contrabarra escapada" begin
+        @test lb(md, "a\\\nb") == "a\\\nb"          # o autor já quebrou
+        @test lb(md, "a\\\\\nb") == "a\\\\\\\nb"    # `\\` é literal, e ainda falta a quebra
+        @test lb(md, "a  \nb") == "a  \\\nb"         # os dois espaços, que o editor apaga
     end
 end
 

@@ -274,6 +274,8 @@ function render_paragraph(ctx::RenderCtx, p::Paragraph)
 
     s, finais = isempty(seams) ? (String(out), seams) : repair(out, seams)
     s = apply_repair_hook(ctx, s, finais)
+    # depois do reparo, que costura por linha e precisa do `\n` limpo (D-070)
+    s = line_breaks(ctx.format, s)
     check_bytes!(ctx, s)
     all(isspace, s) ? nothing : s
 end
