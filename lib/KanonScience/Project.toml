@@ -4,21 +4,25 @@ version = "0.1.0"
 authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
 
 [deps]
-Extenso = "7b3d5e91-2a48-4c6f-9d13-8e4a2f60c5b7"
 Kanon = "3c1f7a2e-9b4d-4a6f-8e21-5d0c7b3f9a14"
 
 [compat]
 CSV = "0.10"
+Dates = "1"
+Extenso = "0.1"
 JSON3 = "1"
 Kanon = "0.1"
+Tables = "1"
+Test = "1"
 julia = "1.10"
 
 [extras]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Extenso = "7b3d5e91-2a48-4c6f-9d13-8e4a2f60c5b7"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["CSV", "Extenso", "JSON3", "Tables", "Test"]
+test = ["CSV", "Dates", "Extenso", "JSON3", "Tables", "Test"]
