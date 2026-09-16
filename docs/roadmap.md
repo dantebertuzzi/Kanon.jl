@@ -1,6 +1,8 @@
 # Roadmap
 
-> Estado em 15 de setembro de 2026 (o portão fechado; quatro das cinco decisões da seção 1a feitas). Escrito para retomar sem depender de memória.
+> Estado em 15 de setembro de 2026. O portão está **fechado** (15 de 15), quatro das cinco
+> decisões da seção 1a estão tomadas, e o **site está no ar**. Escrito para retomar sem
+> depender de memória.
 
 ## Onde estamos
 
@@ -16,7 +18,7 @@
 | **F7** Ingestão e reuso | ✅ concluída | inclusão de fragmentos com contrato unificado; `Tables.jl` e JSON por extensão |
 | **F8** Saída | ✅ concluída | `text`, `markdown` e `typst`; o valor é escapado, a prosa não, e o rótulo sai intacto |
 | **F9** Editor | ✅ concluída | `outline`, `kanon ask`, e o **servidor de linguagem** — diagnóstico, estrutura, cursor, salto e completação |
-| **F10** Publicação | 🔨 quase | CI, Aqua e Documenter feitos; falta o registro no General, que é ação sua |
+| **F10** Publicação | 🔨 quase | CI, Aqua, Documenter e o **site no ar**; falta o registro no General, que é ação sua |
 
 **O produto existe.** `load_template` → `check` → `render`, mais a CLI, os três formatos
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
@@ -30,8 +32,8 @@ Windows, com cobertura no Codecov.
 
 ## O que resta
 
-As dez fases estão feitas ou entregues em parte. **O que resta não é código de motor** —
-é uso, decisão e interface, nesta ordem de importância.
+As dez fases estão feitas ou entregues em parte. **O que resta não é código de motor** — é
+**uma decisão**, o congelamento, e o que vier depois dele.
 
 ### 1. Quinze modelos reais — o portão, fechado
 
@@ -51,11 +53,10 @@ quantitativos digitados no `kanon ask`) e `reclamacao.kanon` (a petição entreg
 `.docx`, pelo `bin/kanon` encadeado ao pandoc, com o documento lido de volta). O portão
 para a 1.0 pedia quinze, e **está fechado**.
 
-**Onde está cada um.** Os catorze primeiros estão na `main`, o último pelo PR #8. O CI da
-`main`, vermelho no Julia 1.10 depois desses merges, voltou a verde com o PR #9, mergeado
-em 15 de setembro de 2026. O nº 15 está no branch `modelo-real-15`, com o PR aberto
-**contra a `main`** — PR empilhado não se reaponta sozinho quando o de baixo é mergeado,
-e foi assim que o nº 13 foi parar no branch do nº 12.
+**Onde está cada um.** Os quinze estão na `main`: o nº 15 pelo PR #10, depois de o PR #9
+consertar o CI no Julia 1.10. Cada modelo abriu o PR **contra a `main`** — PR empilhado não
+se reaponta sozinho quando o de baixo é mergeado, e foi assim que o nº 13 foi parar no
+branch do nº 12.
 
 **O CI agora instala o pandoc** (3.11, o binário da release de cada sistema), antes da
 suíte do `KanonLegal`: o teste do nº 15 roda a cadeia `bin/kanon | pandoc` de verdade, e no
@@ -64,14 +65,15 @@ para um pandoc, ou o teste avisa e fica marcado como pulado.
 
 **Ao retomar, nesta ordem:**
 
-1. **A seção 1a**, uma decisão de cada vez, cada uma registrada em `decisoes.md`. Com o
-   portão fechado ela deixa de ser lista e vira o trabalho: é o que separa o acervo de uma
-   sintaxe congelada. Feitas: o tipo `list` (**D-071**), a marca que nomeia o sujeito
+1. **A última decisão da seção 1a**: os **apelidos de idioma para atributos e
+   formatadores**. Feitas: o tipo `list` (**D-071**), a marca que nomeia o sujeito
    (**D-072**), a série de trechos opcionais (**D-073**) — as duas reservadas com erro, e o
    reparo de emenda intocado — e o ponto final duplicado (**D-075**), resolvido por uma
-   **costura da interpolação** que não é reparo de emenda. **Resta uma**: os **apelidos de
-   idioma para atributos e formatadores**, que só acrescentam.
-2. Só então a `0.1.0` e o registro no General (item 2), que é decisão sua.
+   **costura da interpolação** que não é reparo de emenda.
+2. Com a seção 1a fechada, **congelar a sintaxe** é uma decisão tomável: o que resta depois
+   dela é a `0.1.0` e o registro no General (item 2), que é ação sua.
+3. E, se quiser público antes disso, o **simulador na página** (item 5), que é o único item
+   novo desta lista.
 
 Isto não foi burocracia. Uma linguagem de modelos é julgada por escrever modelos, e cada
 um dos quinze cobrou alguma coisa. **Nenhuma outra atividade teve a mesma taxa de
@@ -212,7 +214,8 @@ qualificação do advogado só serve à procuração e à notificação porque a
 advogado de `advogado`; a inclusão não tem parâmetro, e é assim de propósito (D-005).
 
 **Enquanto isso não acontecer, congelar a sintaxe é apostar.** Depois de congelada, cada
-erro de design vira permanente.
+erro de design vira permanente. Com a última respondida, a decisão de congelar passa a ser
+sua, e não do calendário.
 
 ### 2. O registro no General — decisão sua, não minha
 
@@ -250,12 +253,54 @@ vê o erro onde ele está, e vê que um campo pode faltar antes de gerar o docum
 Nenhuma bloqueia nada. Estão na tabela do fim, com o gatilho de cada uma — a maioria é
 "quando alguém precisar", e algumas dependem de um dos três itens acima.
 
+### 5. O simulador na página — proposto, não começado
+
+O site (item 6) mostra o motor em três cenas **gravadas**. O passo seguinte é o visitante
+escrever o próprio modelo e ver o que o motor responde. O desenho, decidido em 15 de
+setembro de 2026 e ainda não implementado:
+
+- **O motor de verdade, atrás de uma API mínima** — `POST /check`, `POST /render`,
+  `POST /contract` num serviço em Julia com as camadas carregadas, imagem feita com
+  `PackageCompiler` para a partida não custar segundos.
+- **Não um gêmeo em JavaScript.** Reimplementar a linguagem no navegador é o que a D-029 e
+  a D-039 recusaram para o servidor de linguagem: uma ferramenta que discorde do motor é
+  pior que nenhuma, porque o redator confia nela justamente onde não consegue conferir. Se
+  algum dia existir, o preço de entrada é rodar o corpus golden inteiro contra ele no CI e
+  quebrar a build em qualquer divergência de um byte.
+- **Exposto é seguro, e não por sorte:** a §11 já proíbe execução de código, I/O, rede e
+  campo não declarado, e o orçamento é contado em nós, bytes, profundidade e iterações, não
+  em tempo de parede (D-010). O que o serviço acrescenta é teto de corpo da requisição,
+  limite por IP e timeout duro.
+- **Rede de segurança:** a página traz exemplos com a saída **pré-computada pelo motor no
+  CI**. Se a API não responde, o visitante ainda edita entre as variações prontas e vê
+  resultado verdadeiro, com o commit que o gerou ao lado. A página nunca inventa uma saída.
+- **WebAssembly fica para depois.** Seria o ideal — motor de verdade sem servidor —, mas o
+  `WebAssemblyCompiler.jl` compila só um subconjunto estático de Julia, e o Kanon depende de
+  despacho múltiplo e de introspecção da tabela de métodos (é assim que `kanon_formats`
+  enumera formatadores). Gatilho para reavaliar: a história de WASM em Julia amadurecer.
+
+### 6. O site — feito em 15 de setembro de 2026
+
+`https://dantebertuzzi.github.io/Kanon.jl/` é a landing page, e
+`https://dantebertuzzi.github.io/Kanon.jl/dev/` a documentação, no mesmo Pages.
+
+A página é um arquivo só em `web/index.html`, sem framework, com a fonte servida pelo
+próprio site. Ela mostra a demo do motor em três cenas com **as mensagens que o motor
+imprime**, o teorema da lacuna, os três planos, a tabela de onde mora o contrato em cada
+sistema, as duas portas e as camadas.
+
+**Duas coisas a saber antes de mexer nela.** O Pages estava configurado no `gh-pages` e
+**nunca tinha sido construído** — era por isso que os links da documentação não abriam. E o
+Documenter reescreve o `index.html` da raiz a cada deploy: por isso o job `docs` do CI
+republica `web/` na raiz **depois** do deploy da documentação. Tirar esse passo faz a
+landing durar até o próximo build de docs.
+
 ---
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.618, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.655, ~50 s
 # o KanonLSP roda o modelo real nº 13 com a camada de verdade: desenvolva as camadas nele
 # antes, como o CI faz (`Pkg.develop` de `.`, `lib/Extenso`, `lib/KanonScience` e
 # `lib/KanonLegal` no projeto `lib/KanonLSP`); e o KanonLegal roda o modelo nº 15 pelo pandoc:
@@ -742,8 +787,10 @@ rende com «marcadores» e nunca exporta —, e o que falta é o caminho até a 
 ## F10 — Publicação (quase, 5 de setembro de 2026)
 
 **Feito:** CI (entrou junto com o README em inglês), Aqua na suíte, Documenter gerando a
-referência da API a partir das docstrings — publicada pelo próprio CI — e cobertura no
-Codecov.
+referência da API a partir das docstrings — publicada pelo próprio CI —, cobertura no
+Codecov e, em 15 de setembro de 2026, o **site no ar**: a landing em `web/` na raiz do
+`gh-pages` e a documentação em `/dev/` (item 6 de "o que resta", com as duas armadilhas do
+Pages registradas lá).
 
 **Sobre a cobertura, e por que ela é sinal fraco aqui.** Nenhum dos defeitos que os
 modelos reais acharam — trinta e seis até o nº 15, contando os do servidor de linguagem —
