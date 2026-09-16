@@ -1,0 +1,18 @@
+kanon 1 pt
+
+# Uma página simples, como `sobre.md`: título, descrição opcional e o texto do redator.
+
+dados
+  titulo    : texto !
+  descricao : texto
+
+texto
+
+: titulo
+# {titulo}
+
+: descricao
+[*{descricao}*]
+
+: corpo
+<!-- corpo -->

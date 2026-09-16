@@ -90,7 +90,10 @@ export UndecodableValue, IncomparableValues
 export Analysis, ResolvedPath, Model
 export analyze, load_string, load_template, load_source, Loaded
 export Loader
-export Bound, check, bind, value
+# `bind` não é exportado: o `Base` exporta um `bind`, e os dois juntos não resolvem — quem
+# fizesse `using Kanon` e chamasse `bind(modelo, dados)` recebia `UndefVarError`. Escreve-se
+# `Kanon.bind`, e `diagnostics` é o que lê o resultado (D-078).
+export Bound, check, value, diagnostics
 export rows, render_each, read_json, parse_json
 export Plan, BlockInstance
 export contract

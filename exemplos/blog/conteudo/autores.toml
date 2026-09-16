@@ -1,0 +1,6 @@
+# Quem assina os posts. A chave entre colchetes é o que se escreve no cabeçalho do post:
+# `autor = "dante-bertuzzi"`.
+
+[dante-bertuzzi]
+nome = "Dante Bertuzzi"
+iniciais = "DB"

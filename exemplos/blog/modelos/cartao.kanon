@@ -1,0 +1,44 @@
+kanon 1 pt
+
+# O card de um post na página inicial — o miolo do `{% for post in posts %}` do Liquid.
+#
+# O que o Liquid decidia dentro do laço, aqui chega decidido: `construir.jl` filtra os
+# posts pelo idioma (o `where`), os ordena, e diz qual é o mais novo (o `forloop.first`)
+# e quais começam escondidos (o `forloop.index > 3`). Uma regra do Kanon só remove ou
+# repete um bloco (D-015), e não tem índice de laço nenhum: posição na lista é
+# apresentação, e quem apresenta é o site.
+#
+# Também não há `truncatewords`: um formatador por interpolação (D-007), e o resumo chega
+# pronto, como um campo.
+#
+# O HTML do card — a moldura, as classes — não mora aqui. O Kanon escapa valores para
+# CommonMark, e não para atributo HTML: um título com aspas dentro de `alt="..."` quebraria
+# a página. A imagem vai como imagem de Markdown, e é o CommonMark.jl que escreve o `alt`.
+
+dados
+  titulo : texto    !
+  url    : texto    !
+  data   : data     !
+  resumo : texto    !
+  imagem : texto
+  novo   : booleano = falso
+
+texto
+
+: imagem
+[!\[{titulo}\](<{imagem}>)]
+
+: selo
+**Novo**
+
+: rotulo
+Artigo · {data:corrente}
+
+: titulo
+### \[{titulo}\](<{url}>)
+
+: resumo
+{resumo}
+
+regras
+  selo  quando novo

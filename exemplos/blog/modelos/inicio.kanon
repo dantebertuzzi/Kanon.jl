@@ -1,0 +1,29 @@
+kanon 1 pt
+
+# A página inicial: o texto de apresentação do redator, e a lista dos posts publicados,
+# do mais novo para o mais antigo. A lista é montada por `construir.jl` a partir dos
+# posts que passaram no contrato — um post recusado não aparece aqui, porque não existe.
+#
+# `posts : chamada[1..]` é a garantia de que a página inicial nunca sai vazia: sem
+# nenhum post publicado, o site não é construído.
+#
+# Os cards não estão aqui: cada um é um documento de `cartao.kanon`, e `construir.jl` os
+# põe no lugar do `<!-- cartoes -->` dentro da grade, que é HTML da casca do site.
+
+dados
+  titulo : texto        !
+  posts  : chamada[1..] !
+
+texto
+
+: titulo
+# {titulo}
+
+: apresentacao
+<!-- corpo -->
+
+: recentes
+## Artigos publicados
+
+: cartoes
+<!-- cartoes -->

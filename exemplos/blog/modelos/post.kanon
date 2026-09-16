@@ -1,0 +1,52 @@
+kanon 1 pt
+
+# O que o `_layouts/post.html` do Jekyll fazia com Liquid: o título, a descrição, a
+# assinatura, a série, a tradução e as etiquetas em volta do texto do redator.
+#
+# O texto do redator não passa por aqui. Ele é Markdown do Franklin — com `$...$` para
+# matemática —, e um valor que o Kanon interpola nunca altera a estrutura (D-028): se o
+# corpo entrasse como campo, cada asterisco dele sairia escapado. Por isso o modelo marca
+# **onde** o corpo entra, com o comentário do bloco `corpo`, e `construir.jl` o põe ali.
+#
+# Os nomes dos campos são os que o redator escreve no cabeçalho do post.
+#
+# Todo valor que ocupa o lugar de um endereço vai entre `<` e `>`: o escape que o Kanon
+# garante é o de texto corrido, e num destino de link do CommonMark um espaço encerra o
+# endereço — `/assets/curva normal.svg` deixava de ser imagem e saía como texto cru.
+
+dados
+  titulo     : texto      !
+  descricao  : texto
+  imagem     : texto
+  autor      : autor      !
+  data       : data       !
+  atualizado : data
+  serie      : texto
+  tags       : texto[1..]
+  traducao   : chamada
+
+texto
+
+: titulo
+# {titulo}
+
+: imagem
+[!\[{titulo}\](<{imagem}>)]
+
+: descricao
+[*{descricao}*]
+
+: assinatura
+Por **{autor}**, em {data:corrente}[; atualizado em {atualizado:corrente}].
+
+: serie
+[Este texto faz parte da série *{serie}*.]
+
+: traducao
+[Também em inglês: \[{traducao}\](<{traducao.url}>).]
+
+: corpo
+<!-- corpo -->
+
+: etiquetas
+[Etiquetas: {tags}.]
