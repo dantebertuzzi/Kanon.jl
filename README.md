@@ -251,22 +251,22 @@ an absent key, and a group of cells that are all empty is an absent field.
 
 ## Status
 
-Phases 1 through 8 are done, and F9 in part. The language is usable end to end: parse, validate, render,
-and a CLI.
+Phases 0 through 9 are done. The language is usable end to end: parse, validate, render,
+a CLI, and a language server.
 
 | Phase | State |
 |---|---|
 | F0 Specification · F1 Parser · F2 Validator | done |
 | F3 Renderer · F4 `Extenso` · F5 Rules · F6 Domains · F7 Ingestion · F8 Output | done |
-| F9 Editor | partial — `outline` and `ask` shipped; the GUI is an application |
-| F10 Publishing | CI, Aqua and Documenter done; General registration pending |
+| F9 Editor | done — `outline`, `ask` and the language server (`lib/KanonLSP`) |
+| F10 Publishing | CI, Aqua, Documenter and the site done; General registration pending |
 
-**Syntax is not frozen.** The gate to 1.0 was fifteen real templates rewritten in the
-language, and all fifteen are written — the last one delivered as `.docx` through the
-pandoc pipeline below. What remains before freezing are the decisions those templates
-left open (`docs/roadmap.md`, section 1a): after that there is a corpus, every design
-mistake becomes permanent, and the golden suite must render byte-identical on every `1.x`
-engine.
+**The syntax of language version 1 is frozen** (decision D-077, 2026-09-16). The gate
+was fifteen real templates rewritten in the language, and the five decisions they left
+open are taken (D-071 to D-076). From here on, the golden corpus listed in §13 of the
+specification must render byte-identical on every `kanon 1.x` engine: additions come in
+minor versions, and anything that changes a byte of the corpus is `kanon 2`. The packages
+are at `0.1.0` — the *language* is stable, the Julia API may still change in `0.2`.
 
 ## A note on language
 
@@ -282,7 +282,7 @@ The normative documents live in [`docs/`](docs/):
 | Document | What it holds |
 |---|---|
 | [`especificacao.md`](docs/especificacao.md) | the normative spec: lexis, grammar, types, elision, errors, the theorem |
-| [`decisoes.md`](docs/decisoes.md) | 27 decisions, each with alternatives, reasoning and date |
+| [`decisoes.md`](docs/decisoes.md) | 77 decisions, each with alternatives, reasoning and date |
 | [`api-extensao.md`](docs/api-extensao.md) | the extension protocol — ten generic functions |
 | [`ast.md`](docs/ast.md) | the tree, the side tables, and the four invariants |
 | [`roadmap.md`](docs/roadmap.md) | where things stand, and what each phase found |

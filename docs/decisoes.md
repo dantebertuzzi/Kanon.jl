@@ -2775,3 +2775,53 @@ incluem —, e a saída de cada um é byte a byte a mesma — inclusive o `.docx
 reclamação, lido de volta pelo pandoc. O que muda é o texto de duas dicas (`K2020` e
 `K2041`), que agora listam os nomes na língua do modelo, e a completação do editor, que
 oferece `maiusculo` e não `upper` num modelo `pt`.
+
+---
+
+## D-077 — A sintaxe da versão 1 está congelada
+
+*2026-09-16 · aceita · decisão de Dante, depois da seção 1a*
+
+**O que isto é.** A declaração de que `kanon 1` é a linguagem que a especificação descreve,
+e de que ela passa a mudar só pelas regras da §13: o aditivo em versão menor, o resto em
+`kanon 2`. A especificação deixa de ser "rascunho para aceite", e o corpus golden deixa de
+ser um conjunto de testes e vira **contrato**, listado arquivo por arquivo na §13.
+
+**Por que agora.** As duas condições que o projeto se impôs, e só elas:
+
+1. **O portão**: quinze documentos reais reescritos na linguagem. Fechou em 15 de 15, e os
+   catorze escritos com o motor pronto cobraram trinta e seis defeitos.
+2. **A seção 1a**: as cinco perguntas que os quinze deixaram, e que depois da 1.0 seriam
+   versão maior. Respondidas pelas D-071 a D-076, a última mergeada com o CI verde nas seis
+   configurações.
+
+**O que deixa o congelamento barato de manter.** As construções que alguém vai querer
+estão **reservadas com erro**: o encadeamento e o argumento de formatador (D-007), a marca
+que nomeia o sujeito (D-072) e a série de trechos opcionais (D-073). Um erro que ganha
+sentido é afrouxamento, e afrouxamento é versão menor. O mesmo vale para os nomes que a
+D-076 deixou em inglês — `title`, `fixed2`, `plain`, `count`, `bare` — e para `x não é y`,
+que hoje é erro.
+
+**O que ele torna permanente.** Toda palavra-chave, todo nome de tipo, formatador e
+atributo do núcleo e das camadas publicadas, os apelidos em português da D-076, o algoritmo
+de elisão e o reparo de emenda, e a costura da interpolação (D-075). Um erro de design
+nessa lista, achado amanhã, é `kanon 2`.
+
+**As dívidas que ficam, e por que nenhuma pede versão maior.** O `1.320` lido como `1.32`
+no arquivo `chave = valor` é leitura de dado, não linguagem. O leitor do pandoc que lê mais
+que o CommonMark é escape de saída — mais escape em valor não muda byte de documento cujo
+valor não tinha o caractere, e onde tinha, o documento estava errado. O `é não` agramatical
+se resolve aceitando `não é`, que hoje é erro.
+
+**Junto com o congelamento.** Os cinco pacotes saem de `0.1.0-DEV` para `0.1.0`. A versão do
+**pacote** e a da **linguagem** são independentes (§13): `0.1.0` diz que a API Julia ainda
+pode mudar em `0.2`, e `kanon 1` diz que os modelos não mudam de sentido. O registro no
+General é ação de Dante, na ordem que o roadmap fixa: `Kanon`, `Extenso`, e as demais.
+
+**Alternativas.** (a) Esperar mais modelos: o portão foi fixado na F0 justamente para não
+virar horizonte móvel, e os três últimos não acharam nada de sintaxe — acharam CLI, editor
+e formato de saída. (b) Congelar com a `1.0.0` do pacote: prometeria estabilidade à API
+Julia, que o registro e os primeiros usuários de fora ainda vão cobrar. (c) Congelar sem
+listar o corpus: a §13 dizia "o corpus golden" desde a F0 sem dizer quais arquivos, e o
+`.docx` lido pelo pandoc mostrou que a pergunta tem resposta não óbvia. (d) Congelar agora,
+com o corpus listado e o pacote em `0.1.0` (escolhida).

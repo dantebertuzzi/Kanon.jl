@@ -1,6 +1,6 @@
 name = "KanonScience"
 uuid = "9f4c8b26-3e51-4a7d-b982-6c05d1e3f8a4"
-version = "0.1.0-DEV"
+version = "0.1.0"
 authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
 
 [deps]
