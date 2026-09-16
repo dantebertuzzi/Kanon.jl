@@ -57,6 +57,20 @@ struct BlockStyle
     domain::Symbol
 end
 
+"""
+Apelido de idioma para o nome de um atributo ou de um formatador: `preciso` para
+`precise`, `maiusculo` para `upper`.
+
+Não é palavra-chave — o nome canônico continua valendo ao lado dele — e não é nome de
+tipo: não aponta para um registro, porque atributo e formatador são métodos do tipo, e
+só a análise, que conhece o tipo, sabe se o nome canônico existe ali (D-076).
+"""
+struct NameAlias
+    alias::Symbol
+    canonical::Symbol
+    domain::Symbol
+end
+
 "Uma forma escrita que substitui a palavra-chave canônica no idioma ativo."
 struct KeywordAlias
     form::String
@@ -82,6 +96,8 @@ mutable struct EnvironmentBuilder
     domain::Symbol
     types::Vector{TypeEntry}
     typealiases::Vector{TypeAlias}
+    attributealiases::Vector{NameAlias}
+    formatteraliases::Vector{NameAlias}
     keywords::Vector{KeywordAlias}
     styles::Vector{BlockStyle}
     marks::Vector{String}
@@ -99,7 +115,8 @@ mutable struct EnvironmentBuilder
 end
 
 EnvironmentBuilder(locale::Union{Nothing,Symbol} = nothing) =
-    EnvironmentBuilder(locale, :kanon, TypeEntry[], TypeAlias[], KeywordAlias[],
+    EnvironmentBuilder(locale, :kanon, TypeEntry[], TypeAlias[], NameAlias[], NameAlias[],
+                       KeywordAlias[],
                        BlockStyle[], String[], nothing, :none, nothing, :none,
                        nothing, :none, ".", "", "yyyy-mm-dd", Pair{Symbol,String}[],
                        Pair{Symbol,String}[])
@@ -157,6 +174,64 @@ function register_type_alias!(b::EnvironmentBuilder, alias::Symbol, canonical::S
                "`$(old.canonical)`) e por `$(b.domain)` (para `$canonical`).")
     end
     push!(b.typealiases, TypeAlias(alias, canonical, b.domain))
+    return b
+end
+
+"""
+    register_attribute_alias!(b, lang, alias, canonical)
+
+Dá ao atributo `canonical` um nome no idioma `lang`: `quando pontos é preciso` num modelo
+`pt` pergunta o mesmo que `when pontos is precise`. Aplicado só quando `lang` é o idioma
+ativo.
+
+É **aditivo**: o nome canônico continua valendo, e nenhum modelo muda de sentido. Um
+atributo não é palavra-chave, e por isso a D-003 não se aplica — como o nome de tipo, que
+também convive com o apelido.
+
+Quem registra é a **camada de idioma**, e não a camada que define o atributo: `preciso` é
+palavra portuguesa, e o `KanonScience` não tem idioma (a forma do glossário da D-056). Um
+canônico pode ter mais de um apelido, e tem, quando o adjetivo concorda em gênero com o
+campo — `a estimativa é precisa`, `o ponto é preciso`. O **primeiro** registrado é o que o
+motor escreve de volta nas mensagens.
+
+O apelido **não** pode ser uma palavra-chave do idioma: `verdadeiro` já é `true`, e o
+parser o leria como palavra-chave antes de o ambiente ser consultado (D-076).
+"""
+function register_attribute_alias!(b::EnvironmentBuilder, lang::Symbol, alias::Symbol,
+                                   canonical::Symbol)
+    lang === b.locale || return b
+    register_name_alias!(b, b.attributealiases, "atributo", alias, canonical)
+end
+
+"""
+    register_formatter_alias!(b, lang, alias, canonical)
+
+Dá ao formatador `canonical` um nome no idioma `lang`: `{nome:maiusculo}` num modelo `pt`
+é `{nome:upper}`. Aplicado só quando `lang` é o idioma ativo, aditivo, e registrado pela
+camada de idioma — as mesmas regras de [`register_attribute_alias!`](@ref).
+
+Não confundir com um formatador **do idioma**, como `extenso`: esse é comportamento, existe
+por despacho e é declarado por `kanon_format_locale` (D-026). O apelido é só nome, e não
+formata nada que o canônico não formate (D-076).
+"""
+function register_formatter_alias!(b::EnvironmentBuilder, lang::Symbol, alias::Symbol,
+                                   canonical::Symbol)
+    lang === b.locale || return b
+    register_name_alias!(b, b.formatteraliases, "formatador", alias, canonical)
+end
+
+function register_name_alias!(b::EnvironmentBuilder, into::Vector{NameAlias},
+                              what::AbstractString, alias::Symbol, canonical::Symbol)
+    alias === canonical &&
+        enverr("`$(b.domain)` dá ao $what `$canonical` um apelido igual ao próprio nome.")
+    prev = findfirst(e -> e.alias === alias, into)
+    if prev !== nothing
+        old = into[prev]
+        old.canonical === canonical && return b
+        enverr("o apelido de $what `$alias` é registrado por `$(old.domain)` (para " *
+               "`$(old.canonical)`) e por `$(b.domain)` (para `$canonical`).")
+    end
+    push!(into, NameAlias(alias, canonical, b.domain))
     return b
 end
 
@@ -360,6 +435,8 @@ struct Environment
     domains::Vector{Symbol}
     types::Vector{TypeEntry}
     typealiases::Vector{TypeAlias}
+    attributealiases::Vector{NameAlias}    # na ordem de registro: o primeiro é o escrito
+    formatteraliases::Vector{NameAlias}
     keywords::KeywordTable
     styles::Vector{BlockStyle}
     marks::Vector{String}
@@ -434,8 +511,18 @@ function freeze(b::EnvironmentBuilder, domains::Vector{Symbol})
             enverr("`$(a.alias)` é ao mesmo tempo nome de tipo e apelido de `$(a.canonical)`.")
     end
 
+    keywords = build_keywords(b)
+    for a in b.attributealiases
+        k = keyword(keywords, String(a.alias))
+        k === nothing ||
+            enverr("o apelido de atributo `$(a.alias)` (para `$(a.canonical)`, por " *
+                   "`$(a.domain)`) é a palavra-chave `$k` deste idioma, e uma regra que o " *
+                   "escrevesse o leria como palavra-chave.")
+    end
+
     Environment(b.locale, domains, types, aliases,
-                build_keywords(b), sort(b.styles; by = s -> s.name), copy(b.marks),
+                copy(b.attributealiases), copy(b.formatteraliases),
+                keywords, sort(b.styles; by = s -> s.name), copy(b.marks),
                 b.inflect, b.repair, b.joiner, b.decimal_separator, b.group_separator,
                 b.date_pattern, sort(b.currency; by = first),
                 sort(b.terms; by = first))
@@ -512,6 +599,58 @@ existe, e se escreve pela cardinalidade (D-071).
 typenames(env::Environment) =
     sort!(vcat([e.name for e in env.types if e.name !== COLLECTION_TYPENAME],
                [a.alias for a in env.typealiases if a.canonical !== COLLECTION_TYPENAME]))
+
+"""
+    resolve_name(aliases, available, written) -> Union{Nothing,Symbol}
+
+O nome canônico que `written` denota entre os nomes `available` de um tipo: ele mesmo, se o
+tipo o tem; o canônico de um apelido, se o tipo tem esse canônico; `nothing`, se nenhum.
+
+A resolução é **por tipo**, e o nome canônico ganha do apelido. É o que deixa uma camada
+nacional ter um atributo chamado, por acaso, como o apelido de outro: `rural` do
+`KanonLegal` é `rural` onde o tipo o tem, e o ambiente nunca precisa saber (D-076).
+"""
+function resolve_name(aliases::Vector{NameAlias}, available, written::Symbol)
+    written in available && return written
+    for a in aliases
+        a.alias === written && a.canonical in available && return a.canonical
+    end
+    return nothing
+end
+
+"O atributo canônico que `written` denota em `T`, ou `nothing` (D-076)."
+attribute_name(env::Environment, T::Type, written::Symbol) =
+    resolve_name(env.attributealiases, kanon_attributes(T), written)
+
+"O formatador canônico, visível neste ambiente, que `written` denota em `T` (D-076)."
+formatter_name(env::Environment, T::Type, written::Symbol) =
+    resolve_name(env.formatteraliases, kanon_formats(T, env), written)
+
+"""
+    written_name(aliases, canonical) -> Symbol
+
+O nome que o ambiente escreve para um canônico: o primeiro apelido registrado, ou o
+próprio canônico. É o `written_typename` dos atributos e dos formatadores — a mensagem que
+lista o que existe cita a língua do modelo (D-051).
+"""
+function written_name(aliases::Vector{NameAlias}, canonical::Symbol)
+    i = findfirst(a -> a.canonical === canonical, aliases)
+    i === nothing ? canonical : aliases[i].alias
+end
+
+"""
+Atributos como este ambiente os escreve, ordenados (I4). Os quatro que são palavras-chave —
+`present`, `absent`, `true` e `false` — saem pela tabela do idioma; os demais, pelo apelido.
+"""
+written_attributes(env::Environment, names) =
+    sort!([n in KEYWORD_ATTRIBUTES ? Symbol(written(env.keywords, n)) :
+                                     written_name(env.attributealiases, n) for n in names])
+
+const KEYWORD_ATTRIBUTES = (:absent, :present, Symbol("true"), Symbol("false"))
+
+"Os formatadores de `T` visíveis neste ambiente, como ele os escreve, ordenados (I4)."
+written_formatters(env::Environment, T::Type) =
+    sort!([written_name(env.formatteraliases, f) for f in kanon_formats(T, env)])
 
 "Estilo de bloco da unidade de marcador, ou `nothing`."
 function stylefor(env::Environment, unit::Char)

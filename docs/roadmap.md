@@ -1,6 +1,6 @@
 # Roadmap
 
-> Estado em 15 de setembro de 2026. O portão está **fechado** (15 de 15), quatro das cinco
+> Estado em 16 de setembro de 2026. O portão está **fechado** (15 de 15), as cinco
 > decisões da seção 1a estão tomadas, e o **site está no ar**. Escrito para retomar sem
 > depender de memória.
 
@@ -24,8 +24,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.693 testes** ao todo — 1.655 no núcleo (~50 s com Aqua), 330 em `Extenso`,
-308 em `KanonLegal`, 215 em `KanonScience`, 185 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.747 testes** ao todo — 1.681 no núcleo (~50 s com Aqua), 357 em `Extenso`,
+308 em `KanonLegal`, 215 em `KanonScience`, 186 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -65,13 +65,14 @@ para um pandoc, ou o teste avisa e fica marcado como pulado.
 
 **Ao retomar, nesta ordem:**
 
-1. **A última decisão da seção 1a**: os **apelidos de idioma para atributos e
-   formatadores**. Feitas: o tipo `list` (**D-071**), a marca que nomeia o sujeito
-   (**D-072**), a série de trechos opcionais (**D-073**) — as duas reservadas com erro, e o
-   reparo de emenda intocado — e o ponto final duplicado (**D-075**), resolvido por uma
-   **costura da interpolação** que não é reparo de emenda.
-2. Com a seção 1a fechada, **congelar a sintaxe** é uma decisão tomável: o que resta depois
-   dela é a `0.1.0` e o registro no General (item 2), que é ação sua.
+1. **A seção 1a está fechada.** As cinco: o tipo `list` (**D-071**), a marca que nomeia o
+   sujeito (**D-072**), a série de trechos opcionais (**D-073**) — as duas reservadas com
+   erro, e o reparo de emenda intocado —, o ponto final duplicado (**D-075**), resolvido
+   por uma **costura da interpolação** que não é reparo de emenda, e os **apelidos de
+   idioma para atributos e formatadores** (**D-076**), aditivos e registrados pela camada
+   de idioma.
+2. **Congelar a sintaxe** é agora uma decisão tomável, e é sua: o que resta depois dela é a
+   `0.1.0` e o registro no General (item 2).
 3. E, se quiser público antes disso, o **simulador na página** (item 5), que é o único item
    novo desta lista.
 
@@ -191,16 +192,22 @@ O que procurar no que falta:
 O portão existe para que estas perguntas sejam respondidas **antes** da 1.0: depois dela,
 cada resposta muda a saída de documento publicado ou a gramática, e vira versão maior.
 Com o portão fechado, **são o próximo trabalho**: todas precisam de resposta antes do
-congelamento. Quatro saíram em 15 de setembro de 2026 — o tipo `list` (D-071), que a
-evidência dos quinze modelos decidiu; as duas de sintaxe reservada (D-072 e D-073),
-decididas juntas porque pediam a mesma coisa; e o ponto final duplicado (D-075). **Resta
-uma.**
+congelamento. **Estão todas respondidas.** Quatro saíram em 15 de setembro de 2026 — o tipo
+`list` (D-071), que a evidência dos quinze modelos decidiu; as duas de sintaxe reservada
+(D-072 e D-073), decididas juntas porque pediam a mesma coisa; e o ponto final duplicado
+(D-075). A quinta saiu em 16 de setembro.
 
-| Decisão | Por que agora | Tocada por |
-|---|---|---|
-| **Apelido de idioma para atributos e formatadores** — `quando x é precise`, `{nome:upper}` num modelo `pt` | aditivo, e por isso não bloqueia; mas o nome em português que entrar depois convive para sempre com o inglês | nº 8, nº 9, nº 10, nº 12 |
+**Decidida em 16 de setembro de 2026**: os apelidos de idioma para atributos e formatadores
+(D-076). `quando pontos é preciso` e `{nome:maiusculo}` num modelo `pt`, **ao lado** do
+canônico, que continua valendo. Quem registra é a camada de idioma, e a análise resolve pelo
+tipo. A tabela do `Extenso` só traz os nomes que o português dá sem escolha — um nome que
+entra convive para sempre com o inglês —, e `title`, `fixed2`, `plain`, `count` e `bare`
+esperam o modelo que os peça. O formatador tem o nome na forma de dicionário, como o
+`KanonLegal` já fazia, e com isso `{nome:maiusculo}` vale em `texto` e em `pessoa` — a
+dívida da procuração nº 12 fechou junto, e a das mensagens com os atributos em inglês também. Os modelos nº 8, nº 9, nº 10 e nº 15 e o fragmento do
+procurador passaram a escrever os apelidos, com a saída intacta.
 
-**Decididas em 15 de setembro de 2026**, e fora da tabela: o tipo `list` (D-071); a marca
+**Decididas em 15 de setembro de 2026**: o tipo `list` (D-071); a marca
 que nomeia o sujeito, `procurador(a:advogado)`, **reservada** com o erro `K1216` (D-072); a
 série de trechos opcionais, `[[, {b}][ e {c}]]`, **reservada** com o erro `K2015`, com o
 reparo de emenda intocado (D-073); e o ponto final duplicado, resolvido pela **costura da
@@ -213,8 +220,8 @@ E um limite, registrado e não dívida: **o fragmento fixa os nomes dos campos**
 qualificação do advogado só serve à procuração e à notificação porque as duas chamam o
 advogado de `advogado`; a inclusão não tem parâmetro, e é assim de propósito (D-005).
 
-**Enquanto isso não acontecer, congelar a sintaxe é apostar.** Depois de congelada, cada
-erro de design vira permanente. Com a última respondida, a decisão de congelar passa a ser
+**Congelar a sintaxe deixou de ser aposta.** Depois de congelada, cada erro de design vira
+permanente, e as perguntas que o portão deixou estão respondidas. A decisão de congelar é
 sua, e não do calendário.
 
 ### 2. O registro no General — decisão sua, não minha
@@ -300,7 +307,7 @@ landing durar até o próximo build de docs.
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.655, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.681, ~50 s
 # o KanonLSP roda o modelo real nº 13 com a camada de verdade: desenvolva as camadas nele
 # antes, como o CI faz (`Pkg.develop` de `.`, `lib/Extenso`, `lib/KanonScience` e
 # `lib/KanonLegal` no projeto `lib/KanonLSP`); e o KanonLegal roda o modelo nº 15 pelo pandoc:
@@ -859,8 +866,6 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 
 | Dívida | Onde | Gatilho |
 |---|---|---|
-| Os nomes de atributo não têm apelido de idioma: num modelo `pt` escreve-se `quando x é empty` | `environment.jl` | **puxado pelos modelos nº 8, nº 9 e nº 10** (e os formatadores, pelo nº 12 — linha abaixo), que escrevem `quando não (pontos é precise)` e `quando não (indicacao é precise)` em certificados em português. A §9 promete que o idioma renomeia palavras-chave, e atributo não é palavra-chave — mas o autor não sabe disso, e agora que o motor cita a regra de volta na língua certa (D-051) o `precise` no meio dela é a única palavra fora do lugar. Um `register_attribute_alias!` é aditivo, e o glossário da D-056 mostrou onde ele **não** vai: atributo é nome que a regra resolve, não texto que sai no documento |
-| As mensagens listam os atributos em inglês mesmo num modelo `pt`: `Atributos de \`texto\`: absent, present` | `analyze.jl` | um redator reclamar. Traduzir diagnóstico é projeto próprio, e a D-027 diz por que ele não é urgente |
 | `is not` em português vira `é não`, que é agramatical | `parse_rules.jl` | escrever `não (x é y)` resolve hoje; mudar a **ordem** da gramática por idioma seria versão maior |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | um `pessoa` com `nome = " "` passa pelo D-008. Fecha o mesmo buraco um nível abaixo |
 | Escalar de camada vira `{}` no checklist | `contract.jl` | um gerador de formulário precisar da forma de `measure`. Um `kanon_json_type` é aditivo e cabe numa versão menor |
@@ -869,7 +874,6 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
 | O arquivo `chave = valor` escrito à mão lê `drenagem = 1.320` como `1.32` | `cli.jl` | o `ask` recusa a resposta ambígua desde a D-069, e o arquivo digitado não passa por ele: `parse_data_value` não conhece o ambiente. O JSON não tem o problema, porque lá o número é da gramática do JSON. Gatilho: o primeiro modelo com dados digitados à mão em `chave = valor` com número agrupado |
-| Os formatadores de `texto` são `upper`, `lower` e `title` num modelo `pt`, e o de `pessoa` é `maiusculo` | `core_types.jl`, `KanonLegal` | a mesma dívida dos atributos, pela outra porta: a procuração escreveu `{nome:maiusculo}` dentro do bloco `<- outorgado` e levou `K2020`: ali `nome` é `texto`, cujo formatador é `upper`, e `maiusculo` é o de `pessoa` — duas palavras, em duas línguas, para a mesma coisa |
 | O escape do Markdown é o do CommonMark, e o leitor padrão do pandoc lê mais: `a)`, `(1)` e `iv.` no começo da linha abrem lista; `H~2~O` e `10^3^` são subscrito e sobrescrito no meio dela; `--` vira travessão e a aspa reta vira curva | `output.jl` | um valor com uma dessas formas chegar a um `.docx`. Registrado na D-070, conferido no pandoc 3.11: a reclamação nº 15 não tem nenhuma, e escapar `(` e `^` em todo Markdown encheria de barras o fonte de quem o lê no CommonMark |
 | Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
 | A cobertura mede só o núcleo; as quatro camadas não sobem `lcov` | `CI.yml` | quando uma camada crescer a ponto de a leitura do número dela dizer algo. Hoje diria pouco: o sinal deste projeto está nas invariantes, não no percentual |

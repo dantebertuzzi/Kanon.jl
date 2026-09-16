@@ -47,16 +47,16 @@ dados
 texto
 
 : enderecamento
-**EXCELENTÍSSIMO((A)) SENHOR((A)) JUIZ((A)) DA ___ VARA DO TRABALHO DE {cidade:upper}/PE**
+**EXCELENTÍSSIMO((A)) SENHOR((A)) JUIZ((A)) DA ___ VARA DO TRABALHO DE {cidade:maiusculo}/PE**
 
 : qualificacao_reclamante <- reclamante
-**{nome:upper}**, {estado_civil}, {profissao}, portador(a) do CPF {cpf} e da CTPS nº {ctps}, residente e domiciliado(a) na {endereco}[, endereço eletrônico {email_reclamante}], por seu advogado infra-assinado, com procuração anexa, vem, respeitosamente, à presença de Vossa Excelência propor
+**{nome:maiusculo}**, {estado_civil}, {profissao}, portador(a) do CPF {cpf} e da CTPS nº {ctps}, residente e domiciliado(a) na {endereco}[, endereço eletrônico {email_reclamante}], por seu advogado infra-assinado, com procuração anexa, vem, respeitosamente, à presença de Vossa Excelência propor
 
 : acao
 **RECLAMAÇÃO TRABALHISTA**, pelo rito ordinário,
 
 : qualificacao_reclamada <- reclamada
-em face de **{nome:upper}**, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº {documento}, com sede na {endereco}, pelos fatos e fundamentos a seguir expostos.
+em face de **{nome:maiusculo}**, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº {documento}, com sede na {endereco}, pelos fatos e fundamentos a seguir expostos.
 
 : titulo_fatos
 **I — DOS FATOS**
@@ -122,7 +122,7 @@ pede deferimento.
 {cidade}, {emissao:corrente}.
 
 : assinatura <- advogado
-{nome:upper}
+{nome:maiusculo}
 OAB/PE {oab}
 
 regras

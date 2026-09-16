@@ -58,13 +58,13 @@ O instrumento calibrado, apresentado a este laboratório por {cliente}, é o {in
 A calibração compreendeu {ciclos} ciclos de medição em cada ponto, à temperatura ambiente de {temperatura}[ e umidade relativa de {umidade}].
 
 ::: padrao
-As indicações do instrumento foram comparadas com as do padrão de referência, de {padrao}, cuja incerteza relativa é de {padrao:relative}.
+As indicações do instrumento foram comparadas com as do padrão de referência, de {padrao}, cuja incerteza relativa é de {padrao:relativo}.
 
 :: resultados
 Mediram-se os pontos adiante relacionados[, todos expressos em {padrao.unit}], e a incerteza de cada um é a incerteza expandida da média dos ciclos.
 
 ::: ponto <- pontos
-Indicação média de {pontos}, com incerteza relativa de {pontos:relative}.
+Indicação média de {pontos}, com incerteza relativa de {pontos:relativo}.
 
 ::: ponto_impreciso <- pontos
 A indicação de {pontos} tem incerteza superior a um centésimo do valor indicado, e não sustenta ajuste do instrumento por comparação.
@@ -78,5 +78,5 @@ Os resultados do item {::resultados} referem-se exclusivamente ao instrumento id
 regras
   ponto            um para cada pontos
   ponto_impreciso  um para cada pontos
-  ponto_impreciso  quando não (pontos é precise)
+  ponto_impreciso  quando não (pontos é preciso)
   observacao       quando observacao é presente

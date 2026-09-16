@@ -123,6 +123,48 @@ está escrito aqui (D-056).
 const TERMOS = (:theorem => "Teorema",)
 
 """
+Os nomes de atributo em português (D-076). Aditivos: `precise` continua valendo ao lado de
+`preciso`, e a ordem importa — o primeiro de cada canônico é o que a mensagem escreve.
+
+O adjetivo concorda com o campo, e o campo tem gênero: `a indicação é precisa`, `o ponto é
+preciso`. Os dois são apelidos, e o motor não confere concordância nenhuma.
+
+Como em `TERMOS`, estar aqui não é conhecer quem define o atributo: `precise` e
+`dimensionless` são do `KanonScience`, e `preciso` é só uma palavra portuguesa. Ficam de
+fora `zero`, que é a mesma palavra, e `true`/`false`, que já são `verdadeiro`/`falso`
+pela tabela das palavras-chave.
+"""
+const ATRIBUTOS = [
+    :negativo => :negative, :negativa => :negative,
+    :positivo => :positive, :positiva => :positive,
+    :vazio => :empty, :vazia => :empty,
+    :preciso => :precise, :precisa => :precise,
+    :adimensional => :dimensionless,
+]
+
+"""
+Os nomes de formatador em português (D-076) — **só os que traduzem sem escolha**.
+
+Um nome que entra aqui convive com o inglês para sempre, e por isso a tabela para onde a
+tradução passaria a ser invenção: `title`, `fixed2`, `plain`, `count` e `bare` pedem um
+nome que o português não dá pronto, e esperam o modelo que os peça. `iso` é a mesma
+palavra. E `extenso`, `corrente` e `mes` não estão aqui porque já **são** portugueses:
+são formatadores do idioma, não apelidos.
+
+O nome é a **forma de dicionário** — masculino singular —, e não concorda com nada: um
+formatador não é predicado de frase nenhuma. É a convenção que o `KanonLegal` já seguia com o
+`maiusculo` de `pessoa`, e segui-la é o que faz `{nome:maiusculo}` valer tanto no campo
+`pessoa` quanto no `texto` do sujeito — a troca que custou um `K2020` à procuração nº 12.
+"""
+const FORMATADORES = [
+    :maiusculo => :upper, :minusculo => :lower,
+    :inteiro => :integer,
+    :codigo => :code, :simbolo => :symbol,
+    :numerico => :numeric,
+    :relativo => :relative,
+]
+
+"""
     Kanon.configure_locale!(b, ::Val{:pt})
 
 Tudo que é **nome** e é local ao ambiente. O que é comportamento — formatar, flexionar —
@@ -133,6 +175,13 @@ function Kanon.configure_locale!(b::EnvironmentBuilder, ::Val{:pt})
 
     for (apelido, canonico) in TIPOS
         register_type_alias!(b, apelido, canonico)
+    end
+
+    for (apelido, canonico) in ATRIBUTOS
+        register_attribute_alias!(b, :pt, apelido, canonico)
+    end
+    for (apelido, canonico) in FORMATADORES
+        register_formatter_alias!(b, :pt, apelido, canonico)
     end
 
     for (chave, palavra) in TERMOS

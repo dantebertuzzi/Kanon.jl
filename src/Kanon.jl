@@ -77,6 +77,7 @@ export register_type!, register_aliases!, register_block_style!
 export register_inflection!, register_repair_hook!, register_currency!
 export register_separators!, register_date_pattern!
 export register_type_alias!, register_list_joiner!
+export register_attribute_alias!, register_formatter_alias!
 export register_term!, term
 export configure!, configure_locale!
 export @kanon_type

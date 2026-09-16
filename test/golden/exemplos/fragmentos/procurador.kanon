@@ -20,4 +20,4 @@ dados
 texto
 
 : qualificacao_procurador <- advogado
-PROCURADOR: {nome:upper}, advogado(a) inscrito(a) na OAB/PE sob o nº {oab}, com escritório profissional na {endereco}[, endereço eletrônico {email}].
+PROCURADOR: {nome:maiusculo}, advogado(a) inscrito(a) na OAB/PE sob o nº {oab}, com escritório profissional na {endereco}[, endereço eletrônico {email}].

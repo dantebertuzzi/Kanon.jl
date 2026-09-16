@@ -185,6 +185,10 @@ register_repair_hook!(b, :pt, (text, seams, ctx) -> recapitalize_after_elision(t
 register_list_joiner!(b, :pt, (partes, ctx) -> join_with_conjunction(partes))
 
 register_type_alias!(b, :dinheiro, :money)
+
+register_attribute_alias!(b, :pt, :preciso, :precise)
+register_attribute_alias!(b, :pt, :precisa, :precise)
+register_formatter_alias!(b, :pt, :maiusculo, :upper)
 ```
 
 **[acrescentados na F4 — D-025]** `register_list_joiner!` substitui a única convenção
@@ -209,6 +213,30 @@ a camada funcionando em ambiente neutro.
 
 Não é tradução de diagnóstico (D-027) nem palavra-chave: é o texto que a camada põe
 **dentro** do documento.
+
+**[acrescentado na seção 1a — D-076]** `register_attribute_alias!` e
+`register_formatter_alias!` dão nome no idioma a um atributo e a um formatador: `quando
+pontos é preciso` e `{nome:maiusculo}` num modelo `pt`. A divisão do trabalho é a do
+glossário — o domínio define `precise` em inglês canônico, e a camada de idioma registra
+`preciso` sem conhecer o domínio —, mas o lugar é outro: o glossário é texto que **sai** no
+documento, e o apelido é nome que a **regra resolve**.
+
+Três propriedades que a camada precisa saber:
+
+- **É aditivo.** O nome canônico continua valendo ao lado do apelido; ao contrário da
+  palavra-chave (D-003), atributo e formatador não são gramática.
+- **A resolução é por tipo.** A análise procura o nome escrito entre os do tipo, e só então
+  o apelido; o canônico ganha. Por isso o ambiente não recusa um apelido que coincida com
+  o atributo de outra camada — `rural` do `KanonLegal` continua sendo o dele.
+- **O primeiro apelido é o escrito.** Um canônico pode ter vários (`preciso` e `precisa`,
+  porque o atributo é predicado e concorda com o campo), e as mensagens e a completação do
+  editor citam o primeiro registrado. O formatador não concorda com nada: um nome só, na
+  forma de dicionário, que é a que o `KanonLegal` usa (`maiusculo`).
+
+Um apelido de atributo que seja palavra-chave do idioma é recusado na construção: o parser
+o leria como palavra-chave antes de o ambiente ser consultado. E um formatador **do
+idioma** — `extenso` — não é apelido: é comportamento, declarado por `kanon_format_locale`
+(D-026).
 
 O protocolo de sujeito que a camada de idioma usa é ela mesma quem define
 (`gender(v)`, `number(v)` despachados sobre os tipos do domínio). **O núcleo não conhece
@@ -347,6 +375,8 @@ alcançar uma mensagem de erro é ordenada, por I4:
 | símbolo de moeda | `register_currency!` | dois símbolos para a mesma moeda |
 | junção de lista | `register_list_joiner!` | duas camadas de idioma |
 | apelido de tipo de outrem | `register_type_alias!` | dois apelidos iguais |
+| apelido de atributo | `register_attribute_alias!` | o mesmo apelido para canônicos diferentes; apelido que é palavra-chave |
+| apelido de formatador | `register_formatter_alias!` | o mesmo apelido para canônicos diferentes |
 | separadores decimal e de milhar | `register_separators!` | último vence (é do idioma) |
 | padrão de `date:numeric` | `register_date_pattern!` | último vence (é do idioma) |
 | palavra de glossário | `register_term!` | último vence (é do idioma) |

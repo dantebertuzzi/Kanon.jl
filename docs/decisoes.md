@@ -2691,3 +2691,87 @@ modelos que tocaram no caso o contornaram. É a última janela em que essa corre
 convenção das escritas latinas. Um idioma em que isso não valha precisaria de um gancho —
 hoje o de reparo (§5.5) só recebe as emendas da elisão. Nenhum documento pediu, e a decisão
 de estender o gancho espera um que peça.
+
+---
+
+## D-076 — Atributos e formatadores têm nome no idioma, ao lado do canônico
+
+*2026-09-16 · aceita · quinta e última decisão da seção 1a*
+
+**A observação.** Num modelo `pt`, as palavras-chave, os tipos e as mensagens estão em
+português, e três certificados publicados escrevem `quando não (pontos é precise)`,
+`quando não (indicacao é precise)` e `quando estimativa é precise`. A reclamação nº 15 e o
+fragmento do procurador escrevem `{nome:upper}`. Desde a D-051 o motor cita a regra de
+volta na língua do arquivo, e o `precise` no meio dela é a única palavra fora do lugar. As
+mensagens também listavam o que existe em inglês: `Atributos de texto: absent, present`,
+num modelo em que o autor escreve `ausente` e `presente`.
+
+**Por que agora, sendo aditivo.** Um apelido pode entrar em qualquer versão menor. O que não
+pode é **sair**: um nome que entra convive para sempre com o canônico. Decidir o mecanismo e
+a tabela antes de congelar é escolher com cuidado o que vai ser permanente.
+
+**Decisão.**
+
+1. **Dois registros novos, da camada de idioma**: `register_attribute_alias!(b, lang,
+   apelido, canônico)` e `register_formatter_alias!(b, lang, apelido, canônico)`. A divisão
+   do trabalho é a do glossário (D-056): o `KanonScience` define `precise` e não tem idioma,
+   e o `Extenso` registra `preciso` sem conhecer o `KanonScience`. Mas o lugar não é o
+   glossário: `register_term!` é texto que **sai** no documento, e isto é nome que a
+   **regra resolve**.
+2. **O canônico continua valendo.** `é precise` e `é preciso` são a mesma regra num modelo
+   `pt`. A restrição de mistura (D-003) é sobre a gramática, e atributo e formatador são
+   vocabulário do tipo — como o nome de tipo, que já convivia com o apelido.
+3. **A resolução é por tipo, na análise.** O nome escrito é procurado entre os nomes do tipo;
+   se não está lá, entre os apelidos cujo canônico o tipo tem. O canônico ganha. O ambiente
+   não sabe que atributos cada tipo tem, porque atributo é método, e por isso não tenta
+   recusar coincidência entre o apelido e o atributo de outra camada: onde o tipo tem
+   `rural`, `rural` é dele.
+4. **O nó guarda o escrito, e a tabela lateral guarda o canônico** (I2). `Analysis.formatter`
+   já existia e passa a receber o canônico; `Analysis.attribute` é nova. O render executa o
+   canônico, e o `outline` e o editor citam o escrito.
+5. **O atributo concorda; o formatador não.** O atributo é predicado de uma frase — `a
+   indicação é precisa`, `o ponto é preciso` —, e por isso um canônico pode ter os dois
+   gêneros como apelidos; o motor não confere concordância. O formatador não é predicado
+   de nada, e tem um nome só, na **forma de dicionário**: `maiusculo`, `relativo`. É a
+   convenção que o `KanonLegal` já seguia com o `maiusculo` de `pessoa`, e é ela que fecha a
+   dívida da procuração nº 12, que escreveu `{nome:maiusculo}` num campo `texto` e levou
+   `K2020` — duas palavras, em duas línguas, para a mesma coisa. Agora é uma. Quando há
+   mais de um apelido, o **primeiro** registrado é o que as mensagens e a completação do
+   editor escrevem.
+6. **As listas das mensagens saem na língua do modelo**: `adimensional, ausente, preciso,
+   presente` para um `measure`. Os quatro atributos que são palavras-chave (`present`,
+   `absent`, `true`, `false`) saem pela tabela do idioma, e os demais, pelo apelido. Isso
+   fecha a dívida das mensagens em inglês, que tinha o mesmo remédio.
+7. **Um apelido de atributo que seja palavra-chave do idioma é erro de construção.** O parser
+   lê `verdadeiro` como palavra-chave antes de o ambiente ser consultado, e o apelido nunca
+   seria alcançado.
+
+**A tabela do `Extenso`, e onde ela para.** Entram os nomes que o português dá **sem
+escolha**: `vazio`/`vazia`, `positivo`/`positiva`, `negativo`/`negativa`,
+`preciso`/`precisa`, `adimensional`; `maiusculo`, `minusculo`, `inteiro`, `codigo`,
+`simbolo`, `numerico`, `relativo`. Ficam de fora `title`, `fixed2`, `plain`, `count` e
+`bare`, que pedem um nome que o português não dá pronto — `bare` é "o valor central sem a
+incerteza", e nenhuma palavra só diz isso. Esperam o modelo que os peça. `zero` e `iso` já
+são a mesma palavra, e `extenso`, `corrente` e `mes` não são apelidos: são formatadores
+**do idioma** (D-026). O roteiro de aula nº 10 continua escrevendo `{estimativa:bare}`, e é
+a evidência de que a fronteira existe.
+
+**Alternativas.** (a) A camada que define o atributo dá os apelidos, como `register_type!`
+faz com `aliases = (pt = …,)`: põe português dentro de uma camada que se anuncia sem idioma,
+a mesma objeção que a D-056 fez ao rótulo `Theorem`. (b) Apelidos como palavras-chave, com o
+inglês deixando de valer num modelo `pt`: quebraria os quinze modelos publicados, e atributo
+não é gramática — cada camada acrescenta os seus. (c) Canonicalizar no parser, como já se faz
+com `presente`: o parser não tem o ambiente (invariante 8), e o nó perderia o que o autor
+escreveu, que é o que a D-051 manda citar. (d) Traduzir a tabela inteira: cada nome
+inventado é permanente, e "corrigir o que nenhum documento pediu é adivinhar". (e) Não
+fazer nada: o autor em português continua escrevendo a única palavra inglesa da regra, e o
+motor continua listando `absent, present` para quem escreve `ausente`. (f) Registro pela
+camada de idioma, resolução por tipo na análise, canônico preservado (escolhida).
+
+**O que isto custa em compatibilidade.** Nada. Nenhum modelo muda de sentido e nenhum golden
+de saída mudou: os modelos nº 8, nº 9, nº 10 e nº 15, e o fragmento do procurador, passam a
+escrever os apelidos — o fragmento é o que a procuração nº 12 e a notificação nº 13
+incluem —, e a saída de cada um é byte a byte a mesma — inclusive o `.docx` da
+reclamação, lido de volta pelo pandoc. O que muda é o texto de duas dicas (`K2020` e
+`K2041`), que agora listam os nomes na língua do modelo, e a completação do editor, que
+oferece `maiusculo` e não `upper` num modelo `pt`.

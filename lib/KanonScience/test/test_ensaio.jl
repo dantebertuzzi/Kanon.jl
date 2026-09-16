@@ -99,7 +99,7 @@ const DADOS_ENSAIO = Dict{String,Any}(
     end
 
     @testset "a incerteza relativa decide o texto, por iteração" begin
-        # `quando não (pontos é precise)` — um ponto em quatro, e é o de menor valor:
+        # `quando não (pontos é preciso)` — um ponto em quatro, e é o de menor valor:
         # a incerteza é quase a mesma em toda a faixa, e por isso pesa mais embaixo.
         @test count("tem incerteza superior a um centésimo", saida) == 1
         @test occursin("A indicação de 20,1 ± 0,3 °C tem incerteza superior", saida)
@@ -148,7 +148,7 @@ const DADOS_ENSAIO = Dict{String,Any}(
         fixo = replace(read(ENSAIO, String),
                        "::: ponto_impreciso <- pontos" => ":::: nota",
                        "  ponto_impreciso  um para cada pontos\n" => "",
-                       "  ponto_impreciso  quando não (pontos é precise)\n" => "")
+                       "  ponto_impreciso  quando não (pontos é preciso)\n" => "")
         e2 = try; load_string(ENV_ENSAIO, fixo; name = "e.kanon"); catch err; err; end
         @test e2 isa KanonReferenceError
         @test any(x -> x.code == "K2048", collect(e2.diagnostics))
@@ -187,7 +187,7 @@ const DADOS_ENSAIO = Dict{String,Any}(
         s = Kanon.format_outline(m)
         @test occursin("um para cada pontos", s)
         @test occursin("quando observacao é presente", s)
-        @test occursin("quando não (pontos é precise)", s)
+        @test occursin("quando não (pontos é preciso)", s)
         @test !occursin("one for each", s)
         @test !occursin("is present", s)
         # o tipo de um campo de composto também: `text` do esquema é `texto` aqui

@@ -19,6 +19,8 @@ e método é global e aditivo — a divisão está em D-025.
 ```@docs
 register_type!
 register_type_alias!
+register_attribute_alias!
+register_formatter_alias!
 register_aliases!
 register_block_style!
 register_inflection!

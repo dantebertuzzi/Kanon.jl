@@ -23,7 +23,7 @@ struct ResolvedPath
     decl::NodeId                 # a declaração de origem, para a mensagem de erro; 0 se constante
 end
 
-"Valor neutro de `formatter` para os nós que não são interpolação."
+"Valor neutro de `formatter` e `attribute` para os nós que não são do seu tipo."
 const NO_FORMATTER = Symbol("")
 
 """
@@ -33,13 +33,15 @@ O resultado de `analyze`: tabelas laterais endereçadas por `NodeId`, mais os
 diagnósticos acumulados.
 
 Preenchimento por fase, para que a leitura do arquivo não engane: `paths` e `formatter`
-são da F2.2; `guarded` é da F2.3; `block_index`, `block_rule` e `block_foreach` são da
+são da F2.2; `attribute`, que guarda o nome canônico de um `is` escrito com apelido de
+idioma, é da D-076; `guarded` é da F2.3; `block_index`, `block_rule` e `block_foreach` são da
 F2.4; `numbering` é da F5.
 """
 struct Analysis
     # por nó
     paths::Vector{Union{Nothing,ResolvedPath}}
     formatter::Vector{Symbol}
+    attribute::Vector{Symbol}
     guarded::Vector{Bool}
 
     # por bloco, indexadas pela POSIÇÃO em `template.text.blocks` — a ordem do arquivo,
@@ -56,6 +58,7 @@ end
 function Analysis(n::Integer)
     Analysis(Union{Nothing,ResolvedPath}[nothing for _ in 1:n],
              fill(NO_FORMATTER, n),
+             fill(NO_FORMATTER, n),
              falses(n),
              Vector{Int32}[],
              Int32[],
@@ -70,6 +73,12 @@ resolved(a::Analysis, e::RuleExpr) = a.paths[id(e)]
 
 "O formatador efetivo de uma interpolação: `:default` quando o modelo não nomeia nenhum."
 formatter(a::Analysis, n::Interp) = a.formatter[id(n)]
+
+"""
+O atributo canônico de uma condição `is`: `precise` quando o modelo escreveu `preciso`. O
+nó guarda o que o autor escreveu, e o render pergunta por aqui (I2, D-076).
+"""
+attribute(a::Analysis, e::AttrExpr) = a.attribute[id(e)]
 
 haserrors(a::Analysis) = any(d -> d.severity === :error, a.diagnostics)
 
