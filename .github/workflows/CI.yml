@@ -193,6 +193,30 @@ jobs:
           git diff --cached --quiet || git commit -m "Landing page: $GITHUB_SHA"
           git push
 
+  # As provas de fogo: o motor dentro de outra ferramenta. O blog constrói um site em
+  # Franklin e planta os erros de um redator; o gerador de minutas monta o formulário do
+  # checklist e o preenche num Chrome sem janela — que as imagens do Ubuntu já trazem.
+  # Os dois projetos trazem o `Manifest.toml` — reprodutibilidade é metade do propósito —, e
+  # por isso rodam na versão de Julia que os resolveu. `[sources]` pede 1.11 ou mais.
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.13'
+      - uses: julia-actions/cache@v2
+      - name: Blog em Franklin
+        run: |
+          julia --project=exemplos/blog -e 'using Pkg; Pkg.instantiate()'
+          julia --project=exemplos/blog exemplos/blog/teste.jl
+          cd exemplos/blog && julia --project=. construir.jl
+      - name: Gerador de minutas
+        run: |
+          julia --project=exemplos/minutas -e 'using Pkg; Pkg.instantiate()'
+          julia --project=exemplos/minutas exemplos/minutas/teste.jl
+
   neutrality:
     name: Neutrality
     runs-on: ubuntu-latest

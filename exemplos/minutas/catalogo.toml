@@ -1,0 +1,35 @@
+# Os modelos que o gerador oferece. São os modelos reais do portão, em
+# `test/golden/exemplos/`, usados no lugar — e não copiados: o que o gerador preenche é
+# exatamente o que a suíte renderiza byte a byte.
+#
+# `exemplo` é o JSON de dados do mesmo modelo, que o botão "Preencher com o exemplo" carrega.
+
+[procuracao]
+titulo = "Procuração ad judicia"
+descricao = "Outorga de poderes a advogado, para o foro em geral e poderes especiais."
+modelo = "procuracao.kanon"
+exemplo = "procuracao.json"
+
+[notificacao]
+titulo = "Notificação extrajudicial"
+descricao = "Constituição em mora por dívida vencida, com prazo para pagamento."
+modelo = "notificacao.kanon"
+exemplo = "notificacao.json"
+
+[servicos]
+titulo = "Contrato de prestação de serviços"
+descricao = "Objeto, entregas, preço em parcelas, prazo, multa e foro."
+modelo = "servicos.kanon"
+exemplo = "servicos.json"
+
+[reclamacao]
+titulo = "Reclamação trabalhista"
+descricao = "Petição inicial com fatos, pedidos e valor da causa."
+modelo = "reclamacao.kanon"
+exemplo = "reclamacao.json"
+
+[doacao]
+titulo = "Escritura de doação"
+descricao = "Doação de imóvel a um ou mais donatários, com reserva de usufruto."
+modelo = "doacao.kanon"
+exemplo = "doacao.json"

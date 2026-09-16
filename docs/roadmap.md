@@ -1,8 +1,8 @@
 # Roadmap
 
 > Estado em 16 de setembro de 2026. O portão está **fechado** (15 de 15), as cinco
-> decisões da seção 1a estão tomadas, **a sintaxe da versão 1 está congelada** (D-077) e o
-> **site está no ar**. Escrito para retomar sem depender de memória.
+> decisões da seção 1a estão tomadas, **a sintaxe da versão 1 está congelada** (D-077), o
+> **site está no ar**, e duas provas de fogo puseram o motor fora do acervo (D-078, D-079). Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -300,6 +300,25 @@ sistema, as duas portas e as camadas.
 Documenter reescreve o `index.html` da raiz a cada deploy: por isso o job `docs` do CI
 republica `web/` na raiz **depois** do deploy da documentação. Tirar esse passo faz a
 landing durar até o próximo build de docs.
+
+
+### 7. As provas de fogo — o motor fora do acervo (16 de setembro de 2026)
+
+Depois do congelamento, duas provas puseram o Kanon onde nenhum dos quinze modelos o tinha
+posto: no meio de outra ferramenta, com alguém que não programa do outro lado. Cada uma está
+em `exemplos/`, com um `LEIA-ME.md`, um `teste.jl` e o que achou.
+
+| Prova | O que é | O que achou no Kanon |
+|---|---|---|
+| `exemplos/blog/` | um blog em Franklin, como um Jekyll com Liquid: posts em Markdown com cabeçalho TOML, e o cabeçalho validado pelo contrato antes de virar página | `bind` exportado e inutilizável sem qualificar; `diagnostics` não exportado; as mensagens de decodificação sem acento (**D-078**); valor em destino de link precisa do `<…>` do CommonMark |
+| `exemplos/minutas/` | um gerador de minutas: catálogo dos modelos reais, formulário montado só do checklist, prévia com «marcadores» a cada tecla, download que só se habilita com o contrato fechado | o checklist recusava o JSON real de cinco modelos jurídicos, e publicava o caminho da máquina (**D-079**) |
+
+E o que elas acharam **fora** do Kanon, e que quem o integra precisa saber: o Markdown que o
+Kanon escreve é CommonMark, e o Franklin lê outro dialeto (`\[` abre matemática, dois `$` viram
+fórmula); o `+++` do Franklin é código Julia avaliado; a dica de `K3001` é para quem escreve o
+modelo, e não para quem preenche.
+
+As duas rodam no CI, no job `Examples`.
 
 ---
 
@@ -866,7 +885,6 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 |---|---|---|
 | `is not` em português vira `é não`, que é agramatical | `parse_rules.jl` | escrever `não (x é y)` resolve hoje; mudar a **ordem** da gramática por idioma seria versão maior |
 | Texto em branco só é normalizado no campo de primeiro nível, não dentro de composto | `check.jl` | um `pessoa` com `nome = " "` passa pelo D-008. Fecha o mesmo buraco um nível abaixo |
-| Escalar de camada vira `{}` no checklist | `contract.jl` | um gerador de formulário precisar da forma de `measure`. Um `kanon_json_type` é aditivo e cabe numa versão menor |
 | `money` emite duas casas para toda moeda; JPY não tem centavos | `core_types.jl` | alguém escrever em iene. Exige casas por moeda no ambiente |
 | O orçamento não é configurável pela CLI | `cli.jl` | um documento legítimo estourar o padrão |
 | Coluna deslocada em um caractere na linha escapada com `\:` | `parse_text.jl` | quando incomodar; é o preço de ter uma contrabarra na coluna 0 |

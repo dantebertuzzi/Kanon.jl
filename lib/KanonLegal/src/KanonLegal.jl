@@ -150,6 +150,66 @@ Extenso.genero(p::Parte) = p.genero
     decode     = (raw, ctx) -> parte_de(raw, ctx)
 end
 
+# --- a forma de entrada, para o checklist ------------------------------------
+#
+# O esquema de cada tipo (`schema = ...` acima) é o que um **modelo** lê. A entrada pede
+# mais: `genero`, que decide `portador(a)`, e `tipo` do imóvel e `empresa` da parte, que
+# decidem os atributos. Sem estas formas, o checklist proibia justamente essas chaves, e o
+# JSON de cinco modelos reais era recusado pelo próprio contrato num validador de JSON
+# Schema (D-079). Os títulos são para o formulário gerado a partir do checklist.
+
+texto_ld(titulo) = ["type" => "string", "title" => titulo]
+
+"Uma escolha com rótulo: o valor que a entrada leva, e o nome que o formulário mostra."
+opcoes_ld(titulo, pares...) = ["type" => "string", "title" => titulo,
+                               "oneOf" => [["const" => v, "title" => t] for (v, t) in pares]]
+
+const GENERO_LD = [opcoes_ld("Gênero", "f" => "Feminino", "m" => "Masculino")...,
+                   "description" => "Decide a concordância, como em portador(a)."]
+
+Kanon.kanon_json_schema(::Type{Pessoa}) = [
+    "type" => "object",
+    "properties" => [
+        "nome" => texto_ld("Nome completo"),
+        "genero" => GENERO_LD,
+        "estado_civil" => texto_ld("Estado civil"),
+        "cpf" => texto_ld("CPF"),
+        "endereco" => texto_ld("Endereço"),
+        "regime" => texto_ld("Regime de bens"),
+        "nascimento" => ["type" => "string", "format" => "date", "title" => "Data de nascimento"],
+    ],
+    "required" => ["nome", "genero", "estado_civil", "cpf", "endereco"],
+    "additionalProperties" => false,
+]
+
+Kanon.kanon_json_schema(::Type{Imovel}) = [
+    "type" => "object",
+    "properties" => [
+        "matricula" => texto_ld("Matrícula"),
+        "tipo" => opcoes_ld("Tipo", "rural" => "Rural", "urbano" => "Urbano"),
+        "descricao" => texto_ld("Descrição"),
+        # só número: o decodificador recusa `"360"` — e um formulário que obedeça ao
+        # checklist manda exatamente o que o checklist permite
+        "area" => ["type" => "number", "title" => "Área (m²)"],
+    ],
+    "required" => ["matricula", "tipo", "descricao"],
+    "additionalProperties" => false,
+]
+
+Kanon.kanon_json_schema(::Type{Parte}) = [
+    "type" => "object",
+    "properties" => [
+        "nome" => texto_ld("Nome ou razão social"),
+        "genero" => GENERO_LD,
+        "documento" => texto_ld("CPF ou CNPJ"),
+        "endereco" => texto_ld("Endereço"),
+        "empresa" => ["type" => "boolean", "title" => "É pessoa jurídica"],
+        "representante" => ["\$ref" => "#/\$defs/pessoa", "title" => "Representante"],
+    ],
+    "required" => ["nome", "genero", "documento", "endereco"],
+    "additionalProperties" => false,
+]
+
 # --- leitura de dados externos -----------------------------------------------
 #
 # Um JSON — ou uma linha de tabela, ou um `Dict` montado à mão — não chega como `Pessoa`:
