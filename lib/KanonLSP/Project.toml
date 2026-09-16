@@ -1,7 +1,7 @@
 name = "KanonLSP"
 uuid = "c9098b74-a6d5-4719-97ce-59c125cc3a47"
 authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
-version = "0.1.0-DEV"
+version = "0.1.0"
 
 [deps]
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"

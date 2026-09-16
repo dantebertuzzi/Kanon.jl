@@ -1,8 +1,8 @@
 # Roadmap
 
 > Estado em 16 de setembro de 2026. O portão está **fechado** (15 de 15), as cinco
-> decisões da seção 1a estão tomadas, e o **site está no ar**. Escrito para retomar sem
-> depender de memória.
+> decisões da seção 1a estão tomadas, **a sintaxe da versão 1 está congelada** (D-077) e o
+> **site está no ar**. Escrito para retomar sem depender de memória.
 
 ## Onde estamos
 
@@ -71,8 +71,9 @@ para um pandoc, ou o teste avisa e fica marcado como pulado.
    por uma **costura da interpolação** que não é reparo de emenda, e os **apelidos de
    idioma para atributos e formatadores** (**D-076**), aditivos e registrados pela camada
    de idioma.
-2. **Congelar a sintaxe** é agora uma decisão tomável, e é sua: o que resta depois dela é a
-   `0.1.0` e o registro no General (item 2).
+2. **A sintaxe está congelada** (D-077): a especificação é a versão 1 aceita, e o corpus
+   golden listado na §13 é contrato. Os cinco pacotes estão em `0.1.0`; o que resta é o
+   **registro no General** (item 2), que é ação sua.
 3. E, se quiser público antes disso, o **simulador na página** (item 5), que é o único item
    novo desta lista.
 
@@ -220,18 +221,16 @@ E um limite, registrado e não dívida: **o fragmento fixa os nomes dos campos**
 qualificação do advogado só serve à procuração e à notificação porque as duas chamam o
 advogado de `advogado`; a inclusão não tem parâmetro, e é assim de propósito (D-005).
 
-**Congelar a sintaxe deixou de ser aposta.** Depois de congelada, cada erro de design vira
-permanente, e as perguntas que o portão deixou estão respondidas. A decisão de congelar é
-sua, e não do calendário.
+**A sintaxe está congelada desde 16 de setembro de 2026 (D-077).** Cada erro de design
+achado daqui em diante é `kanon 2` — e as construções que alguém vai querer estão
+reservadas com erro, para que entrem como versão menor.
 
 ### 2. O registro no General — decisão sua, não minha
 
-O pacote está em `0.1.0-DEV`, que não é versão registrável. Registrar exige decidir a
-`0.1.0`, e essa decisão depende do item 1: uma `0.1.0` publicada cria expectativa de
-estabilidade que as decisões da seção 1a ainda podem desfazer.
-
-Se a decisão for registrar assim mesmo — o que é defensável, `0.1.x` não promete nada —, o
-que o registro vai cobrar está na seção da F10.
+Os cinco pacotes estão em `0.1.0` desde o congelamento (D-077), e a versão é registrável.
+A `0.1.0` promete o que pode cumprir: a **linguagem** `kanon 1` não muda de sentido, e a
+**API Julia** ainda pode mudar em `0.2`. O que o registro vai cobrar — a revisão humana de
+`Kanon` e `Extenso` pelo nome, e a ordem entre os pacotes — está na seção da F10.
 
 ### 3. A pré-visualização sempre visível
 
@@ -822,9 +821,8 @@ tipo**, e a ferramenta padrão do ecossistema concorda. O `Val{:extenso}` é um 
 camada porque o símbolo é dela. A escolha foi feita na F0 por outra razão — enumerar
 formatadores por introspecção —, e essa propriedade veio junto.
 
-**Falta, e é ação sua:** o registro no General. O pacote está em `0.1.0-DEV`, que não é
-versão registrável; registrar exige decidir a `0.1.0`, e essa decisão depende do portão
-abaixo, não de mim.
+**Falta, e é ação sua:** o registro no General. Os pacotes estão em `0.1.0` desde o
+congelamento da sintaxe (D-077).
 
 ### O que o registro vai cobrar
 

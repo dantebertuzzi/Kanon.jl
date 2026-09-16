@@ -1,6 +1,6 @@
 name = "KanonLegal"
 uuid = "5e2a91c4-7d38-4b0e-9a65-3f81c2d4e7a9"
-version = "0.1.0-DEV"
+version = "0.1.0"
 authors = ["Dante Bertuzzi <dantesbertuzzi@gmail.com>"]
 
 [deps]

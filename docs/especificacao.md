@@ -1,7 +1,10 @@
-# Kanon — Especificação da linguagem, versão 1 (rascunho F0)
+# Kanon — Especificação da linguagem, versão 1
 
-> Estado: **rascunho para aceite**. Nada aqui está congelado; a sintaxe só congela
-> depois de quinze modelos reais reescritos (seção 13 do documento de projeto).
+> Estado: **aceita e congelada** em 16 de setembro de 2026 (D-077). O portão que a F0
+> impôs — quinze modelos reais reescritos na linguagem — fechou em 15 de 15, e as cinco
+> decisões que ele deixou em aberto estão tomadas (D-071 a D-076). Daqui em diante, o que
+> pode mudar e o que exige `kanon 2` é o que a seção 13 diz, e o corpus golden que ela
+> lista é o contrato.
 >
 > Este documento é normativo e deve ser legível sem o código Julia. Onde ele diverge
 > da especificação inicial, a divergência está marcada com **[revisão]** e justificada.
@@ -1103,6 +1106,24 @@ Exige **versão maior da linguagem**:
 O corpus golden é versionado junto com a especificação e nunca é editado para
 acomodar uma mudança de motor. Depreciação: uma versão menor inteira emitindo aviso
 antes da remoção na maior seguinte.
+
+**[acrescentado no congelamento — D-077]** O corpus golden da versão 1 é, arquivo por
+arquivo, o que está em `test/golden/` no commit que congelou a sintaxe:
+
+| Parte | Entradas | Saídas que o motor garante byte a byte |
+|---|---|---|
+| Os treze casos normativos de emenda (§4.4) | `emenda/01` a `emenda/13`: o modelo e os dados de cada `.golden` | a seção `saida` de cada caso |
+| O relatório de `exemplos.md` §2 | o modelo do teste de aceitação | `report.output.txt`, `report.contract.json` |
+| Os quinze modelos reais | `exemplos/*.kanon`, os três `exemplos/fragmentos/*.kanon`, e os dados: `*.json`, `verificacao.csv`, `*.respostas.txt` | todo `exemplos/*.txt` que não é dado, `servicos.md`, `reclamacao.md`, `edital.typ`, `procuracao.typ` e `servicos.rascunho.txt` |
+
+Uma saída fica **fora** do contrato, e de propósito: `reclamacao.docx.txt` é o `.docx`
+lido de volta pelo pandoc 3.11. Ele registra que o Markdown do motor vira o documento
+certo, e a suíte o confere — mas os bytes dele são do pandoc, e uma versão nova do
+pandoc que os mude não é mudança da linguagem.
+
+Os quinze modelos foram escritos antes do congelamento, e cinco deles tiveram a **entrada**
+editada pela D-076 (os apelidos de idioma), com a saída intacta. Depois deste commit, nem
+entrada nem saída do corpus se edita para acomodar motor.
 
 ---
 
