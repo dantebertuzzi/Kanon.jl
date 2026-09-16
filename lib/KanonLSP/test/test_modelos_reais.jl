@@ -133,13 +133,17 @@ end
         muda!(p, a.procuracao, pr, 2)
         fmts = completar!(p, a.procuracao, pr, "{especiais:")
         @test Set(fmts) == Set(String.(Kanon.kanon_formats(Kanon.typefor(ENV_PT, :list), ENV_PT)))
-        @test !("upper" in fmts)
+        @test !("upper" in fmts) && !("maiusculo" in fmts)
 
-        # e o formatador de um campo do sujeito, no fragmento
+        # e o formatador de um campo do sujeito, no fragmento — na forma que o modelo
+        # escreve: `maiusculo`, e não `upper`, que continua valendo mas não é o que o
+        # motor cita de volta num modelo `pt` (D-076)
         abre!(p, a.fragmento)
-        f = replace(read(a.fragmento, String), "{nome:upper}" => "{nome:")
+        f = replace(read(a.fragmento, String), "{nome:maiusculo}" => "{nome:")
         muda!(p, a.fragmento, f, 2)
-        @test "upper" in completar!(p, a.fragmento, f, "{nome:")
+        oferecidos = completar!(p, a.fragmento, f, "{nome:")
+        @test "maiusculo" in oferecidos
+        @test !("upper" in oferecidos)
     end
 
     @testset "o formatador de outro idioma não se oferece (D-067)" begin

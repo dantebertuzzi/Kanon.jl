@@ -56,7 +56,7 @@ Este roteiro cobre {encontros:extenso} encontros e usa, em todos os exemplos, a 
 A média amostral, calculada sobre as {amostra} observações da amostra, é um estimador não viesado da média populacional. O valor observado nesta turma é de {estimativa}, contra a referência de {referencia} apurada no semestre anterior.
 
 @@@ precisao
-A estimativa é precisa a menos de um centésimo do próprio valor, com incerteza relativa de {estimativa:relative}, e o valor central de {estimativa:bare} está escrito com os algarismos que a medição sustenta e nenhum além deles.
+A estimativa é precisa a menos de um centésimo do próprio valor, com incerteza relativa de {estimativa:relativo}, e o valor central de {estimativa:bare} está escrito com os algarismos que a medição sustenta e nenhum além deles.
 
 @@ intervalo
 O intervalo de confiança de noventa e cinco por cento para a média populacional cobre a média amostral com a margem que a incerteza acima exprime, e a interpretação dele é sobre o procedimento, nunca sobre o intervalo já calculado.
@@ -67,4 +67,4 @@ incluir "fragmentos/avaliacao.kanon"
 O {::estimador} será demonstrado no primeiro encontro, e os critérios do item {::avaliacao} valem para toda a turma.
 
 regras
-  precisao  quando estimativa é precise
+  precisao  quando estimativa é precisa

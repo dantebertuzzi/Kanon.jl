@@ -369,8 +369,13 @@ function resolve_formatter!(ctx::AnalysisCtx, n::Interp, rp::ResolvedPath)
         return nothing
     end
 
-    fmts = kanon_formats(T, ctx.env)
-    n.formatter in fmts && return nothing
+    # o nome escrito, ou o apelido de idioma dele: `maiusculo` é `upper` (D-076)
+    canon = formatter_name(ctx.env, T, n.formatter)
+    if canon !== nothing
+        ctx.out.formatter[id(n)] = canon
+        return nothing
+    end
+    fmts = written_formatters(ctx.env, T)
 
     # O formatador pode existir, e ser de outro idioma: dizer "não existe" mandaria o
     # redator procurar um erro de digitação onde falta uma camada.
@@ -1224,6 +1229,7 @@ end
 
 "`present` e `absent` valem para todo campo; os demais atributos vêm do tipo."
 function check_attribute!(ctx::AnalysisCtx, e::AttrExpr, rp::ResolvedPath)
+    ctx.out.attribute[id(e)] = e.attr
     if e.attr in UNIVERSAL_ATTRIBUTES
         # Um campo que o contrato garante torna `is present` uma tautologia, e a regra
         # que depende dela, decoração. Aviso, não erro: pode ser um modelo em edição.
@@ -1241,12 +1247,19 @@ function check_attribute!(ctx::AnalysisCtx, e::AttrExpr, rp::ResolvedPath)
     tn = effective_typename(rp)
     T = typefor(ctx.env, tn)
     T === nothing && return nothing
-    attrs = kanon_attributes(T)
-    e.attr in attrs && return nothing
+    # o nome escrito, ou o apelido de idioma dele: `preciso` é `precise` (D-076)
+    canon = attribute_name(ctx.env, T, e.attr)
+    if canon !== nothing
+        ctx.out.attribute[id(e)] = canon
+        return nothing
+    end
 
-    todos = sort!(collect(Symbol, (attrs..., UNIVERSAL_ATTRIBUTES...)))
+    # a lista na língua do modelo: `ausente, preciso, presente`, e não `absent, precise`
+    todos = written_attributes(ctx.env, (kanon_attributes(T)..., UNIVERSAL_ATTRIBUTES...))
+    # `verdadeiro` chega aqui como `true`, que o parser canonicalizou; o resto, como escrito
+    escrito = e.attr in KEYWORD_ATTRIBUTES ? written(ctx.env.keywords, e.attr) : e.attr
     err!(ctx, "K2041", e.span,
-         "`$tn` não tem o atributo `$(e.attr)`.";
+         "`$tn` não tem o atributo `$(escrito)`.";
          hint = did_you_mean(e.attr, todos, "Atributos de `$tn`: $(join(todos, ", "))."),
          path = string(e.subject))
     return nothing

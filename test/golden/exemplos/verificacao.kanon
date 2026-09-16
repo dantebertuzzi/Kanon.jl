@@ -26,7 +26,7 @@ CERTIFICADO DE VERIFICAÇÃO Nº {numero}
 O {laboratorio} certifica que verificou em {verificacao:corrente}, a pedido de {cliente}, a {instrumento} de número de série {serie} e capacidade máxima de {capacidade} kg[, à temperatura ambiente de {temperatura}].
 
 :: ensaio
-Aplicada a carga de referência de {carga}, o instrumento indicou {indicacao}, com incerteza relativa de {indicacao:relative}.
+Aplicada a carga de referência de {carga}, o instrumento indicou {indicacao}, com incerteza relativa de {indicacao:relativo}.
 
 :: ressalva
 A incerteza da indicação excede um centésimo do valor indicado, e o instrumento não deve ser usado, nesta faixa, em pesagem sujeita a controle metrológico.
@@ -38,5 +38,5 @@ Registra-se a seguinte observação: {observacao}.
 Emitido em {emissao:corrente}.
 
 regras
-  ressalva    quando não (indicacao é precise)
+  ressalva    quando não (indicacao é precisa)
   observacao  quando observacao é presente

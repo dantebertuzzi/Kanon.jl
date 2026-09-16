@@ -80,6 +80,7 @@ struct RuleScope
     iterating::Union{Nothing,Path}
     element::Any
     ctx::FormatContext
+    analysis::Analysis
 end
 
 "O valor de um caminho, com a substituição do elemento corrente quando ele se aplica."
@@ -125,7 +126,8 @@ function eval_attr(sc::RuleScope, e::AttrExpr)
     else
         # um atributo de tipo sobre valor ausente é falso, e não um erro: `absent` é o
         # que se escreve para perguntar pela ausência
-        v === nothing ? false : kanon_attribute(v, Val(e.attr))
+        # e pelo nome canônico, que a análise resolveu: `preciso` é `precise` (D-076)
+        v === nothing ? false : kanon_attribute(v, Val(attribute(sc.analysis, e)))
     end
     e.negated ? !r : r
 end
@@ -203,7 +205,7 @@ function build_plan(m::Model, values::Vector{Any}, ctx::FormatContext, budget,
 
             sc = RuleScope(values, tmpl.data.fields,
                            regra_for === nothing ? nothing : regra_for.foreach,
-                           elemento, ctx)
+                           elemento, ctx, a)
             regra_when === nothing || eval_rule(sc, regra_when.when) || continue
 
             sujeito = block_subject_value(m, values, b, regra_for, elemento)
@@ -226,7 +228,7 @@ iteração só, com `nothing` no lugar do elemento.
 function instances_of(m::Model, values::Vector{Any}, ctx::FormatContext, b::Block,
                       regra::Union{Nothing,Rule}, preview::Bool = false)
     regra === nothing && return Any[nothing]
-    sc = RuleScope(values, m.template.data.fields, nothing, nothing, ctx)
+    sc = RuleScope(values, m.template.data.fields, nothing, nothing, ctx, m.analysis)
     v = scope_value(sc, regra.foreach)
     if v === nothing
         # Coleção ausente: nenhuma iteração — salvo no rascunho, e só quando o contrato

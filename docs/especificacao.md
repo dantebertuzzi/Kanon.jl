@@ -885,6 +885,39 @@ separa as duas línguas: o que é **citação do modelo** sai na língua do mode
 português (D-027). O nome de um **atributo de tipo** não é palavra-chave, e sai como o
 domínio o registrou.
 
+**[acrescentado na seção 1a — D-076]** Atributos e formatadores também têm nome no idioma,
+registrado pela camada de idioma. Com `Extenso.jl`:
+
+| Canônico | pt |
+|---|---|
+| `empty` | `vazio`, `vazia` |
+| `positive` / `negative` | `positivo`, `positiva` / `negativo`, `negativa` |
+| `precise` / `dimensionless` | `preciso`, `precisa` / `adimensional` |
+| `upper` / `lower` | `maiusculo` / `minusculo` |
+| `integer` | `inteiro` |
+| `code` / `symbol` | `codigo` / `simbolo` |
+| `numeric` | `numerico` |
+| `relative` | `relativo` |
+
+Três diferenças em relação às palavras-chave:
+
+1. **O canônico continua valendo.** `quando pontos é precise` e `quando pontos é preciso`
+   são a mesma regra num modelo `pt`. A restrição da D-003 é sobre a gramática, e atributo
+   e formatador são vocabulário do tipo.
+2. **O atributo concorda; o formatador não.** O atributo é predicado de frase, e tem os
+   dois gêneros — `a indicação é precisa` e `o ponto é preciso` são o mesmo atributo, e o
+   motor não confere concordância. O formatador tem um nome só, na forma de dicionário,
+   que é a convenção das camadas nacionais: `maiusculo` vale para `texto` como já valia
+   para `pessoa`.
+3. **A tabela não é completa, e de propósito.** Um nome que entra convive para sempre com o
+   canônico, e só entram os que o português dá sem escolha. `title`, `fixed2`, `plain`,
+   `count` e `bare` ficam em inglês até que um modelo peça um nome — e `zero` e `iso` são a
+   mesma palavra.
+
+A regra da D-051 vale aqui: o motor cita o nome que o autor escreveu, e a mensagem que
+lista o que existe — `adimensional, ausente, preciso, presente` para um `measure` —
+lista na língua do modelo.
+
 **[acrescentado na F10 — D-056]** A camada de idioma também empresta palavras a quem não
 tem idioma nenhum. Uma camada de domínio que escreva texto no documento — o rótulo
 `Theorem 1` do estilo `@` é o caso — declara uma **chave** e a palavra de que se contenta,

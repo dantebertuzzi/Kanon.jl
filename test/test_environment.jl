@@ -67,6 +67,9 @@ Kanon.configure_locale!(b::Kanon.EnvironmentBuilder, ::Val{:xx}) = begin
                          apply = (word, mark, subject, ctx) -> word)
     register_repair_hook!(b, :xx, (text, seams, ctx) -> text)
     register_separators!(b; decimal = ",", group = ".")
+    register_attribute_alias!(b, :xx, :vazio, :empty)
+    register_attribute_alias!(b, :xx, :vazia, :empty)
+    register_formatter_alias!(b, :xx, :maiusculo, :upper)
     b
 end
 
@@ -201,6 +204,81 @@ end
         b = EnvironmentBuilder(:xx)
         b.domain = :Teste
         @test_throws KanonEnvironmentError register_aliases!(b, :xx, (nao_existe = "nada",))
+    end
+
+    @testset "apelido de atributo e de formatador: aditivo, e resolvido pelo tipo (D-076)" begin
+        env = Environment(locale = :xx)
+        V, S = Vector{String}, String
+        @test Kanon.attribute_name(env, V, :vazio) === :empty
+        @test Kanon.attribute_name(env, V, :vazia) === :empty
+        @test Kanon.attribute_name(env, V, :empty) === :empty        # o canônico continua
+        @test Kanon.attribute_name(env, Bool, :vazio) === nothing     # o tipo não o tem
+        @test Kanon.formatter_name(env, S, :maiusculo) === :upper
+        @test Kanon.formatter_name(env, S, :upper) === :upper
+        @test Kanon.formatter_name(env, Date, :maiusculo) === nothing
+
+        # o primeiro apelido registrado é o que a mensagem escreve
+        @test Kanon.written_attributes(env, (:empty, :present, :absent)) == [:absent, :presente, :vazio]
+        @test Kanon.written_formatters(env, S) == sort!([:lower, :maiusculo, :title])
+
+        # só no idioma ativo: o núcleo puro não tem apelido nenhum
+        neutro = Environment()
+        @test Kanon.attribute_name(neutro, V, :vazio) === nothing
+        @test Kanon.formatter_name(neutro, S, :maiusculo) === nothing
+        @test Kanon.written_formatters(neutro, S) == [:lower, :title, :upper]
+    end
+
+    @testset "o modelo escreve o apelido, e o motor executa o canônico (D-076)" begin
+        env = Environment(locale = :xx)
+        fonte(attr, fmt) = "kanon 1 xx\n\ndados\n  nome : text !\n  itens : text[]\n\ntexto\n\n" *
+                           ": a\n{nome:$fmt}\n\n: b\nSem itens.\n\nregras\n  b  quando itens is $attr\n"
+        xx = load_string(env, fonte("vazio", "maiusculo"))
+        en = load_string(env, fonte("empty", "upper"))
+        for d in (Dict("nome" => "ana", "itens" => String[]), Dict("nome" => "ana", "itens" => ["x"]))
+            @test render(xx, d) == render(en, d)
+        end
+        @test render(xx, Dict("nome" => "ana", "itens" => String[])) == "ANA\n\nSem itens."
+
+        # o nó guarda o que o autor escreveu; a tabela lateral, o canônico (I2)
+        r = only(xx.template.rules.rules)
+        @test r.when.attr === :vazio
+        @test Kanon.attribute(xx.analysis, r.when) === :empty
+    end
+
+    @testset "o apelido errado é recusado na língua do modelo (D-076)" begin
+        env = Environment(locale = :xx)
+        a = Kanon.load_source(env, "kanon 1 xx\n\ndados\n  nome : text !\n  itens : text[]\n\ntexto\n\n" *
+                                   ": a\n{nome:maiuscula}\n\n: b\nx\n\nregras\n  b  quando itens is vazo\n")
+        f = only(filter(d -> d.code == "K2020", collect(a.diagnostics)))
+        @test occursin("`maiusculo`", f.hint) && !occursin("upper", f.hint)
+        g = only(filter(d -> d.code == "K2041", collect(a.diagnostics)))
+        @test occursin("`vazio`", g.hint)
+        @test occursin("absent, presente, vazio", g.hint)
+    end
+
+    @testset "apelido de atributo e de formatador: os conflitos (D-076)" begin
+        b = EnvironmentBuilder(:xx)
+        b.domain = :Um
+        register_attribute_alias!(b, :xx, :preciso, :precise)
+        register_attribute_alias!(b, :xx, :preciso, :precise)            # repetir é inócuo
+        b.domain = :Dois
+        e = try; register_attribute_alias!(b, :xx, :preciso, :exact); catch err; err; end
+        @test e isa KanonEnvironmentError
+        @test occursin("`Um`", sprint(showerror, e)) && occursin("`Dois`", sprint(showerror, e))
+        @test_throws KanonEnvironmentError register_formatter_alias!(b, :xx, :upper, :upper)
+
+        # outro idioma: não entra
+        register_formatter_alias!(b, :zz, :grande, :upper)
+        @test isempty(b.formatteraliases)
+
+        # o apelido que é palavra-chave do idioma nunca chegaria ao ambiente: o parser o
+        # leria antes. Recusado na construção.
+        k = EnvironmentBuilder(:xx)
+        register_aliases!(k, :xx, (present = "presente",))
+        register_attribute_alias!(k, :xx, :presente, :precise)
+        e = try; Kanon.freeze(k, Symbol[]); catch err; err; end
+        @test e isa KanonEnvironmentError
+        @test occursin("palavra-chave", sprint(showerror, e))
     end
 
     @testset "separadores chegam à formatação pelo contexto" begin

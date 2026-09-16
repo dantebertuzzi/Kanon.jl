@@ -411,6 +411,67 @@ end
         @test Kanon.written_typename(Environment(), :text) === :text
     end
 
+    @testset "atributos e formatadores têm nome em português, ao lado do inglês (D-076)" begin
+        corpo(vazio, positivo, maiusculo, simbolo, numerico, inteiro) =
+            "kanon 1 pt\n\ndados\n  nome : texto !\n  itens : texto[]\n  n : numero !\n" *
+            "  preco : dinheiro !\n  dia : data !\n\ntexto\n\n" *
+            ": a\n{nome:$maiusculo}, {preco:$simbolo}, {dia:$numerico}, {n:$inteiro}.\n\n" *
+            ": b\nSem itens.\n\n: c\nPositivo.\n\n" *
+            "regras\n  b  quando itens é $vazio\n  c  quando n é $positivo\n"
+        pt = load_string(ENV_PT, corpo("vazio", "positivo", "maiusculo", "simbolo", "numerico", "inteiro");
+                         name = "pt.kanon")
+        en = load_string(ENV_PT, corpo("empty", "positive", "upper", "symbol", "numeric", "integer");
+                         name = "en.kanon")
+        @test isempty(pt.analysis.diagnostics) && isempty(en.analysis.diagnostics)
+        for (itens, n) in ((String[], 3.7), (["x"], -2))
+            d = Dict("nome" => "ana", "itens" => itens, "n" => n,
+                     "preco" => Kanon.Money("1200.5", :BRL), "dia" => Date(2026, 9, 16))
+            @test render(pt, d) == render(en, d)
+        end
+        @test render(pt, Dict("nome" => "ana", "itens" => String[], "n" => 3.7,
+                              "preco" => Kanon.Money("1200.5", :BRL), "dia" => Date(2026, 9, 16))) ==
+              "ANA, R\$ 1.200,50, 16/09/2026, 4.\n\nSem itens.\n\nPositivo."
+
+        # o adjetivo concorda com o campo, e os dois gêneros são o mesmo atributo
+        @test Kanon.attribute_name(ENV_PT, Vector{String}, :vazia) === :empty
+        @test Kanon.attribute_name(ENV_PT, Float64, :negativa) === :negative
+    end
+
+    @testset "o apelido é do idioma: não existe em ambiente neutro (D-076)" begin
+        a = Kanon.load_source(Environment(), "kanon 1\n\ndata\n  nome : text !\n\ntext\n\n: a\n{nome:maiusculo}\n";
+                              name = "en.kanon")
+        @test only(a.diagnostics).code == "K2020"
+        @test Kanon.formatter_name(Environment(), String, :maiusculo) === nothing
+    end
+
+    @testset "a lista do que existe sai na língua do modelo (D-076)" begin
+        a = Kanon.load_source(ENV_PT,
+            "kanon 1 pt\n\ndados\n  nome : texto !\n  itens : texto[]\n\ntexto\n\n" *
+            ": a\n{nome:maiuscula}\n\n: b\nx\n\nregras\n  b  quando itens é vazo\n";
+            name = "pt.kanon")
+        f = only(filter(d -> d.code == "K2020", collect(a.diagnostics)))
+        @test occursin("Você quis dizer `maiusculo`?", f.hint)
+        @test !occursin("upper", f.hint)
+        g = only(filter(d -> d.code == "K2041", collect(a.diagnostics)))
+        # antes da D-076: `Atributos de \`texto\`: absent, empty, present`
+        @test occursin("ausente, presente, vazio", g.hint)
+    end
+
+    @testset "todo apelido aponta para um nome que alguma camada define (D-076)" begin
+        # O `Extenso` não carrega o `KanonScience`, e por isso os nomes dele entram aqui
+        # como texto: um apelido para um nome que ninguém define seria erro de digitação
+        # que nenhum modelo acusaria.
+        ciencia_attr = (:precise, :dimensionless)
+        ciencia_fmt = (:relative,)
+        nucleo = (String, Float64, Kanon.Money, Date, Bool, Vector{String})
+        for (_, c) in Extenso.ATRIBUTOS
+            @test c in ciencia_attr || any(T -> c in kanon_attributes(T), nucleo)
+        end
+        for (_, c) in Extenso.FORMATADORES
+            @test c in ciencia_fmt || any(T -> c in kanon_formats(T), nucleo)
+        end
+    end
+
     @testset "a mensagem de erro fala o nome escrito, não o canônico" begin
         # A canonicalização é da lógica; a redação continua sendo do autor.
         e = try

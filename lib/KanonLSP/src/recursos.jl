@@ -263,7 +263,8 @@ function descrever_campo(m::Kanon.Model, f::Kanon.FieldDecl)
     Kanon.islist(f.card) && println(io, "- coleção: ", Kanon.card_text(f.card), " valores")
     T = Kanon.typefor(m.env, f.type)
     if T !== nothing
-        fs = Kanon.kanon_formats(T)
+        # os deste ambiente, como ele os escreve — o mesmo que a completação oferece (D-076)
+        fs = Kanon.written_formatters(m.env, T)
         isempty(fs) || println(io, "- formatadores: ", join(("`" .* String.(fs) .* "`"), ", "))
     end
     String(take!(io))
@@ -273,8 +274,8 @@ function descrever_interp(m::Kanon.Model, n::Kanon.Interp)
     rp = Kanon.resolved(m.analysis, n)
     rp === nothing && return "**`{$(n.path)}`** — este caminho não resolveu."
     io = IOBuffer()
-    fmt = Kanon.formatter(m.analysis, n)
-    println(io, "**`{", n.path, fmt === :default ? "" : ":" * String(fmt), "}`**")
+    # o formatador como o modelo o escreveu; o canônico da tabela é o que o motor executa
+    println(io, "**`{", n.path, n.formatter === nothing ? "" : ":" * String(n.formatter), "}`**")
     println(io)
     println(io, "- tipo: `", rp.typename, "`")
     rp.kind === :subject_field && println(io, "- lido pelo **sujeito do bloco**")
@@ -475,12 +476,13 @@ function completar_interpolacao(d::Document, l::Integer, ctx)
         # deste ambiente, e os de `list` quando o campo é coleção. `kanon_formats(T)` sem o
         # ambiente enumera o processo inteiro, e o `kanon-lsp` sempre tem camada carregada —
         # oferecia `extenso` num ambiente sem idioma, e `upper` para `{especiais:}`, que é
-        # uma lista de texto (D-067).
+        # uma lista de texto (D-067). E na forma que o modelo escreve: `maiusculo` num
+        # modelo `pt`, que é o nome que o motor cita de volta (D-076).
         T = colecao_do_caminho(m, arg) ? Kanon.typefor(m.env, :list) :
                                          tipo_no_bloco(m, arquivo, l, arg)
         T === nothing && return []
         return [item(String(f), KIND_VALUE, "formatador de `" * String(Kanon.kanon_typename(T)) * "`")
-                for f in Kanon.kanon_formats(T, m.env)]
+                for f in Kanon.written_formatters(m.env, T)]
     end
 
     # depois do ponto, só os campos do tipo à esquerda dele: `{notificado.` num bloco cujo
