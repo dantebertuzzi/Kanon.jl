@@ -725,7 +725,7 @@ function check_level_rules!(ctx::AnalysisCtx)
         i === nothing && (push!(aberto, b.unit => Int[]); i = lastindex(aberto))
         abertos = last(aberto[i])
 
-        if n > 1 && length(abertos) >= n - 1
+        if n > 1 && length(abertos) >= n - 1 && abertos[n - 1] != 0
             pai = abertos[n - 1]
             check_nested_foreach!(ctx, b, pos, pai, n)
             regra_pai = ctx.out.block_rule[pai]
@@ -743,6 +743,15 @@ function check_level_rules!(ctx::AnalysisCtx)
             end
         end
 
+        # `resize!` para cima não inicializa memória — a mesma armadilha que
+        # `advance_counter!` comenta. Um estilo que pula nível (`:` e depois `:::`)
+        # deixava o nível 2 em lixo, e o `pai` lido acima virava um índice qualquer:
+        # `BoundsError` saindo de `load_template`, no lugar do `K2031` que `index_blocks!`
+        # já tinha enfileirado — e, no servidor de linguagem, nenhum diagnóstico
+        # publicado. Zero quer dizer "este nível não foi aberto", e é o que a guarda lê.
+        while length(abertos) < n
+            push!(abertos, 0)
+        end
         resize!(abertos, n)
         abertos[n] = pos
     end
@@ -963,7 +972,11 @@ function analyze_data!(ctx::AnalysisCtx)
                  path = String(f.name))
             continue
         end
-        typefor(ctx.env, f.type) === nothing || continue
+        T = typefor(ctx.env, f.type)
+        if T !== nothing
+            check_default!(ctx, f, T)
+            continue
+        end
         push!(ctx.poisoned, f.name)
         names = typenames(ctx.env)
         # Quando nenhum nome conhecido se parece com o escrito, a causa provável não é
@@ -978,6 +991,65 @@ function analyze_data!(ctx::AnalysisCtx)
              hint = did_you_mean(f.type, names, falta),
              path = String(f.name))
     end
+end
+
+"""
+O valor padrão de um campo, conferido contra o tipo declarado — aqui, sem dados.
+
+`quando : date = 5` declarava data e entregava o número cinco. O `check` devolvia o
+literal **cru**, sem passar pelo `kanon_decode` por onde passa todo valor vindo de fora
+(§3.4): o contrato era dado por satisfeito, nenhum diagnóstico saía, e o documento
+escrevia `Em 5,`. É a forma da D-048 pela porta do contrato — o documento sai e diz o que
+ninguém escreveu. O formatador vinha de brinde, pelo outro lado: `{preco:code}` era
+conferido contra o `money` **declarado**, e estourava `UnknownFormatter` dentro do render,
+que só pode falhar por orçamento (`ast.md` §8).
+
+O lugar é a análise, e não o `check`, por duas razões. O padrão está escrito no modelo e
+não depende de dado nenhum — é estático, e o estático é da F2. E um padrão só entra em
+cena quando o campo **falta**: no `check` o erro dormiria em todo conjunto de dados que
+trouxesse o campo, e acordaria no primeiro que não trouxesse, que é quando ninguém está
+olhando.
+
+`today` não se decodifica: ele vira uma `Date` no `check` (§2.2, injetada, nunca lida do
+relógio), e o que se exige do tipo é **aceitar uma `Date`**. Perguntar isso decodificando
+uma data qualquer significaria inventar uma aqui, e a análise não tem relógio.
+
+`= null` passa: é o campo dizendo que o padrão é a ausência, e ausência não tem tipo.
+"""
+function check_default!(ctx::AnalysisCtx, f::FieldDecl, T::Type)
+    lit = f.default
+    (lit === nothing || lit.kind === :null) && return nothing
+
+    if islist(f.card)
+        return default_err!(ctx, f, "`$(f.name)` é uma coleção, e um literal é um valor só.",
+                            "Tire o valor padrão: uma coleção ausente é uma coleção vazia.")
+    end
+
+    if lit.kind === :constant                      # `= today`
+        Date <: T && return nothing
+        return default_err!(ctx, f,
+            "o padrão de `$(f.name)` é `today`, que é uma data, e `$(f.type)` não aceita data.",
+            "Declare o campo como data, ou escreva um valor do tipo declarado.")
+    end
+
+    try
+        kanon_decode(T, lit.value, FormatContext(ctx.env))
+    catch e
+        e isa KanonProtocolError || rethrow()
+        motivo = e isa UndecodableValue ? e.reason : sprint(showerror, e)
+        return default_err!(ctx, f,
+            "o padrão de `$(f.name)` não é um valor de `$(f.type)`: " * motivo,
+            "O padrão entra no documento como qualquer outro valor, e entra como o tipo " *
+            "declarado — não há conversão implícita (§3.4).")
+    end
+    return nothing
+end
+
+function default_err!(ctx::AnalysisCtx, f::FieldDecl, mensagem::AbstractString,
+                      dica::AbstractString)
+    err!(ctx, "K2016", f.default.span, mensagem; hint = dica, path = String(f.name))
+    push!(ctx.poisoned, f.name)
+    return nothing
 end
 
 """

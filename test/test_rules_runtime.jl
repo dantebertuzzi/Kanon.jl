@@ -225,6 +225,17 @@ rules
         @test occursin("as regras removeram", s[1].message)
         @test_throws KanonContractError render(m, DADOS_R)
     end
+
+    @testset "e no rascunho a remissão sem número é uma lacuna marcada" begin
+        # O `K3040` só se reporta quando nada mais falta, e o rascunho é feito de coisas
+        # faltando: ali o render chegava à remissão com o plano vazio e escrevia **nada**
+        # — `join(Int32[], '.')` —, com o estilo do núcleo, e estourava `BoundsError` com
+        # um estilo que lê o último nível, como o do `KanonLegal`. Os dois na terceira
+        # coluna do editor, que é onde o rascunho é lido.
+        p = preview(m, DADOS_R)
+        @test occursin("Conforme a «::alvo».", p)
+        @test !occursin("Conforme a .", p)
+    end
 end
 
 @testset "o plano é dado, e a Analysis continua estática" begin

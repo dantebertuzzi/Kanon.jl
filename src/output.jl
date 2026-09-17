@@ -131,6 +131,21 @@ E três construções que **não abrem nada visível — apagam**, conferidas co
 Os três são o pior tipo de defeito que um formato pode ter — o documento compila, sai, e
 diz menos do que o dado dizia. A barra só leva escape onde forma comentário: junto de outra
 barra, ou na borda do valor, onde a vizinha é prosa que o escape não vê.
+
+E mais três, da mesma família e achadas pela mesma conferência levada ao fim — varrendo o
+alfabeto inteiro contra o compilador, em vez de ir atrás de uma suspeita (D-080). Estas
+não apagam: **trocam**, e por isso a D-062 passou por elas.
+
+- `--` é meia-risca e `---` é travessão: `SEI 0001--2026` sai `SEI 0001–2026`;
+- `...` são reticências: `disse que ... não sabia` sai com `…`.
+
+Um número de processo que muda de caractere no documento que vai à assinatura é a mesma
+falha do `//`, com o agravante de ser legível — ninguém confere o que parece certo. O
+hífen leva escape pela regra da barra, que é a regra de todo atalho de **dois**
+caracteres: junto de outro hífen, ou na borda, onde a vizinha é prosa. O ponto não: são
+**três** para formar reticências, e só uma sequência dentro do próprio valor as alcança —
+um ponto sozinho na borda precisaria que a prosa trouxesse os outros dois, e aí as
+reticências são do autor, que as escreveu.
 """
 function escape_value(::Typst, s::AbstractString, inicio_de_linha::Bool)
     io = IOBuffer()
@@ -144,7 +159,8 @@ function escape_value(::Typst, s::AbstractString, inicio_de_linha::Bool)
            c == '~' ||
            (c == '/' && (i == 1 || i == n || anterior == '/' || seguinte == '/')) ||
            (c == '?' && (i == 1 || anterior == '-')) ||
-           (c == '-' && i == n)
+           (c == '-' && (i == 1 || i == n || anterior == '-' || seguinte == '-')) ||
+           (c == '.' && (anterior == '.' || seguinte == '.'))
             print(io, '\\')
         end
         print(io, c)

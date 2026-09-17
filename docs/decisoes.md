@@ -2897,3 +2897,105 @@ passa a poder imprimir `m`. (b) Afrouxar o checklist (`additionalProperties: tru
 real passa, e o formulário continua sem perguntar o gênero — a minuta não fecha. (c) Um
 adaptador por modelo no gerador: é exatamente o que a D-009 prometeu não ser preciso. (d) A
 forma de entrada declarada pela camada (escolhida).
+
+---
+
+## D-080 — No Typst, o valor também não troca de texto
+
+*2026-09-17 · aceita · surgida numa varredura do escape contra o compilador*
+
+**A observação.** A D-062 conferiu a tabela de escape do Typst contra o compilador e achou
+três construções que **apagam** texto. A conferência parou nas três. Varrendo o alfabeto
+inteiro — todo valor de um e de dois caracteres, e os de três formados pelos sinais, contra
+o mesmo Typst 0.15.1 —, sobraram três que a primeira passagem não procurava, porque elas não
+apagam: **trocam**.
+
+| No valor | O Typst lê | O documento |
+|---|---|---|
+| `SEI 0001--2026` | meia-risca | `SEI 0001–2026` |
+| `faixa 10---20` | travessão | `faixa 10—20` |
+| `disse que ... não sabia` | reticências | `disse que … não sabia` |
+
+Um número de processo que muda de caractere no PDF que vai à assinatura é a falha da D-062
+com um agravante: **é legível**. Ninguém confere o que parece certo.
+
+**Decisão.** O escape do Typst acrescenta o hífen pela regra da barra — junto de outro
+hífen, ou em qualquer das bordas do valor, onde a vizinha é prosa que o escape não vê — e o
+ponto só onde encosta em outro ponto. A diferença entre os dois não é gosto: o atalho do
+hífen tem **dois** caracteres, e por isso a prosa vizinha basta para formá-lo; o das
+reticências tem **três**, e um ponto sozinho na borda precisaria que a prosa trouxesse os
+outros dois — e aí as reticências são do autor, que as escreveu. Escapar todo ponto de borda
+poria uma contrabarra no fim de quase todo valor, protegendo nada.
+
+**O que isto custa.** Nada no corpus. Os dois goldens `.typ` — edital nº 6 e procuração
+nº 12 — compilam sem nenhuma substituição, antes e depois, e nenhum byte deles muda. O
+defeito era latente, e é por isso que cabe antes da 1.0 sem tocar na D-077.
+
+**O método, que é o que fica, e é a correção do método da D-062.** A tabela de escape se
+confere contra o compilador — a D-062 já dizia —, mas **varrendo**, e não seguindo a
+suspeita. A suspeita achou o que apaga; a varredura achou o que troca. Uma tabela de escape
+é finita e o alfabeto é pequeno: percorrê-lo inteiro custa menos que a próxima leitura
+atenta da documentação, e é a única forma de saber que acabou. O mesmo exercício do lado do
+Markdown, contra o CommonMark de verdade, não achou nada — 2.628 valores e 968 com quebra
+de linha, todos voltando iguais.
+
+---
+
+## D-081 — O valor padrão é conferido contra o tipo declarado, na análise
+
+*2026-09-17 · aceita · surgida numa revisão do `check`*
+
+**A observação.** `quando : date = 5` declarava data e entregava o número cinco.
+`default_value` devolvia o literal **cru** — sem passar pelo `kanon_decode` por onde passa
+todo valor vindo de fora (§3.4) —, o `check` não emitia diagnóstico nenhum, e o documento
+saía com `Em 5,`. Um documento que ninguém escreveu, com o contrato dado por satisfeito: é
+a forma da D-048 pela porta do contrato. O formatador vinha junto, pelo outro lado:
+`{preco:code}` era conferido contra o `money` **declarado** e estourava `UnknownFormatter`
+dentro do render, que só pode falhar por orçamento (`ast.md` §8) — porque quem chegava lá
+era o literal, que é `number`.
+
+**Decisão.** A análise confere o padrão contra o tipo declarado, e o modelo não carrega se
+ele não serve. Código novo: **`K2016`**. O `today` não se decodifica — ele vira uma `Date`
+no `check` (§2.2, injetada, nunca lida do relógio) —, e o que se exige do tipo é **aceitar
+uma `Date`**; `= null` passa, porque é o campo dizendo que o padrão é a ausência, e ausência
+não tem tipo; e uma coleção não tem literal por padrão, porque um literal é um valor só.
+
+**Por que na análise, e não no `check`.** O padrão está escrito no modelo e não depende de
+dado nenhum — é estático, e o estático é da F2. E um padrão só entra em cena quando o campo
+**falta**: no `check` o erro dormiria em todo conjunto de dados que trouxesse o campo, e
+acordaria no primeiro que não trouxesse, que é quando ninguém está olhando. Na análise ele
+aparece no editor, enquanto se escreve o modelo.
+
+**O que isto custa.** Nada no corpus: os dez modelos com padrão usam `= hoje` e
+`= "texto"`, e os dois continuam válidos.
+
+---
+
+## D-082 — O valor que não se escreve
+
+*2026-09-17 · aceita · surgida na mesma varredura*
+
+**A observação.** Uma medição de **valor zero** é legítima — o branco de um laboratório, um
+desvio nulo, um instrumento no ponto de referência. A incerteza relativa dela é uma divisão
+por zero: o `check` aprovava o valor, e o render morria com `DivideError` cru, saindo de
+dentro do formatador da camada. Do lado do núcleo, a mesma forma: `Rational{BigInt}(Inf)` é
+`1//0`, e a guarda de finitude existia num formatador só (`plain_number`) de cinco portas.
+
+**Decisão.**
+
+1. **`UnwritableValue`** entra no protocolo, ao lado do `UndecodableValue`. Os dois erram em
+   momentos diferentes: o que não **entra** é recusado pelo `check`, com os dados na mão, e
+   nunca chega ao documento; o que não se **escreve** só aparece no render, e vem de valor
+   que a camada calcula ou que o `check` não tinha como recusar sem os formatadores do
+   modelo na mão. Dizer "não foi possível ler" nesse caso seria falso.
+2. **A guarda de finitude desce para `scaled_digits`**, por onde passam todas as portas — e
+   `Inf` e `NaN` passam a ser **recusados na entrada**, pelo `kanon_decode` do `number`: não
+   vêm de JSON, que não os escreve, e sim de coluna calculada, que é de onde vem a medição.
+   Recusar na entrada é o que faz o erro sair com a linha do contrato.
+3. **A CLI responde a erro de protocolo com o código de contrato** (§12), e não com a pilha
+   de Julia que o `rethrow()` imprimia. Um valor que o contrato aceitou e que não se escreve
+   é falha de contrato, não de programa.
+
+**O que isto custa.** Nada no corpus. `{medicao:relative}` de uma leitura de zero passa a
+ser recusado, dizendo o que escrever no lugar (`{campo}` ou `{campo:bare}`) — antes ele
+derrubava o processo.

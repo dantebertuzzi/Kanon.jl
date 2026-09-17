@@ -110,6 +110,7 @@ const CODE_TITLES = Dict{String,String}(
     "K2013" => "parênteses que não fecham dentro do grupo",
     "K2014" => "aspas que não fecham dentro do grupo",
     "K2015" => "série de trechos opcionais, reservada",
+    "K2016" => "valor padrão que não é do tipo declarado",
     # --- referência: blocos, níveis, remissões e regras ---
     "K2030" => "marcador de bloco sem estilo neste ambiente",
     "K2031" => "nível de bloco sem o nível anterior",

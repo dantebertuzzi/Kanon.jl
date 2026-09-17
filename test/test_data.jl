@@ -37,6 +37,15 @@
         @test "K1102" in codes(src("  a : person[5..2]\n"))
     end
 
+    @testset "cardinalidade fora do alcance é K1102, e não exceção de Julia" begin
+        # `[99999999999]` casa com a forma certa e não cabe no `Int32` da cardinalidade:
+        # `parse` estourava `OverflowError` de dentro do parser, e a CLI imprimia a pilha
+        # de Julia que a §12 promete nunca imprimir.
+        @test "K1102" in codes(src("  a : text[99999999999]\n"))
+        @test "K1102" in codes(src("  a : text[1..99999999999]\n"))
+        @test "K1102" in codes(src("  a : text[..99999999999]\n"))
+    end
+
     @testset "literais de valor padrão" begin
         t = ok(src("""
   n : number  = 42
@@ -57,6 +66,14 @@
 
     @testset "data inexistente" begin
         @test "K1104" in codes(src("  d : date = 2026-13-45\n"))
+    end
+
+    @testset "número fora do alcance é K1104, e não exceção de Julia" begin
+        @test "K1104" in codes(src("  n : number = 99999999999999999999\n"))
+        @test "K1104" in codes(src("  n : number = -99999999999999999999\n"))
+        # e o que cabe continua cabendo, nas duas pontas
+        @test ok(src("  n : number = 9223372036854775807\n")).data.fields[1].default.value ==
+              typemax(Int64)
     end
 
     @testset "declaração malformada" begin

@@ -116,6 +116,20 @@ end
         @test format(3.5, Val(:integer), ctx) == "4"
     end
 
+    @testset "o não finito não se escreve, e a recusa é do núcleo" begin
+        # `Rational{BigInt}(Inf)` é `1//0`, e o que saía de `scaled_digits` era um
+        # `DivideError` cru. A guarda estava só no `plain_number` — uma das cinco portas:
+        # `fixed2`, `integer`, os dois formatadores do `money` e toda camada que chama
+        # `fixed_number` passavam sem ela. `measure:relative` chegava aqui com o `Inf` que
+        # a própria camada calculou.
+        for v in (Inf, -Inf, NaN), f in (:default, :fixed2, :integer)
+            @test_throws UnwritableValue format(v, Val(f), ctx)
+        end
+        @test_throws UnwritableValue Kanon.fixed_number(Inf, 2, ctx)
+        e = try; Kanon.fixed_number(NaN, 2, ctx); catch err; err; end
+        @test occursin("não foi possível escrever", sprint(showerror, e))
+    end
+
     @testset "money: exato, com duas casas, e o símbolo vem do ambiente" begin
         m = Money("1234.57", :BRL)
         @test m.amount == 123457//100
@@ -173,6 +187,16 @@ end
         @test_throws UndecodableValue kanon_decode(Bool, 1, ctx)
         # verdadeiro não é 1
         @test_throws UndecodableValue kanon_decode(Kanon.NumberValue, true, ctx)
+    end
+
+    @testset "`Inf` e `NaN` não entram: o `check` os recusa, e o render não os encontra" begin
+        # Não vêm de JSON, que não os escreve — vêm de coluna calculada, que é de onde vem
+        # a medição. Recusar na entrada é o que faz o erro sair com a linha do contrato,
+        # em vez de sair do render, que só pode falhar por orçamento (`ast.md` §8).
+        @test_throws UndecodableValue kanon_decode(Kanon.NumberValue, Inf, ctx)
+        @test_throws UndecodableValue kanon_decode(Kanon.NumberValue, NaN, ctx)
+        m = load_string(env, "kanon 1\n\ndata\n  x : number !\n\ntext\n\n: b\n{x:fixed2}.\n")
+        @test [d.code for d in sorted(check(m, Dict("x" => Inf)))] == ["K3010"]
     end
 
     @testset "dinheiro sem moeda falha alto, e a mensagem diz o que escrever" begin

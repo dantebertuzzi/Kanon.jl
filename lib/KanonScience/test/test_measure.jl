@@ -72,6 +72,21 @@
         @test rel(-20.1, 0.3) == "1.5%"
     end
 
+    @testset "a leitura de zero não tem incerteza relativa, e a recusa diz o que escrever" begin
+        # Uma leitura de zero é medição legítima — o branco de um laboratório, um desvio
+        # nulo —, e a relativa dela seria dividir por zero. Saía `DivideError` cru, de
+        # dentro do formatador, num valor que o `check` tinha aprovado.
+        zero = Measure(0.0, 0.05, "°C")
+        @test_throws Kanon.UnwritableValue Kanon.format(zero, Val(:relative), ctx)
+        e = try; Kanon.format(zero, Val(:relative), ctx); catch err; err; end
+        @test occursin("dividir por zero", sprint(showerror, e))
+        @test occursin(":bare", sprint(showerror, e))
+        # e o resto da medição continua escrevendo: é só a relativa que não existe
+        @test Kanon.format(zero, Val(:default), ctx) == "0.00 ± 0.05 °C"
+        @test Kanon.format(zero, Val(:bare), ctx) == "0.00"
+        @test !kanon_attribute(zero, Val(:precise))
+    end
+
     @testset "os atributos" begin
         @test kanon_attribute(Measure(1.0, 0.001), Val(:precise))
         @test !kanon_attribute(Measure(1.0, 0.5), Val(:precise))
@@ -120,4 +135,37 @@
         @test Kanon.kanon_format_locale(Measure, Val(:bare)) === nothing
         @test :bare in kanon_formats(Measure, ENV_SCI)
     end
+end
+
+# A mesma recusa, pelo lançador de verdade — e não de dentro de Julia, que é onde a D-059
+# e a D-065 já tinham passado batido. O que se prova aqui não é a mensagem: é que a CLI
+# responde com o código de contrato e **não imprime pilha de Julia**, que é o que ela
+# fazia com todo erro de protocolo escapando do render (§12).
+@testset "pelo `bin/kanon`, a medição de zero é recusa de contrato, sem pilha" begin
+    dir = mktempdir()
+    modelo = joinpath(dir, "leitura.kanon")
+    dados = joinpath(dir, "leitura.json")
+    write(modelo, """
+kanon 1
+
+data
+  leitura : measure !
+
+text
+
+: b
+Incerteza relativa de {leitura:relative}.
+""")
+    write(dados, """{"leitura": {"value": 0.0, "uncertainty": 0.05, "unit": "°C"}}""")
+
+    julia = `$(Base.julia_cmd()) --startup-file=no --project=$(Base.active_project())`
+    kanon = joinpath(RAIZ, "bin", "kanon")
+    err = IOBuffer()
+    p = run(pipeline(ignorestatus(`$julia $kanon render $modelo $dados
+                                    --domain KanonScience`); stderr = err))
+    mensagens = String(take!(err))
+    @test p.exitcode == Kanon.EXIT_CONTRACT
+    @test !occursin("Stacktrace", mensagens)
+    @test !occursin("DivideError", mensagens)
+    @test occursin("dividir por zero", mensagens)
 end

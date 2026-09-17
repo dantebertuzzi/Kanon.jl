@@ -251,7 +251,14 @@ function blockref_text(ctx::RenderCtx, n::BlockRef)
     estilo === nothing && return ""
     # o número é o do plano: se uma regra removeu blocos antes deste, ele renumerou —
     # e `check` já recusou a remissão a bloco que as regras tiraram (K3040)
-    String(estilo.ref(ctx.bound.plan.numbers[pos], ctx.fctx))
+    numeros = ctx.bound.plan.numbers[pos]
+    # Menos no rascunho, onde não há recusa: o `K3040` só se reporta quando nada mais
+    # falta, e o rascunho é feito de coisas faltando. Sem número, a remissão saía
+    # **vazia** com o estilo do núcleo (`join(Int32[], '.')`) e estourava `BoundsError`
+    # com o do `KanonLegal`, que lê o último nível — os dois na terceira coluna do
+    # editor. Uma remissão sem número é uma lacuna como outra qualquer, e se marca.
+    isempty(numeros) && return string(Char(0x00AB), "::", n.target, Char(0x00BB))
+    String(estilo.ref(numeros, ctx.fctx))
 end
 
 # --- blocos e parágrafos -----------------------------------------------------

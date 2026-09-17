@@ -201,6 +201,14 @@ text
         @test occursin("`12480.50`", Kanon.recusa_da_forma(env, f, "12.480,50"))
         @test Kanon.recusa_da_forma(env, f, "1320") === nothing
         @test Kanon.recusa_da_forma(env, f, "1.32") === nothing
+        # a dica tira UM zero, e não todos: `1.000` é *mil*, e é o que mais se digita.
+        # `rstrip` mandava escrever `1.`, que a linha seguinte desta mesma função recusa —
+        # o fiscal ia e voltava entre duas grafias recusadas.
+        for (texto, decimal) in ("1.000" => "1.00", "10.000" => "10.00", "1.320" => "1.32")
+            msg = Kanon.recusa_da_forma(env, f, texto)
+            @test occursin("ou `$decimal` se é decimal", msg)
+            @test Kanon.recusa_da_forma(env, f, decimal) === nothing
+        end
         # sem idioma não há separador de milhar, e `1.320` só tem uma leitura
         neutro = Environment()
         @test Kanon.recusa_da_forma(neutro, f, "1.320") === nothing

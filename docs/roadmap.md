@@ -2,7 +2,9 @@
 
 > Estado em 16 de setembro de 2026. O portão está **fechado** (15 de 15), as cinco
 > decisões da seção 1a estão tomadas, **a sintaxe da versão 1 está congelada** (D-077), o
-> **site está no ar**, e duas provas de fogo puseram o motor fora do acervo (D-078, D-079). Escrito para retomar sem depender de memória.
+> **site está no ar**, duas provas de fogo puseram o motor fora do acervo (D-078, D-079) e
+> uma varredura achou e corrigiu nove defeitos (D-080 a D-082). Escrito para retomar sem
+> depender de memória.
 
 ## Onde estamos
 
@@ -24,8 +26,8 @@
 de saída e três camadas. Um modelo real renderiza byte a byte igual ao que a F0 exigiu
 dele, e o que não satisfaz o contrato não renderiza — que era a frase inteira do projeto.
 
-Suíte: **2.747 testes** ao todo — 1.681 no núcleo (~50 s com Aqua), 357 em `Extenso`,
-308 em `KanonLegal`, 215 em `KanonScience`, 186 em `KanonLSP`. CI em Linux, macOS e
+Suíte: **2.815 testes** ao todo — 1.739 no núcleo (~50 s com Aqua), 357 em `Extenso`,
+308 em `KanonLegal`, 225 em `KanonScience`, 186 em `KanonLSP`. CI em Linux, macOS e
 Windows, com cobertura no Codecov.
 
 ---
@@ -347,12 +349,36 @@ modelo, e não para quem preenche.
 
 As duas rodam no CI, no job `Examples`.
 
+### 8. A varredura de defeitos (17 de setembro de 2026)
+
+Uma busca por defeitos feita por dois caminhos independentes, com o acervo congelado e a
+suíte verde: uma leitura de `src/`, `lib/` e `ext/`, e uma varredura empírica contra os
+**leitores de verdade** — o compilador do Typst e o CommonMark. Nove defeitos, nenhum deles
+alcançado pela suíte, todos corrigidos com teste no lugar em que apareceram.
+
+| Onde | O que era |
+|---|---|
+| `check.jl` | o **valor padrão nunca era conferido** contra o tipo declarado: `quando : date = 5` saía como `Em 5,` com zero diagnósticos (**D-081**, `K2016`) |
+| `analyze.jl` | `resize!` para cima não inicializa memória: um estilo que pula nível estourava `BoundsError` no lugar do `K2031` — e deixava o servidor de linguagem mudo |
+| `render.jl` | no rascunho, a remissão a bloco que uma regra removeu saía **vazia** (núcleo) ou estourava `BoundsError` (`KanonLegal`); agora é uma lacuna marcada |
+| `output.jl` | no Typst, `--`, `---` e `...` **trocavam** o valor: `SEI 0001--2026` virava `SEI 0001–2026` (**D-080**) |
+| `core_types.jl`, `KanonScience` | o não finito e a medição de valor zero morriam com `DivideError` cru dentro do formatador (**D-082**) |
+| `parse_data.jl` (×2), `parse_text.jl` | `OverflowError` e `InexactError` no lugar do `K1102`, do `K1104` e do `K1212` — a pilha de Julia que a §12 promete nunca imprimir |
+| `cli.jl` | a dica de `1.000` mandava escrever `1.`, que a mesma função recusa: o redator ia e voltava entre duas grafias recusadas |
+
+**O que a varredura ensinou, e é o que fica.** O defeito não estava no que o motor faz e
+sim no que ele **deixa de conferir**: cinco dos nove são um valor que entra sem passar pela
+porta por onde todos os outros passam. E a conferência de uma tabela finita — o escape de um
+formato — se faz **varrendo o alfabeto inteiro contra o compilador**, não seguindo a
+suspeita: a suspeita da D-062 achou o que apaga texto, e só a varredura achou o que o troca.
+O mesmo exercício do lado do Markdown, contra o CommonMark, não achou nada.
+
 ---
 
 ## Como retomar
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.681, ~50 s
+julia --project=. -e 'using Pkg; Pkg.test()'                          # 1.739, ~50 s
 # o KanonLSP roda o modelo real nº 13 com a camada de verdade: desenvolva as camadas nele
 # antes, como o CI faz (`Pkg.develop` de `.`, `lib/Extenso`, `lib/KanonScience` e
 # `lib/KanonLegal` no projeto `lib/KanonLSP`); e o KanonLegal roda o modelo nº 15 pelo pandoc:

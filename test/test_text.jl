@@ -142,6 +142,10 @@
 
     @testset "nível acima do teto da versão 1" begin
         @test "K1212" in codes("kanon 1\n\ntext\n\n:: a\nx\n\n::::: b\ny\n")
+        # o nível viaja num `Int8`: uma linha de 200 marcadores estourava `InexactError`
+        # no construtor do `Block` e levava junto o diagnóstico que já estava correto
+        @test "K1212" in codes("kanon 1\n\ntext\n\n" * repeat(":", 200) * " b\ny\n")
+        @test "K1212" in codes("kanon 1\n\ntext\n\n" * repeat("§", 300) * " b\ny\n")
     end
 
     @testset "comentário do plano do texto" begin

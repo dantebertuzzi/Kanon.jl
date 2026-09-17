@@ -81,6 +81,28 @@ O **importante** é que {nome} assine[, com a nota {nota}].
         @test e("x-") == "x\\-"
     end
 
+    @testset "no typst um valor também não TROCA de texto: `--`, `---` e `...` (D-080)" begin
+        # A D-062 foi atrás do que apaga, e estes três trocam: são atalhos do Typst, e o
+        # documento compila dizendo outra coisa. `SEI 0001--2026` sai `SEI 0001–2026` —
+        # um número de processo que muda de caractere no PDF que vai à assinatura, e que
+        # ninguém confere porque parece certo. Conferido varrendo o alfabeto inteiro
+        # contra o Typst 0.15.1, e não contra a documentação dele.
+        e(x) = Kanon.escape_value(Kanon.Typst(), x, false)
+        @test e("SEI 0001--2026") == "SEI 0001\\-\\-2026"
+        @test e("faixa 10---20") == "faixa 10\\-\\-\\-20"
+        @test e("disse que ... não sabia") == "disse que \\.\\.\\. não sabia"
+        # o hífen é atalho de DOIS caracteres, e por isso vale a regra da barra: também
+        # nas bordas, onde a vizinha é prosa que o escape não vê
+        @test e("-x") == "\\-x"
+        @test e("x-") == "x\\-"
+        # o ponto são TRÊS, e um sozinho na borda não alcança: escapá-lo seria pôr uma
+        # barra no fim de quase todo valor, protegendo nada
+        @test e("Acme S.A.") == "Acme S.A."
+        @test e("1.320,00") == "1.320,00"
+        # e o hífen que não encosta em outro continua limpo: é o que separa um processo
+        @test e("0001234-56.2026.5.06.0001") == "0001234-56.2026.5.06.0001"
+    end
+
     @testset "um valor não consegue abrir marcação nenhuma" begin
         hostil = Dict("nome" => "X\n\n# Cláusula falsa\n\nAssinado por outro")
         s = render(M_OUT, hostil; to = :markdown)

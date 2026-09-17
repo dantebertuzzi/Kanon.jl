@@ -48,7 +48,16 @@ function read_literal!(ctx::ParseCtx, c::Cursor)
     if m !== nothing
         advance_n!(c, length(m.match))
         sp = merge_span(start, Span(ctx.fileidx, c.line, max(Int32(1), c.col - Int32(1))))
-        v = occursin('.', m.match) ? parse(Float64, m.match) : parse(Int64, m.match)
+        # Um número que não cabe é erro do modelo, e não exceção do Julia: `parse` lançava
+        # `OverflowError` de dentro do parser, e a CLI imprimia a pilha que a §12 promete
+        # nunca imprimir. Fora do alcance, a forma de escrever existe — o valor é que não.
+        v = occursin('.', m.match) ? tryparse(Float64, m.match) : tryparse(Int64, m.match)
+        if v === nothing || !isfinite(v)
+            err!(ctx, "K1104", sp, "`$(m.match)` é um número fora do alcance do motor.";
+                 hint = "O inteiro vai até $(typemax(Int64)); acima disso, escreva a " *
+                        "grandeza na unidade que a encolhe.")
+            return nothing
+        end
         return Literal(:number, v, sp)
     end
 
@@ -112,6 +121,15 @@ function read_cardinality!(ctx::ParseCtx, c::Cursor)
         m = match(re, r)
         if m !== nothing
             advance_n!(c, length(m.match))
+            # Antes de montar: o número tem de caber no `Int32` da cardinalidade. Sem
+            # isto, `[99999999999]` casava com a forma certa e estourava `OverflowError`
+            # dentro do parser, no lugar do `K1102` que esta mesma função sabe dizer.
+            if any(n -> n !== nothing && tryparse(Int32, n) === nothing, m.captures)
+                err!(ctx, "K1102", start,
+                     "a cardinalidade `$(m.match)` tem número maior do que o motor admite.";
+                     hint = "O limite de cada lado é $(typemax(Int32)).")
+                return Cardinality()
+            end
             card = build(m)
             if card.kind === RANGE && card.lo > card.hi
                 err!(ctx, "K1102", start,

@@ -84,7 +84,7 @@ export @kanon_type
 export typefor, typenames, stylefor, hasmark, currency_symbol
 export KanonEnvironmentError, KanonProtocolError
 export UnregisteredType, UnknownFormatter, UnknownAttribute
-export UndecodableValue, IncomparableValues
+export UndecodableValue, UnwritableValue, IncomparableValues
 
 # --- análise ---
 export Analysis, ResolvedPath, Model
