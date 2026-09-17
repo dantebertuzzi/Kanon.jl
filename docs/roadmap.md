@@ -229,8 +229,35 @@ reservadas com erro, para que entrem como versão menor.
 
 Os cinco pacotes estão em `0.1.0` desde o congelamento (D-077), e a versão é registrável.
 A `0.1.0` promete o que pode cumprir: a **linguagem** `kanon 1` não muda de sentido, e a
-**API Julia** ainda pode mudar em `0.2`. O que o registro vai cobrar — a revisão humana de
-`Kanon` e `Extenso` pelo nome, e a ordem entre os pacotes — está na seção da F10.
+**API Julia** ainda pode mudar em `0.2`.
+
+**Pronto para registrar desde 16 de setembro de 2026.** A preparação achou duas
+dependências que não existiam no código — a `KanonScience` declarava o `Extenso`, e a
+`KanonLegal` declarava a `KanonScience`, as duas vazadas de um `Pkg.develop` da suíte para
+o arquivo commitado — e três compat faltando. Estão corrigidas, e o job `Registrable` do CI
+confere as três regras no `Project.toml` commitado a cada push.
+
+**O passo a passo**, cada um num comentário do GitHub no commit da `main` que se quer
+registrar. Um pacote só pode ser pedido depois que as dependências dele **entraram** no
+General — não basta o pedido estar aberto:
+
+| Ordem | Comentário | Espera |
+|---|---|---|
+| 1 | `@JuliaRegistrator register` | `Kanon` entrar no General |
+| 2 | `@JuliaRegistrator register subdir=lib/Extenso` | pode ir junto com o 3 e o 4 |
+| 3 | `@JuliaRegistrator register subdir=lib/KanonScience` | pode ir junto com o 2 e o 4 |
+| 4 | `@JuliaRegistrator register subdir=lib/KanonLSP` | pode ir junto com o 2 e o 3 |
+| 5 | `@JuliaRegistrator register subdir=lib/KanonLegal` | `Extenso` entrar no General |
+
+O grafo que dá essa ordem: `Extenso`, `KanonScience` e `KanonLSP` dependem só do `Kanon`; a
+`KanonLegal` depende do `Kanon` e do `Extenso`. As camadas irmãs que as suítes carregam
+estão em `[extras]` e não travam o registro — mas `Pkg.test("KanonLegal")` só resolve
+depois que a `KanonScience` também estiver no General.
+
+**O que esperar de cada pedido.** Pacote novo fica **três dias** em espera antes do merge
+automático. E três dos cinco vão pedir mais que isso, na seção da F10. Aceito cada um, o
+TagBot cria a tag e a release: `v0.1.0` para o núcleo, `Extenso-v0.1.0` e assim por diante
+para as camadas.
 
 ### 3. A pré-visualização sempre visível
 
@@ -845,16 +872,22 @@ congelamento da sintaxe (D-077).
 
 ### O que o registro vai cobrar
 
-- **`Kanon` e `Extenso` reprovam na checagem automática de similaridade de nome.** Medido
-  contra a `Registry.toml`: `Kanon` tem distância de Damerau 2 de `Kaimon` e de `Kanones`;
-  `Extenso`, 2 de `Extents`. O mínimo do AutoMerge é 3. Os dois vão exigir o rótulo
-  `Override AutoMerge: name similarity is okay` e revisão humana. `KanonLegal` e
+- **`Kanon`, `Extenso` e `KanonLSP` reprovam na checagem automática de similaridade de
+  nome.** Medido de novo em 16 de setembro de 2026 contra a `Registry.toml` (14.249
+  pacotes): `Kanon` tem distância de Damerau 2 de `Kaimon`, de `Kanones` e de `BARON`;
+  `Extenso`, 2 de `Extents` e de `Xtensor`; e `KanonLSP`, que não tinha sido medido, 2 de
+  `Kanones`. O mínimo do AutoMerge é 3. Os três vão exigir o rótulo `Override AutoMerge:
+  name similarity is okay`, que só quem mantém o General aplica: no PR que o Registrator
+  abrir, um comentário curto dizendo que os nomes formam uma família (`Kanon` e as
+  camadas dele) e que `Extenso` é a palavra portuguesa para "por extenso". `KanonLegal` e
   `KanonScience` passam.
-- **Os quatro pacotes vivem num repositório só.** O General aceita subdiretórios
-  (`subdir=`), então não é impedimento — mas cada um precisa da sua própria tag.
-- **Ordem obrigatória:** `Kanon` primeiro; `Extenso` depois dele; `KanonLegal` depois dos
-  dois. Enquanto `Kanon` não estiver registrado, `Pkg.develop` local é a única forma de
-  as camadas resolverem — que é como o CI faz hoje.
+- **Os cinco pacotes vivem num repositório só.** O General aceita subdiretórios
+  (`subdir=`), então não é impedimento — cada um tem a sua tag, criada pelo TagBot.
+- **Ordem obrigatória:** a tabela do item 2. Enquanto `Kanon` não estiver registrado,
+  `Pkg.develop` local é a única forma de as camadas resolverem — que é como o CI faz hoje.
+- **O TagBot não usa chave SSH**, e por isso a tag que ele cria não dispara workflow
+  nenhum. Hoje não faz falta: a documentação publica só `dev/`. Quando `stable/` for
+  querida, é o `DOCUMENTER_KEY` que o TagBot precisa receber.
 
 O CI entrou fora de fase, junto com o README em inglês: um badge de build sem CI afirma
 o que não se verifica, e é a categoria de coisa que este projeto existe para não fazer.
@@ -891,7 +924,7 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
 | O arquivo `chave = valor` escrito à mão lê `drenagem = 1.320` como `1.32` | `cli.jl` | o `ask` recusa a resposta ambígua desde a D-069, e o arquivo digitado não passa por ele: `parse_data_value` não conhece o ambiente. O JSON não tem o problema, porque lá o número é da gramática do JSON. Gatilho: o primeiro modelo com dados digitados à mão em `chave = valor` com número agrupado |
 | O escape do Markdown é o do CommonMark, e o leitor padrão do pandoc lê mais: `a)`, `(1)` e `iv.` no começo da linha abrem lista; `H~2~O` e `10^3^` são subscrito e sobrescrito no meio dela; `--` vira travessão e a aspa reta vira curva | `output.jl` | um valor com uma dessas formas chegar a um `.docx`. Registrado na D-070, conferido no pandoc 3.11: a reclamação nº 15 não tem nenhuma, e escapar `(` e `^` em todo Markdown encheria de barras o fonte de quem o lê no CommonMark |
-| Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`; extrair só se o registro exigir |
+| Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`, e o TagBot tagueia cada um; extrair só se o registro exigir |
 | A cobertura mede só o núcleo; as quatro camadas não sobem `lcov` | `CI.yml` | quando uma camada crescer a ponto de a leitura do número dela dizer algo. Hoje diria pouco: o sinal deste projeto está nas invariantes, não no percentual |
 
 ## Invariantes que nenhuma fase pode quebrar

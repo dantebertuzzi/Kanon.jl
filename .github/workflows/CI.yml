@@ -109,7 +109,9 @@ jobs:
         shell: bash
 
       # `Extenso` entra só para a suíte: o pacote não depende dele, e é o teste dos
-      # separadores que precisa de um ambiente com idioma para haver o que separar.
+      # separadores que precisa de um ambiente com idioma para haver o que separar. O
+      # `develop` o escreve em `[deps]` aqui dentro — e só aqui: o job `registravel` confere
+      # que isso nunca chega ao arquivo commitado.
       - name: KanonScience
         run: |
           julia --project=lib/KanonScience -e '
@@ -192,6 +194,21 @@ jobs:
           git add index.html logo.png fonts
           git diff --cached --quiet || git commit -m "Landing page: $GITHUB_SHA"
           git push
+
+  # O `Project.toml` commitado, conferido como o General vai conferir, e **antes** de qualquer
+  # `Pkg.develop`: é o passo acima que escreve as camadas irmãs em `[deps]`, e foi uma cópia
+  # assim, commitada, que fez a `KanonScience` depender do `Extenso` e a `KanonLegal` da
+  # `KanonScience`, sem código nenhum que as usasse. Job próprio, com checkout limpo, para
+  # que nenhum outro passo toque os arquivos que ele lê.
+  registravel:
+    name: Registrable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - run: julia .github/scripts/registravel.jl
 
   # As provas de fogo: o motor dentro de outra ferramenta. O blog constrói um site em
   # Franklin e planta os erros de um redator; o gerador de minutas monta o formulário do

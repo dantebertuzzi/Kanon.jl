@@ -159,13 +159,13 @@ version = "0.1.0"
     Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 
 [[deps.KanonLegal]]
-deps = ["Dates", "Extenso", "Kanon", "KanonScience"]
+deps = ["Dates", "Extenso", "Kanon"]
 path = "../../lib/KanonLegal"
 uuid = "5e2a91c4-7d38-4b0e-9a65-3f81c2d4e7a9"
 version = "0.1.0"
 
 [[deps.KanonScience]]
-deps = ["Extenso", "Kanon"]
+deps = ["Kanon"]
 path = "../../lib/KanonScience"
 uuid = "9f4c8b26-3e51-4a7d-b982-6c05d1e3f8a4"
 version = "0.1.0"
