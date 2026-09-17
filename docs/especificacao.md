@@ -153,6 +153,13 @@ teorema da seção 3 e não deve ser afrouxada por nenhuma conveniência futura.
 
 `[..n]` e `[]` admitem lista vazia; `[]` sem marca continua opcional (ausente ≠ vazia).
 
+**[acrescentado depois do congelamento — D-081]** O literal do padrão é conferido contra o
+tipo declarado, na análise, sem dados: `x : date = 5` é erro de referência (`K2016`). O
+padrão entra no documento como qualquer outro valor, e entra como o tipo declarado — não há
+conversão implícita (§3.4). `= today` exige um tipo que aceite data; `= null` é o campo
+dizendo que o padrão é a ausência, e passa; e um campo de lista não tem literal por padrão,
+porque um literal é um valor só.
+
 ### 2.2 Constantes de ambiente
 
 `today` é o único nome reservado de constante na versão 1. Não é lido do relógio: é

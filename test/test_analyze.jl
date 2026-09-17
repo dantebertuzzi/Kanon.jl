@@ -550,3 +550,57 @@ end
         @test !isempty(l.diagnostics)
     end
 end
+
+@testset "o valor padrão é conferido contra o tipo declarado (K2016)" begin
+    # `quando : date = 5` declarava data e entregava o número cinco: o `check` devolvia o
+    # literal cru, sem passar pelo `kanon_decode` por onde passa todo valor vindo de fora,
+    # e o documento saía com `Em 5,` — com zero diagnósticos, o contrato dado por
+    # satisfeito. É a D-048 pela porta do contrato. A conferência é aqui e não no `check`
+    # porque o padrão está escrito no modelo: no `check` o erro dormiria em todo conjunto
+    # de dados que trouxesse o campo.
+    dcodes(decl) = [d.code for d in anl("kanon 1\n\ndata\n  " * decl *
+                                        "\n\ntext\n\n: b\nx\n").diagnostics]
+
+    @testset "o tipo do literal tem de ser o tipo declarado" begin
+        @test dcodes("x : date = 5") == ["K2016"]
+        @test dcodes("x : money = 100") == ["K2016"]
+        @test dcodes("x : number = \"5\"") == ["K2016"]
+        @test dcodes("x : boolean = 1") == ["K2016"]
+    end
+
+    @testset "e o que é do tipo passa" begin
+        @test dcodes("x : date = 2026-05-06") == []
+        @test dcodes("x : text = \"Petrolina\"") == []
+        @test dcodes("x : number = 5.5") == []
+        @test dcodes("x : boolean = true") == []
+    end
+
+    @testset "`today` é uma data, e só serve a quem aceita data" begin
+        # não se decodifica: ele vira uma `Date` no `check` (§2.2), e o que se exige do
+        # tipo é aceitar uma `Date` — perguntar isso inventando uma data aqui seria dar
+        # relógio à análise
+        @test dcodes("x : date = today") == []
+        @test dcodes("x : text = today") == ["K2016"]
+        @test dcodes("x : number = today") == ["K2016"]
+    end
+
+    @testset "uma coleção não tem literal por padrão, e `null` não é valor" begin
+        @test dcodes("x : text[] = \"a\"") == ["K2016"]
+        @test dcodes("x : text = null") == []      # o padrão é a ausência, que não tem tipo
+    end
+
+    @testset "o diagnóstico aponta o valor, e o modelo não carrega" begin
+        d = anl("kanon 1\n\ndata\n  quando : date = 5\n\ntext\n\n: b\nEm {quando}.\n").diagnostics[1]
+        @test d.code == "K2016"
+        @test d.path == "quando"
+        @test d.line == 4
+        @test_throws KanonReferenceError load_string(ENVP, "kanon 1\n\ndata\n  quando : date = 5\n\ntext\n\n: b\nEm {quando}.\n")
+    end
+
+    @testset "e com isso o formatador do render volta a ser o do tipo certo" begin
+        # `{preco:code}` era conferido contra o `money` DECLARADO e estourava
+        # `UnknownFormatter` dentro do render, que só pode falhar por orçamento
+        # (`ast.md` §8): quem chegava lá era o literal cru, que é `number`.
+        @test dcodes("preco : money = 100") == ["K2016"]
+    end
+end

@@ -119,6 +119,14 @@ D-034 do outro lado da mesma medição: algarismos que a medição não sustenta
 dos que ela sustenta.
 """
 function format_relative(v::Measure, ctx)
+    # Uma leitura de **zero** é medição legítima — o branco de um laboratório, um desvio
+    # nulo, um instrumento no ponto de referência —, e a incerteza relativa dela não
+    # existe: é dividir por zero. Saía `DivideError` cru, de dentro do formatador, num
+    # valor que o `check` tinha aprovado. Recusar dizendo o que escrever no lugar é o que
+    # o motor faz com todo valor que não se escreve.
+    iszero(v.value) && throw(Kanon.UnwritableValue(Measure, v,
+        "a incerteza relativa de uma medição de valor zero não existe — seria dividir " *
+        "por zero. Escreva `{campo}` ou `{campo:bare}`, que não dependem do valor."))
     r = 100 * v.uncertainty / abs(v.value)
     localized(r, decimals_for(r), ctx) * "%"
 end

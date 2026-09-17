@@ -108,6 +108,12 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
         e isa KanonContractError && return report(err, e, EXIT_CONTRACT)
         e isa KanonResourceError && return report(err, e, EXIT_RESOURCE)
         e isa KanonEnvironmentError && (showerror(err, e); println(err); return EXIT_USAGE)
+        # Um valor que o contrato aceitou e que o formatador não consegue escrever — a
+        # incerteza relativa de uma medição de valor zero, um número não finito vindo de
+        # coluna calculada. É falha de contrato, não de programa, e sai como tal: a
+        # alternativa era o `rethrow()` lá embaixo, com a pilha de Julia que a §12 promete
+        # nunca imprimir.
+        e isa KanonProtocolError && (println(err, "kanon: ", sprint(showerror, e)); return EXIT_CONTRACT)
         # `showerror` de um erro de sistema já traz o caminho e o motivo, e não traz
         # pilha: a CLI não deve responder a um arquivo faltando com um dump de Julia.
         (e isa SystemError || e isa Base.IOError) &&
@@ -425,7 +431,10 @@ function recusa_da_forma(env::Environment, f::FieldDecl, texto::AbstractString)
     # um grupo só: `1.234.567` não é decimal em forma nenhuma, e cai na forma do documento
     if grupo == "." && occursin(r"^-?[1-9][0-9]{0,2}\.[0-9]{3}$", texto)
         inteiro = replace(texto, "." => "")
-        fracao = endswith(texto, "0") ? rstrip(texto, '0') : texto * "0"
+        # Um zero de cada vez: `rstrip` tirava todos, e `1.000` — que é *mil*, e é o que
+        # mais se digita — mandava escrever `1.`, que a linha seguinte desta mesma função
+        # recusa. O fiscal ia e voltava entre duas grafias recusadas.
+        fracao = endswith(texto, "0") ? chop(texto) : texto * "0"
         return "`$texto` é ambíguo: no documento o ponto separa os milhares, e na resposta " *
                "ele separa os decimais. Escreva `$inteiro` se é o número inteiro, ou " *
                "`$fracao` se é decimal."

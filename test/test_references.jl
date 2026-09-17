@@ -62,6 +62,15 @@ ref_diags(corpo; env = ENVC) = anl(CABECA * corpo; env).diagnostics
         @test occursin("nível 3", d.message) && occursin("nível 2", d.message)
     end
 
+    @testset "o nível pulado diz K2031, e não estoura" begin
+        # `resize!` para cima não inicializa memória: o nível que ninguém abriu ficava com
+        # lixo, e o segundo bloco do nível pulado lia esse lixo como índice de bloco —
+        # `BoundsError` saindo de `load_template`, levando junto o `K2031` que já estava
+        # dito. Quem primeiro vê isso é o servidor de linguagem, que fica mudo.
+        @test ref_codes(": um\nx\n\n::: b\ny\n\n::: c\nz\n") == ["K2031"]
+        @test ref_codes(":: um\nx\n\n:::: b\ny\n\n:::: c\nz\n") == ["K2031"]
+    end
+
     @testset "voltar de nível fecha os de baixo" begin
         # 1, 2, 1, 3 — o 3 não tem mais um 2 aberto antes dele
         @test ref_codes(":: a\nx\n\n::: b\nx\n\n:: c\nx\n\n:::: d\nx\n") == ["K2031"]

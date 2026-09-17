@@ -63,8 +63,15 @@ longe do zero — a convenção de documento, e determinística.
 
 Passa por `Rational{BigInt}`, e não por `BigFloat`, porque a precisão do `BigFloat` é
 estado global (`setprecision`) e o determinismo não pode depender dela.
+
+E é aqui que o não finito para. `Rational{BigInt}(Inf)` é `1//0`, e o que sai disso é um
+`DivideError` cru — a pilha de Julia que a CLI promete nunca imprimir (§12). A guarda
+estava só no `plain_number`, que é uma das cinco portas: `fixed2`, `integer`, os dois
+formatadores do `money` e toda camada que chama `fixed_number` entravam sem ela, e a
+`measure` de incerteza relativa chegava com `Inf` calculado dentro da própria camada.
 """
 function scaled_digits(v::Real, digits::Integer)
+    isfinite(v) || throw(UnwritableValue(typeof(v), v, "não é um número finito."))
     scale = big(10)^digits
     n = round(BigInt, Rational{BigInt}(v) * scale, RoundNearestTiesAway)
     neg = n < 0
@@ -111,7 +118,7 @@ function plain_number(v::Real, ctx)
         return assemble_number(neg, int, "", ctx)
     end
     if v isa AbstractFloat
-        isfinite(v) || throw(UndecodableValue(typeof(v), v, "não é um número finito."))
+        isfinite(v) || throw(UnwritableValue(typeof(v), v, "não é um número finito."))
         isinteger(v) && return assemble_number(v < 0, string(abs(BigInt(v))), "", ctx)
     end
     neg, int, frac = scaled_digits(v, MAX_DECIMALS)
@@ -131,7 +138,14 @@ kanon_attribute(v::NumberValue, ::Val{:positive}) = v > 0
 kanon_compare(a::NumberValue, b::NumberValue) = cmp(a, b)
 
 function kanon_decode(::Type{NumberValue}, raw, ctx)
-    raw isa NumberValue && return raw
+    if raw isa NumberValue
+        # `Inf` e `NaN` são números do ponto flutuante, e não valores de documento: não
+        # há como escrevê-los, e recusá-los aqui é o que faz o `check` dizer o que houve
+        # (K3010) em vez de o render estourar na hora de escrever o algarismo. Não vem de
+        # JSON, que não os escreve — vem de coluna calculada, que é de onde vem `measure`.
+        isfinite(raw) || throw(UndecodableValue(NumberValue, raw, "não é um número finito."))
+        return raw
+    end
     raw isa Bool && throw(UndecodableValue(NumberValue, raw,
         "verdadeiro e falso não são números; declare o campo como `boolean`."))
     # Como a data: a cadeia é o erro de quem escreve o arquivo, e a mensagem dá a forma.

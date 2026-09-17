@@ -65,6 +65,24 @@ struct UndecodableValue <: KanonProtocolError
     reason::String
 end
 
+"""
+Valor que o tipo aceitou e que um formatador dele **não consegue escrever**.
+
+É o outro lado do [`UndecodableValue`](@ref), e existe porque os dois erram em momentos
+diferentes: um valor que não entra é recusado pelo `check`, com os dados na mão, e nunca
+chega ao documento. Este só aparece no render, e vem de duas origens — um valor que a
+camada **calcula** (a incerteza relativa de uma medição de valor zero é uma divisão por
+zero) e um que o `check` não tinha como recusar sem os formatadores do modelo na mão.
+
+Dizer "não foi possível **ler**" nesse caso seria falso: o valor foi lido, e é escrever
+que não dá.
+"""
+struct UnwritableValue <: KanonProtocolError
+    type::Type
+    value::Any
+    reason::String
+end
+
 "O tipo não declara como se comparar com aquele valor (§8.1)."
 struct IncomparableValues <: KanonProtocolError
     type::Type
@@ -91,6 +109,10 @@ end
 
 Base.showerror(io::IO, e::UndecodableValue) =
     print(io, "não foi possível ler `", repr(e.raw), "` como `",
+              kanon_typename_or_julia(e.type), "`: ", e.reason)
+
+Base.showerror(io::IO, e::UnwritableValue) =
+    print(io, "não foi possível escrever `", repr(e.value), "` como `",
               kanon_typename_or_julia(e.type), "`: ", e.reason)
 
 Base.showerror(io::IO, e::IncomparableValues) =

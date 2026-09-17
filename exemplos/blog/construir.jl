@@ -153,7 +153,9 @@ uma contrabarra.
 """
 function conferir_cifrao!(problemas::Vector{Problema}, p::Pagina)
     for (i, linha) in enumerate(split(p.corpo, '\n'))
-        for m in eachmatch(r"(?<![\\\w])(R|US|U\$S)?\$(?=\s?\d)", linha)
+        # As alternativas vão inteiras, e não como prefixo de um `$` que vem depois:
+        # `(R|US|U\$S)?\$` nunca casava `U$S`, porque o cifrão dele é o do meio.
+        for m in eachmatch(r"(?<![\\\w])(?:(?:R|US)?\$|U\$S)(?=\s?\d)", linha)
             push!(problemas, Problema(p.arquivo,
                 "o corpo tem `$(m.match)` seguido de número na linha $(i + p.linhas_antes): " *
                 "no Franklin, `\$` abre uma fórmula.";
@@ -178,12 +180,24 @@ Kanon ignora o campo, e `descricão`, com til, é justamente a `descricao` que o
 queria escrever — publicar assim é publicar sem a descrição, em silêncio, que é o que o
 Liquid faria.
 """
-function do_kanon!(problemas::Vector{Problema}, arquivo::String, set)
+function do_kanon!(problemas::Vector{Problema}, arquivo::String, set; rascunho::Bool = false)
     for d in Kanon.sorted(set)
-        grave = d.severity === :error || d.code == "K3021"
+        rascunho && d.code in AUSENCIA && continue
+        grave = !rascunho && (d.severity === :error || d.code == "K3021")
         push!(problemas, Problema(arquivo, d.message; dica = d.hint, grave))
     end
 end
+
+"""
+O que, num rascunho, é o normal: o campo que **ainda não foi escrito**. É para isso que o
+rascunho serve, e dizê-lo a cada construção seria ruído.
+
+O que está **errado** é outra coisa, e ficava calado: um `data = "ontem"` saía na
+pré-visualização como «data», idêntico ao campo que ninguém escreveu ainda, e o redator
+lia "falta preencher" onde havia um valor recusado — só descobria ao tirar o `rascunho`.
+Agora sai como aviso, que não impede o site.
+"""
+const AUSENCIA = ("K3001", "K3004")
 
 # --- 3. o HTML que o Kanon escreve ---------------------------------------------
 
@@ -406,6 +420,7 @@ function construir(; servir::Bool = false, conteudo::AbstractString = CONTEUDO,
         post.rascunho && !servir && continue
         b = Kanon.bind(modelos[post.idioma], dados_do_contrato(post.pagina))
         if post.rascunho
+            do_kanon!(problemas, post.pagina.arquivo, diagnostics(b); rascunho = true)
             push!(validos, post)
             continue
         end

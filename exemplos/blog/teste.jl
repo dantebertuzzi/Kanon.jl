@@ -207,6 +207,37 @@ recusa(r, arquivo, trecho) =
         end
     end
 
+    @testset "o rascunho com valor errado avisa, e não se confunde com o que falta" begin
+        # «data» na pré-visualização dizia as duas coisas ao mesmo tempo: "ainda não
+        # escrevi" e "escrevi e foi recusado". A primeira é o rascunho funcionando; a
+        # segunda o redator só descobria ao tirar o `rascunho`.
+        # só na pré-visualização: publicando, o rascunho nem é lido
+        servindo(editar!) = mktempdir() do dir
+            copia = joinpath(dir, "conteudo")
+            cp(CONTEUDO, copia)
+            editar!(copia)
+            construir(; conteudo = copia, escrever = false, servir = true, io = devnull)
+        end
+
+        r = servindo(c -> trocar!(c, "posts/2026-09-16-moda.md", "rascunho = true",
+                                  "rascunho = true\ndata = \"ontem\""))
+        @test r.ok                                   # o rascunho não derruba o site
+        avisos = [p for p in r.problemas if endswith(p.arquivo, "moda.md")]
+        @test !isempty(avisos)
+        @test all(p -> !p.grave, avisos)
+        @test any(p -> occursin("`data`", p.mensagem), avisos)
+        # e o que apenas falta continua calado: é para isso que o rascunho serve
+        @test isempty([p for p in servindo(identity).problemas if endswith(p.arquivo, "moda.md")])
+    end
+
+    @testset "o cifrão do peso uruguaio também é achado" begin
+        # `(R|US|U\$S)?\$` nunca casava `U$S`: o cifrão dele é o do meio, e a alternativa
+        # exigia outro depois. No Franklin ele abre fórmula do mesmo jeito.
+        r = construir_com(c -> trocar!(c, MEDIANA, "R\\\$ 150", "U\$S 150"))
+        @test !r.ok
+        @test recusa(r, MEDIANA, "U\$S")
+    end
+
     @testset "o título com cifrão não executa nada no Franklin" begin
         r = construir_com(c -> trocar!(c, MEDIANA, "titulo = \"Mediana: o centro que não se mexe\"",
                                        "titulo = \"Mediana: \$(run(`false`))\""))

@@ -74,6 +74,15 @@ E a recusa é parte do tipo, não formalidade: `measure` recusa um número solto
 por quê** — um número sem incerteza não é uma medição, e aceitá-lo com incerteza zero
 imprimiria casas decimais que ninguém mediu [D-047].
 
+**O que não entra e o que não se escreve [D-082].** A recusa de entrada é
+`UndecodableValue`, e ela acontece no `check`, com os dados na mão: o valor nunca chega ao
+documento. Há também o valor que **entrou** e que um formatador não consegue escrever — a
+incerteza relativa de uma medição de valor zero é uma divisão por zero, e o tipo só
+descobre isso na hora de escrever. Esse é `UnwritableValue`, e ele só existe no render.
+Dizer "não foi possível ler" ali seria falso, e a diferença importa para quem lê a
+mensagem: um se corrige nos dados, o outro no modelo. A CLI responde aos dois com o código
+de contrato, e nunca com pilha de Julia.
+
 **Ausência num campo opcional [D-049].** Um `struct` raramente tem `nothing` a pôr no
 lugar de um `String`, e guarda a falta como `""`. O motor lê **em branco como ausente** em
 qualquer profundidade, tanto em `check` quanto no render: o grupo que protege

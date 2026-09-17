@@ -142,6 +142,11 @@ function block_header!(ctx::ParseCtx, s::AbstractString, lineno::Integer)
         err!(ctx, "K1212", Span(ctx.fileidx, Int32(lineno), Int32(1)),
              "o bloco `$name` está no nível $(n - 1), e a versão 1 vai até o nível $MAX_BLOCK_LEVEL.";
              hint = "Níveis são dados pela repetição do marcador: `$(unit)$(unit)` é o nível 1.")
+        # O erro já está dito, e o bloco ainda é construído para que o resto do arquivo
+        # seja lido e diga o que mais tiver. O nível volta ao teto porque ele viaja num
+        # `Int8`: uma linha de 200 marcadores estourava `InexactError` no construtor do
+        # `Block` e levava junto o diagnóstico que estava correto.
+        n = MAX_BLOCK_LEVEL + 1
     end
 
     return (unit, n, Symbol(name), subject)
