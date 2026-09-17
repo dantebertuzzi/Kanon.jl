@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Kanon: a document template language whose templates declare their own data contract. What does not satisfy the contract does not render.">
-<link rel="icon" href="logo.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <title>Kanon — a document template language</title>
 
 <style>
@@ -295,7 +295,10 @@ footer .muted{color:var(--ink-faint)}
   </div>
 
   <div class="logo-stage" id="stage">
-    <img src="logo.png" alt="Kanon: a woman looking upward inside a golden halo, a four-pointed star over her face.">
+    <picture>
+      <source srcset="logo.avif" type="image/avif">
+      <img src="logo.png" width="820" height="1049" alt="Kanon: a woman looking upward inside a golden halo, a four-pointed star over her face.">
+    </picture>
     <canvas class="flare-canvas" id="flare" aria-hidden="true"></canvas>
   </div>
 </header>
@@ -523,7 +526,10 @@ footer .muted{color:var(--ink-faint)}
 <footer>
   <div class="col foot-brand">
     <div class="foot-logo">
-      <img src="logo.png" alt="">
+      <picture>
+        <source srcset="logo-rodape.avif" type="image/avif">
+        <img src="logo.png" width="160" height="205" alt="" loading="lazy">
+      </picture>
       <canvas class="flare-canvas" id="flare-foot" aria-hidden="true"></canvas>
     </div>
     <div><span class="display" style="font-size:1.15rem">Kanon</span>

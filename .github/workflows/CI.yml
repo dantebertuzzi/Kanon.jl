@@ -186,12 +186,12 @@ jobs:
         run: |
           git clone --depth 1 --branch gh-pages \
             "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" site
-          cp web/index.html web/logo.png site/
+          cp web/index.html web/logo.png web/logo.avif web/logo-rodape.avif web/favicon.png site/
           rm -rf site/fonts && cp -r web/fonts site/fonts
           cd site
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html logo.png fonts
+          git add index.html logo.png logo.avif logo-rodape.avif favicon.png fonts
           git diff --cached --quiet || git commit -m "Landing page: $GITHUB_SHA"
           git push
 
