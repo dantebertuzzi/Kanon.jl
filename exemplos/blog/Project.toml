@@ -1,0 +1,16 @@
+[deps]
+CommonMark = "a80b9123-70ca-4bc0-993e-6e3bcb318db6"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Extenso = "7b3d5e91-2a48-4c6f-9d13-8e4a2f60c5b7"
+Franklin = "713c75ef-9fc9-4b05-94a9-213340da978e"
+Kanon = "3c1f7a2e-9b4d-4a6f-8e21-5d0c7b3f9a14"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[sources]
+Extenso = {path = "../../lib/Extenso"}
+Kanon = {path = "../.."}
+
+[compat]
+CommonMark = "1"
+Franklin = "0.10"
+julia = "1.11"

@@ -15,6 +15,7 @@ kanon_attributes
 Kanon.UNIVERSAL_ATTRIBUTES
 kanon_getfield
 kanon_decode
+kanon_json_schema
 kanon_compare
 FieldSpec
 ```

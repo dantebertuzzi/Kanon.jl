@@ -1,0 +1,45 @@
+kanon 1
+
+# The same post header in canonical English, with no language layer loaded — the proof,
+# in the site itself, that the language is neither Portuguese nor legal.
+#
+# Kanon has no English language layer, so a date is written the way the neutral core
+# writes it: `2026-05-06`. `construir.jl` loads this model in an environment without
+# `locale`, and the Portuguese formatters (`corrente`, `extenso`) do not exist here.
+
+data
+  titulo     : text       !
+  descricao  : text
+  imagem     : text
+  autor      : autor      !
+  data       : date       !
+  atualizado : date
+  serie      : text
+  tags       : text[1..]
+  traducao   : chamada
+
+text
+
+: titulo
+# {titulo}
+
+: imagem
+[!\[{titulo}\](<{imagem}>)]
+
+: descricao
+[*{descricao}*]
+
+: assinatura
+By **{autor}**, {data}[; updated {atualizado}].
+
+: serie
+[Part of the series *{serie}*.]
+
+: traducao
+[Also in Portuguese: \[{traducao}\](<{traducao.url}>).]
+
+: corpo
+<!-- corpo -->
+
+: etiquetas
+[Tags: {tags}.]

@@ -282,7 +282,7 @@ The normative documents live in [`docs/`](docs/):
 | Document | What it holds |
 |---|---|
 | [`especificacao.md`](docs/especificacao.md) | the normative spec: lexis, grammar, types, elision, errors, the theorem |
-| [`decisoes.md`](docs/decisoes.md) | 77 decisions, each with alternatives, reasoning and date |
+| [`decisoes.md`](docs/decisoes.md) | 79 decisions, each with alternatives, reasoning and date |
 | [`api-extensao.md`](docs/api-extensao.md) | the extension protocol — ten generic functions |
 | [`ast.md`](docs/ast.md) | the tree, the side tables, and the four invariants |
 | [`roadmap.md`](docs/roadmap.md) | where things stand, and what each phase found |

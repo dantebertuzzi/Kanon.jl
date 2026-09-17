@@ -1,0 +1,25 @@
+[deps]
+CommonMark = "a80b9123-70ca-4bc0-993e-6e3bcb318db6"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Extenso = "7b3d5e91-2a48-4c6f-9d13-8e4a2f60c5b7"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+JSONSchema = "7d188eb4-7ad8-530c-ae41-71a32a6d4692"
+Kanon = "3c1f7a2e-9b4d-4a6f-8e21-5d0c7b3f9a14"
+KanonLegal = "5e2a91c4-7d38-4b0e-9a65-3f81c2d4e7a9"
+KanonScience = "9f4c8b26-3e51-4a7d-b982-6c05d1e3f8a4"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+Extenso = {path = "../../lib/Extenso"}
+Kanon = {path = "../.."}
+KanonLegal = {path = "../../lib/KanonLegal"}
+KanonScience = {path = "../../lib/KanonScience"}
+
+[compat]
+CommonMark = "1"
+HTTP = "1"
+JSON3 = "1"
+JSONSchema = "1"
+julia = "1.11"

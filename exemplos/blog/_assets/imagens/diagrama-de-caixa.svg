@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Diagrama de caixa com mínimo, primeiro quartil, mediana, terceiro quartil e máximo">
+  <rect width="640" height="360" fill="#e3efee"/>
+  <line x1="90" y1="170" x2="210" y2="170" stroke="#1b2226" stroke-width="2"/>
+  <line x1="430" y1="170" x2="560" y2="170" stroke="#1b2226" stroke-width="2"/>
+  <line x1="90" y1="140" x2="90" y2="200" stroke="#1b2226" stroke-width="2"/>
+  <line x1="560" y1="140" x2="560" y2="200" stroke="#1b2226" stroke-width="2"/>
+  <rect x="210" y="110" width="220" height="120" fill="#0f5e63" fill-opacity="0.25" stroke="#0f5e63" stroke-width="3"/>
+  <line x1="300" y1="110" x2="300" y2="230" stroke="#0f5e63" stroke-width="4"/>
+  <g font-family="Source Sans 3, system-ui, sans-serif" font-size="18" fill="#1b2226" text-anchor="middle">
+    <text x="90" y="260">mínimo</text><text x="210" y="275">Q1</text><text x="300" y="260">mediana</text>
+    <text x="430" y="275">Q3</text><text x="560" y="260">máximo</text>
+    <text x="320" y="92">intervalo interquartil</text>
+  </g>
+</svg>

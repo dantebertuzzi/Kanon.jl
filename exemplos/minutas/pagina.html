@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador de minutas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/*
+  O formulário não sabe nada de procuração nem de contrato. Ele lê o JSON Schema que o
+  Kanon escreve para o modelo (`contract`) e monta um campo por propriedade; a prévia e a
+  validação são do servidor, que as pede ao Kanon. Nenhuma regra da linguagem mora aqui.
+*/
+:root {
+  --fundo: #eef0f2;
+  --painel: #ffffff;
+  --papel: #fffdf8;
+  --tinta: #1c2127;
+  --apagado: #5d6670;
+  --linha: #d5dade;
+  --campo: #f7f8f9;
+  --acento: #1f4e79;
+  --acento-fundo: #e4edf6;
+  --falta: #fbe7a8;
+  --falta-tinta: #6b4d00;
+  --erro: #a3261d;
+  --erro-fundo: #fbeceb;
+  --ok: #1e6b43;
+  --ok-fundo: #e2f3e9;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #121518;
+    --painel: #1a1f24;
+    --papel: #20252b;
+    --tinta: #e4e8ec;
+    --apagado: #98a2ad;
+    --linha: #2f363d;
+    --campo: #151a1e;
+    --acento: #8cb8e6;
+    --acento-fundo: #1d2b39;
+    --falta: #5a4712;
+    --falta-tinta: #f6dc8b;
+    --erro: #f0948c;
+    --erro-fundo: #3a1f1d;
+    --ok: #7fd1a3;
+    --ok-fundo: #173026;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--fundo); color: var(--tinta); font: 400 15px/1.5 var(--sans); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: minmax(0, 30rem) minmax(0, 1fr); height: 100%; }
+@media (max-width: 900px) { .app { grid-template-columns: 1fr; height: auto; } }
+
+/* --- a coluna do formulário --- */
+.lado { background: var(--painel); border-right: 1px solid var(--linha); overflow-y: auto; display: flex; flex-direction: column; }
+.topo { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--linha); position: sticky; top: 0; background: var(--painel); z-index: 2; }
+.topo h1 { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--apagado); margin: 0 0 0.6rem; font-weight: 600; }
+.topo label { display: block; font-size: 0.8rem; color: var(--apagado); margin-bottom: 0.25rem; }
+#modelo { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--linha); border-radius: 6px; background: var(--campo); font-weight: 500; }
+#descricao { margin: 0.5rem 0 0.75rem; color: var(--apagado); font-size: 0.9rem; }
+.acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.botao { border: 1px solid var(--linha); background: var(--campo); border-radius: 6px; padding: 0.4rem 0.75rem; cursor: pointer; font-size: 0.85rem; }
+.botao:hover { border-color: var(--acento); }
+
+#formulario { padding: 1rem 1.25rem 3rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.campo { display: flex; flex-direction: column; gap: 0.25rem; }
+.campo > label, fieldset > legend { font-size: 0.85rem; font-weight: 500; display: flex; gap: 0.4rem; align-items: baseline; flex-wrap: wrap; }
+.marca { font-size: 0.7rem; font-weight: 500; color: var(--apagado); letter-spacing: 0.02em; }
+.marca.obrigatorio { color: var(--acento); }
+.ajuda { font-size: 0.78rem; color: var(--apagado); }
+.campo input, .campo select, .campo textarea {
+  width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--linha); border-radius: 5px; background: var(--campo);
+}
+.campo textarea { resize: vertical; min-height: 2.4rem; field-sizing: content; }
+.campo input:focus, .campo select:focus, .campo textarea:focus { border-color: var(--acento); outline: none; box-shadow: 0 0 0 3px var(--acento-fundo); }
+
+fieldset { border: 1px solid var(--linha); border-radius: 8px; padding: 0.75rem 0.9rem 0.9rem; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+fieldset > legend { padding: 0 0.35rem; }
+.lista { display: flex; flex-direction: column; gap: 0.6rem; }
+.item { position: relative; }
+.item > .remover { position: absolute; top: 0.2rem; right: 0.4rem; border: 0; background: none; color: var(--apagado); cursor: pointer; font-size: 0.8rem; }
+.item > .remover:hover { color: var(--erro); }
+.item.simples { display: flex; gap: 0.4rem; align-items: center; }
+.item.simples > .remover { position: static; }
+.adicionar { align-self: flex-start; }
+
+.problema { font-size: 0.8rem; color: var(--erro); background: var(--erro-fundo); border-radius: 4px; padding: 0.35rem 0.5rem; }
+.problema .dica { display: block; color: var(--apagado); margin-top: 0.15rem; }
+.problema.aviso { color: var(--falta-tinta); background: var(--falta); }
+.tem-problema > input, .tem-problema > select, .tem-problema > textarea { border-color: var(--erro); }
+
+/* --- a coluna da prévia --- */
+.previa { overflow-y: auto; display: flex; flex-direction: column; }
+.barra { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; padding: 0.8rem 1.5rem; background: var(--fundo); border-bottom: 1px solid var(--linha); }
+#situacao { font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; }
+#situacao::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--falta-tinta); }
+#situacao.pronta::before { background: var(--ok); }
+#situacao.pronta { color: var(--ok); }
+.baixar { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.baixar button { border: 0; border-radius: 6px; padding: 0.45rem 0.85rem; background: var(--acento); color: var(--painel); font-weight: 500; font-size: 0.85rem; cursor: pointer; }
+.baixar button:disabled { background: var(--linha); color: var(--apagado); cursor: not-allowed; }
+.gerais { margin: 1rem 1.5rem 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.gerais:empty { display: none; }
+
+.folha { margin: 1.5rem auto 3rem; width: min(100% - 2rem, 46rem); background: var(--papel); border: 1px solid var(--linha); border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.06); padding: clamp(1.5rem, 5vw, 4rem) clamp(1.25rem, 6vw, 4.5rem); }
+#documento { font: 400 1.05rem/1.75 var(--serif); text-align: justify; hyphens: auto; }
+#documento p { margin: 0 0 1em; }
+#documento h1, #documento h2, #documento h3 { font-family: var(--serif); text-align: center; }
+#documento mark.falta { background: var(--falta); color: var(--falta-tinta); border-radius: 3px; padding: 0 0.2em; font: 400 0.8em var(--mono); white-space: nowrap; }
+.carregando #documento { opacity: 0.6; transition: opacity .15s; }
+@media (prefers-reduced-motion: reduce) { .carregando #documento { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="lado" aria-label="Dados da minuta">
+    <div class="topo">
+      <h1>Gerador de minutas</h1>
+      <label for="modelo">Modelo</label>
+      <select id="modelo"></select>
+      <p id="descricao"></p>
+      <div class="acoes">
+        <button type="button" class="botao" id="exemplo">Preencher com o exemplo</button>
+        <button type="button" class="botao" id="limpar">Limpar</button>
+      </div>
+    </div>
+    <form id="formulario" novalidate></form>
+  </section>
+
+  <section class="previa" aria-label="Prévia da minuta">
+    <div class="barra">
+      <span id="situacao" role="status" aria-live="polite">Carregando…</span>
+      <div class="baixar">
+        <button type="button" data-formato="docx" disabled>Baixar .docx</button>
+        <button type="button" data-formato="md" disabled>Markdown</button>
+        <button type="button" data-formato="txt" disabled>Texto</button>
+      </div>
+    </div>
+    <div class="gerais" id="gerais"></div>
+    <article class="folha"><div id="documento"></div></article>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+// --- o que se sabe do modelo corrente ---------------------------------------------------
+const estado = { id: null, esquema: null, raiz: null, temporizador: null, pedido: 0 };
+
+// Os nomes que os tipos do núcleo dão às chaves são canônicos e em inglês, porque o núcleo
+// não tem idioma. Traduzi-los aqui é apresentação, não regra: o dado enviado continua com
+// a chave canônica.
+const NOMES = { amount: "Valor", currency: "Moeda", value: "Valor", uncertainty: "Incerteza", unit: "Unidade" };
+
+const el = (tag, attrs = {}, ...filhos) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else e.setAttribute(k, v === true ? "" : v);
+  }
+  filhos.flat().forEach(f => f && e.append(f));
+  return e;
+};
+
+const humano = nome => NOMES[nome] || (nome.charAt(0).toUpperCase() + nome.slice(1)).replace(/_/g, " ");
+
+function resolver(esq) {
+  if (!esq || !esq.$ref) return esq || {};
+  const nome = esq.$ref.replace("#/$defs/", "");
+  const alvo = (estado.raiz.$defs || {})[nome] || {};
+  return Object.assign({}, alvo, esq.title ? { title: esq.title } : {}, { "x-tipo": nome });
+}
+
+// --- um campo por propriedade --------------------------------------------------------------
+//
+// Cada construtor devolve { el, coletar, preencher }. `coletar` devolve `undefined` para o que
+// está vazio, e a chave não é enviada: ausente é o que o Kanon entende por "não informado".
+
+function campo(nome, esquema, caminho, obrigatorio, xk) {
+  const esq = resolver(esquema);
+  const titulo = esquema.title || esq.title || humano(nome);
+
+  if (esq.type === "array") return lista(nome, esq, caminho, obrigatorio, titulo);
+  if (esq.type === "object") return objeto(esq, caminho, obrigatorio, titulo);
+  return escalar(esq, caminho, obrigatorio, titulo, xk);
+}
+
+function marca(obrigatorio, xk) {
+  if (xk && xk.presence === "defaulted") {
+    const padrao = xk.default === "today" ? "hoje" : xk.default;
+    return el("span", { class: "marca", text: `padrão: ${padrao}` });
+  }
+  return el("span", { class: "marca" + (obrigatorio ? " obrigatorio" : ""), text: obrigatorio ? "obrigatório" : "opcional" });
+}
+
+function escalar(esq, caminho, obrigatorio, titulo, xk) {
+  const id = "c-" + caminho.replace(/[^a-z0-9]/gi, "-");
+  let entrada, ler, escrever;
+  const tipos = [].concat(esq.type || "string");
+
+  // escolha fechada: `enum` com os próprios valores, ou `oneOf` de `const` com rótulo
+  const opcoes = esq.enum ? esq.enum.map(v => [v, v]) :
+    (Array.isArray(esq.oneOf) && esq.oneOf.every(o => "const" in o)) ? esq.oneOf.map(o => [o.const, o.title || o.const]) : null;
+  if (opcoes) {
+    entrada = el("select", { id }, el("option", { value: "", text: "—" }), opcoes.map(([v, t]) => el("option", { value: v, text: t })));
+    ler = () => entrada.value || undefined;
+    escrever = v => { entrada.value = v ?? ""; };
+  } else if (tipos.includes("boolean")) {
+    entrada = el("select", { id }, el("option", { value: "", text: "—" }), el("option", { value: "true", text: "Sim" }), el("option", { value: "false", text: "Não" }));
+    ler = () => entrada.value === "" ? undefined : entrada.value === "true";
+    escrever = v => { entrada.value = v === true ? "true" : v === false ? "false" : ""; };
+  } else if (esq.format === "date") {
+    entrada = el("input", { id, type: "date" });
+    ler = () => entrada.value || undefined;
+    escrever = v => { entrada.value = v ?? ""; };
+  } else if (tipos.length === 1 && tipos[0] === "number") {
+    entrada = el("input", { id, type: "number", step: "any", inputmode: "decimal" });
+    ler = () => entrada.value === "" ? undefined : Number(entrada.value);
+    escrever = v => { entrada.value = v ?? ""; };
+  } else if (tipos.includes("number")) {
+    // número ou texto — a quantia de dinheiro: vai como texto, que é como o decimal não perde casa
+    entrada = el("input", { id, type: "text", inputmode: "decimal", placeholder: "1200.00" });
+    ler = () => entrada.value.trim() === "" ? undefined : entrada.value.trim();
+    escrever = v => { entrada.value = v ?? ""; };
+  } else {
+    entrada = el("textarea", { id, rows: 1, spellcheck: "true" });
+    ler = () => entrada.value === "" ? undefined : entrada.value;
+    escrever = v => { entrada.value = v ?? ""; };
+  }
+  if (xk && xk.presence === "defaulted" && "placeholder" in entrada) {
+    entrada.placeholder = xk.default === "today" ? "hoje" : String(xk.default);
+  }
+  entrada.addEventListener("input", agendar);
+  entrada.addEventListener("change", agendar);
+
+  const bloco = el("div", { class: "campo", "data-caminho": caminho },
+    el("label", { for: id }, titulo, " ", marca(obrigatorio, xk)),
+    entrada,
+    esq.description ? el("span", { class: "ajuda", text: esq.description }) : null);
+  return { el: bloco, coletar: ler, preencher: escrever };
+}
+
+function objeto(esq, caminho, obrigatorio, titulo) {
+  const exigidos = esq.required || [];
+  const filhos = Object.entries(esq.properties || {}).map(([k, sub]) =>
+    [k, campo(k, sub, `${caminho}.${k}`, exigidos.includes(k))]);
+  const fs = el("fieldset", { "data-caminho": caminho },
+    el("legend", {}, titulo, " ", marca(obrigatorio)),
+    filhos.map(([, f]) => f.el));
+  return {
+    el: fs,
+    coletar() {
+      const o = {};
+      for (const [k, f] of filhos) { const v = f.coletar(); if (v !== undefined) o[k] = v; }
+      return Object.keys(o).length ? o : undefined;
+    },
+    preencher(v) { for (const [k, f] of filhos) f.preencher(v ? v[k] : undefined); }
+  };
+}
+
+function lista(nome, esq, caminho, obrigatorio, titulo) {
+  const itens = [];
+  const caixa = el("div", { class: "lista" });
+  const minimo = esq.minItems || 0;
+  const simples = !["object"].includes(resolver(esq.items).type);
+  const botao = el("button", { type: "button", class: "botao adicionar", text: "+ Adicionar" });
+  const fs = el("fieldset", { "data-caminho": caminho },
+    el("legend", {}, titulo, " ", marca(obrigatorio),
+       minimo ? el("span", { class: "marca", text: `ao menos ${minimo}` }) : null),
+    caixa, botao);
+
+  function renumerar() {
+    itens.forEach((it, i) => {
+      // o caminho do Kanon conta a partir de 1: `outorgante[1].nome`
+      it.bloco.dataset.caminho = `${caminho}[${i + 1}]`;
+      it.bloco.querySelectorAll("[data-caminho]").forEach(d => {
+        d.dataset.caminho = d.dataset.caminho.replace(new RegExp("^" + caminho.replace(/[[\].]/g, "\\$&") + "\\[\\d+\\]"), `${caminho}[${i + 1}]`);
+      });
+    });
+  }
+  function adicionar(valor) {
+    const n = itens.length + 1;
+    const f = campo(nome, Object.assign({}, esq.items, { title: `${titulo} ${n}` }), `${caminho}[${n}]`, true);
+    const remover = el("button", { type: "button", class: "remover", "aria-label": `Remover ${titulo} ${n}`, text: "remover" });
+    const bloco = el("div", { class: "item" + (simples ? " simples" : ""), "data-caminho": `${caminho}[${n}]` }, f.el, remover);
+    const it = { f, bloco };
+    remover.addEventListener("click", () => {
+      itens.splice(itens.indexOf(it), 1); bloco.remove(); renumerar(); agendar();
+    });
+    itens.push(it); caixa.append(bloco);
+    if (valor !== undefined) f.preencher(valor);
+    return it;
+  }
+  botao.addEventListener("click", () => { const it = adicionar(); agendar(); const alvo = it.bloco.querySelector("input, select, textarea"); alvo && alvo.focus(); });
+  for (let i = 0; i < Math.max(minimo, obrigatorio ? 1 : 0); i++) adicionar();
+
+  return {
+    el: fs,
+    coletar() {
+      const vs = itens.map(it => it.f.coletar()).filter(v => v !== undefined);
+      return vs.length ? vs : undefined;
+    },
+    preencher(v) {
+      itens.splice(0).forEach(it => it.bloco.remove());
+      (Array.isArray(v) ? v : []).forEach(x => adicionar(x));
+      for (let i = itens.length; i < Math.max(minimo, obrigatorio ? 1 : 0); i++) adicionar();
+    }
+  };
+}
+
+// --- o formulário inteiro ---------------------------------------------------------------------
+
+let raizDoFormulario = null;
+
+function montar(esquema) {
+  estado.raiz = esquema;
+  const form = document.getElementById("formulario");
+  form.replaceChildren();
+  const exigidos = esquema.required || [];
+  const campos = Object.entries(esquema.properties || {}).map(([k, sub]) =>
+    [k, campo(k, sub, k, exigidos.includes(k), sub["x-kanon"])]);
+  campos.forEach(([, f]) => form.append(f.el));
+  raizDoFormulario = {
+    coletar() { const o = {}; for (const [k, f] of campos) { const v = f.coletar(); if (v !== undefined) o[k] = v; } return o; },
+    preencher(v) { for (const [k, f] of campos) f.preencher(v ? v[k] : undefined); }
+  };
+}
+
+// --- a prévia ----------------------------------------------------------------------------------
+
+function agendar() {
+  clearTimeout(estado.temporizador);
+  estado.temporizador = setTimeout(atualizar, 250);
+}
+
+async function atualizar() {
+  const pedido = ++estado.pedido;
+  document.body.classList.add("carregando");
+  const r = await fetch(`/api/modelos/${estado.id}/previa`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(raizDoFormulario.coletar())
+  });
+  const p = await r.json();
+  if (pedido !== estado.pedido) return;            // uma resposta velha não pinta por cima da nova
+  document.body.classList.remove("carregando");
+  if (!r.ok) { mostrarGerais([{ mensagem: p.erro || "erro no servidor", grave: true }]); return; }
+
+  // «campo» é o marcador de rascunho do Kanon; o HTML já vem escapado pelo servidor
+  document.getElementById("documento").innerHTML = p.html.replace(/«([^»<]+)»/g, '<mark class="falta">$1</mark>');
+
+  const graves = p.problemas.filter(x => x.grave).length;
+  const situacao = document.getElementById("situacao");
+  situacao.classList.toggle("pronta", p.completo);
+  situacao.textContent = p.completo ? "Minuta pronta" : (graves === 1 ? "Falta 1 coisa" : `Faltam ${graves} coisas`);
+  document.querySelectorAll(".baixar button").forEach(b => { b.disabled = !p.completo; });
+  pendurarProblemas(p.problemas);
+}
+
+// O problema vai para o campo mais específico cujo caminho ele alcança: um erro em
+// `outorgante[2]` — a chave que faltou no objeto — fica no quadro do 2º outorgante.
+function pendurarProblemas(problemas) {
+  document.querySelectorAll(".problema").forEach(n => n.remove());
+  document.querySelectorAll(".tem-problema").forEach(n => n.classList.remove("tem-problema"));
+  const soltos = [];
+  const blocos = [...document.querySelectorAll("#formulario [data-caminho]")];
+  for (const x of problemas) {
+    let alvo = null;
+    for (const b of blocos) {
+      const c = b.dataset.caminho;
+      if (x.caminho === c || x.caminho.startsWith(c + ".") || x.caminho.startsWith(c + "[")) {
+        if (!alvo || c.length > alvo.dataset.caminho.length) alvo = b;
+      }
+    }
+    if (!alvo || !x.caminho) { soltos.push(x); continue; }
+    alvo.classList.add("tem-problema");
+    alvo.append(nota(x));
+  }
+  mostrarGerais(soltos);
+}
+
+// Os diagnósticos do Kanon falam com dois públicos, e o código diz qual: o `K3001` — campo
+// obrigatório que não veio — traz a linha do modelo e a dica "declare o campo opcional",
+// que são para quem escreve o modelo. Para quem preenche, a ação é uma só. Mapear código a
+// ação é o uso para o qual os códigos são estáveis (§10.2).
+const PARA_QUEM_PREENCHE = { K3001: "Preencha este campo." };
+
+function nota(x) {
+  const propria = x.caminho && PARA_QUEM_PREENCHE[x.codigo];
+  return el("div", { class: "problema" + (x.grave ? "" : " aviso"), role: "note" },
+    propria || x.mensagem, !propria && x.dica ? el("span", { class: "dica", text: x.dica }) : null);
+}
+
+function mostrarGerais(lista) { document.getElementById("gerais").replaceChildren(...lista.map(nota)); }
+
+// --- baixar ---------------------------------------------------------------------------------------
+
+document.querySelectorAll(".baixar button").forEach(b => b.addEventListener("click", async () => {
+  const r = await fetch(`/api/modelos/${estado.id}/documento?formato=${b.dataset.formato}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(raizDoFormulario.coletar())
+  });
+  if (!r.ok) { const p = await r.json(); mostrarGerais(p.problemas || [{ mensagem: p.erro, grave: true }]); return; }
+  const nome = (r.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/)?.[1] || "minuta";
+  const url = URL.createObjectURL(await r.blob());
+  const a = el("a", { href: url, download: nome });
+  document.body.append(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}));
+
+// --- o catálogo --------------------------------------------------------------------------------------
+
+async function escolher(id, catalogo, comExemplo = false) {
+  estado.id = id;
+  const e = catalogo.find(x => x.id === id);
+  document.getElementById("descricao").textContent = e.descricao;
+  const r = await fetch(`/api/modelos/${id}/contrato`);
+  montar(await r.json());
+  try { history.replaceState(null, "", "#" + id); } catch (_) {}
+  if (comExemplo) raizDoFormulario.preencher(await (await fetch(`/api/modelos/${id}/exemplo`)).json());
+  atualizar();
+}
+
+(async function iniciar() {
+  const catalogo = await (await fetch("/api/modelos")).json();
+  const seletor = document.getElementById("modelo");
+  catalogo.forEach(e => seletor.append(el("option", { value: e.id, text: e.titulo })));
+  // `#procuracao` abre o modelo; `#procuracao/exemplo` abre já preenchido
+  const [pedido, extra] = location.hash.slice(1).split("/");
+  seletor.value = catalogo.some(e => e.id === pedido) ? pedido : catalogo[0].id;
+  seletor.addEventListener("change", () => escolher(seletor.value, catalogo));
+  document.getElementById("exemplo").addEventListener("click", async () => {
+    raizDoFormulario.preencher(await (await fetch(`/api/modelos/${estado.id}/exemplo`)).json());
+    atualizar();
+  });
+  document.getElementById("limpar").addEventListener("click", () => { raizDoFormulario.preencher({}); atualizar(); });
+  escolher(seletor.value, catalogo, extra === "exemplo" && seletor.value === pedido);
+})();
+</script>
+</body>
+</html>

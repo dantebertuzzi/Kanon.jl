@@ -2825,3 +2825,75 @@ Julia, que o registro e os primeiros usuários de fora ainda vão cobrar. (c) Co
 listar o corpus: a §13 dizia "o corpus golden" desde a F0 sem dizer quais arquivos, e o
 `.docx` lido pelo pandoc mostrou que a pergunta tem resposta não óbvia. (d) Congelar agora,
 com o corpus listado e o pacote em `0.1.0` (escolhida).
+
+---
+
+## D-078 — `bind` deixa de ser exportado, e `diagnostics` passa a ser
+
+*2026-09-16 · aceita · achada pela prova de fogo do blog em Franklin*
+
+**A observação.** O primeiro programa escrito fora da suíte que chamou `bind` recebeu
+`UndefVarError`. O `Base` também exporta um `bind` (o de `Channel`), e dois exports com o
+mesmo nome não resolvem: `using Kanon` seguido de `bind(modelo, dados)` não funcionava em
+programa nenhum. A suíte nunca viu porque escrevia sempre `Kanon.bind`. E `diagnostics`, a
+função que lê o que `bind` devolve — a docstring de `bind` diz "para que o chamador decida" —,
+não era exportada.
+
+**Decisão.** `bind` sai da lista de exportados e se escreve `Kanon.bind`; `diagnostics` entra.
+Nada que funcionava deixa de funcionar: o nome exportado nunca foi alcançável sem
+qualificar. Junto, as sete mensagens de decodificação do núcleo ganham os acentos que não
+tinham (`nao e uma data do calendario`) — são as que um redator lê quando erra um dado.
+
+**Alternativas.** (a) Renomear `bind` para um nome sem conflito: muda a API documentada desde
+a F2 por um problema que a qualificação resolve. (b) Deixar como está e documentar: um
+export que nunca funciona é uma armadilha, e não uma escolha. (c) Tirar o export (escolhida).
+
+---
+
+## D-079 — A camada declara a forma de entrada do tipo, e o checklist a publica
+
+*2026-09-16 · aceita · achada pelo gerador de minutas*
+
+**A observação.** A D-009 fez o checklist ser JSON Schema para que "qualquer gerador de
+formulário consuma sem adaptador". Ninguém tinha gerado um formulário com ele. Ao gerar, e
+ao validar os JSON reais do acervo num validador de terceiros (JSONSchema.jl), **cinco dos
+sete foram recusados pelo próprio checklist** — procuração, notificação, reclamação, serviços
+e doação, todos renderizados byte a byte pela suíte. O esquema de `pessoa` não listava
+`genero` e proibia chave a mais; o decodificador exige `genero`, porque é ele que decide
+`portador(a)`. O mesmo com `tipo` de `imovel` e `genero` e `empresa` de `parte`.
+
+**A causa é de desenho, e não de descuido.** O checklist derivava o `$defs` de `kanon_schema`,
+que é a **interface de leitura** do tipo: os campos que um modelo alcança com `{pessoa.nome}`.
+A entrada pede mais do que um modelo lê, e `genero` não deve virar campo legível — um modelo
+que escrevesse `{genero}` imprimiria `m`. As duas descrições são coisas diferentes, e o
+protocolo tinha uma só. A dívida "escalar de camada vira `{}` no checklist", com o gatilho "um
+gerador de formulário precisar da forma", era o caso pequeno do mesmo buraco.
+
+**Decisão.**
+
+1. **`kanon_json_schema(::Type{T})`**, décima primeira função do protocolo, devolve a forma
+   JSON que `kanon_decode` aceita, ou `nothing`. Com `nothing`, vale o que valia: a forma
+   derivada de `kanon_schema`. A forma se escreve com vetores de pares, que guardam a ordem —
+   o checklist continua comparável em `diff`.
+2. **Uma referência declarada (`"$ref" => "#/$defs/pessoa"`) entra no `$defs`** junto.
+3. **O `KanonLegal` declara as três formas**, com `title` para o formulário e `oneOf` de `const`
+   para as escolhas com rótulo (`f` → Feminino).
+4. **O `$id` do checklist é o nome do arquivo**, e não o caminho: `kanon:/home/…/procuracao.kanon`
+   mudava de uma máquina para outra e publicava o diretório de quem gerou. O golden
+   `report.contract.json` já tinha a forma nova — ele vem de modelo lido de texto — e não muda.
+
+**O que isto custa.** Nada no corpus golden. O checklist dos modelos jurídicos muda — ganha
+as chaves que faltavam —, e é o que um consumidor dele precisava.
+
+**Um limite que a própria correção expôs.** Uma forma escrita à mão pode mentir: declarei a
+área do imóvel como número ou texto, e o decodificador recusa `"360"`. O formulário obedeceu
+ao checklist e a doação nunca fechou. Quem pegou foi o teste do gerador, que preenche cada
+modelo pelo formulário gerado num navegador sem janela — é esse teste, e não a revisão, que
+mantém a forma declarada honesta. Derivar a forma do decodificador seria o fim do problema, e
+não é possível: decodificador é código.
+
+**Alternativas.** (a) Acrescentar `genero` a `kanon_schema`: vira campo legível, e um modelo
+passa a poder imprimir `m`. (b) Afrouxar o checklist (`additionalProperties: true`): o JSON
+real passa, e o formulário continua sem perguntar o gênero — a minuta não fecha. (c) Um
+adaptador por modelo no gerador: é exatamente o que a D-009 prometeu não ser preciso. (d) A
+forma de entrada declarada pela camada (escolhida).

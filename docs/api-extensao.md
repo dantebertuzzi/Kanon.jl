@@ -43,6 +43,7 @@ kanon_getfield(v::T, ::Val{name})    -> valor do campo declarado por kanon_schem
 kanon_format_locale(::Type{T}, ::Val{name}) -> Symbol | Nothing   # idioma do formatador
 kanon_decode(::Type{T}, raw, ctx)    -> T                 # da entrada externa
 kanon_compare(a::T, b)               -> Int               # -1, 0, 1; ou erro
+kanon_json_schema(::Type{T})         -> Nothing | forma JSON    # a entrada, para o checklist
 ```
 
 ```julia
@@ -347,6 +348,35 @@ o `x-kanon` carrega o que o JSON Schema não expressa. Custo próximo de zero
 
 Saída **determinística**: chaves em ordem de declaração no `properties`, `required` na
 ordem do arquivo, sem espaços variáveis. O checklist é comparável em `diff`.
+
+**[acrescentado na prova de fogo — D-079]** O `$defs` de um tipo de camada é a **forma de
+entrada** que ela declara com `kanon_json_schema`, quando declara; senão, a forma derivada de
+`kanon_schema`. As duas diferem sempre que a entrada pede mais do que um modelo lê: `pessoa`
+precisa de `genero`, que decide a flexão e nenhum modelo imprime. Sem a declaração, o checklist
+proibia a chave que o decodificador exige, e o JSON real de cinco modelos era recusado num
+validador de JSON Schema. A forma se escreve com vetores de pares, para guardar a ordem:
+
+```julia
+Kanon.kanon_json_schema(::Type{Imovel}) = [
+    "type" => "object",
+    "properties" => [
+        "matricula" => ["type" => "string", "title" => "Matrícula"],
+        "tipo" => ["type" => "string", "title" => "Tipo",
+                   "oneOf" => [["const" => "rural", "title" => "Rural"],
+                               ["const" => "urbano", "title" => "Urbano"]]],
+        "area" => ["type" => "number", "title" => "Área (m²)"],
+    ],
+    "required" => ["matricula", "tipo"],
+    "additionalProperties" => false,
+]
+```
+
+A forma é uma promessa sobre o decodificador, e nada a confere contra ele: declarar `area`
+como número ou texto, com um decodificador que recusa `"360"`, faz o formulário gerado mandar
+o que o motor recusa. O gerador de minutas em `exemplos/minutas/` preenche cada modelo pelo
+formulário num navegador, e é esse teste que a mantém honesta.
+
+O `$id` é o nome do arquivo do modelo, e não o caminho (D-079).
 
 ## 8. O que a API de extensão deliberadamente **não** oferece
 

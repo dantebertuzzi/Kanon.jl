@@ -1,0 +1,193 @@
+/* Uma coluna de leitura, e nada que dispute com o texto. */
+
+:root {
+  --papel: #f6f7f4;
+  --superficie: #ffffff;
+  --tinta: #1b2226;
+  --apagado: #5a6670;
+  --linha: #d9ded9;
+  --acento: #0f5e63;
+  --acento-fundo: #e3efee;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #121719;
+    --superficie: #182022;
+    --tinta: #e3e8e6;
+    --apagado: #95a3a8;
+    --linha: #2a3538;
+    --acento: #7cc6c3;
+    --acento-fundo: #1c2e2f;
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font: 400 1.125rem/1.7 var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--acento); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+.topo, main, .rodape {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding-inline: 1.25rem;
+}
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-block: 1.75rem 1.25rem;
+  border-bottom: 1px solid var(--linha);
+  font-family: var(--sans);
+}
+.topo .marca { color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 1.05rem; }
+.topo nav { display: flex; gap: 1.25rem; font-size: 0.95rem; }
+.topo nav a { color: var(--apagado); text-decoration: none; }
+.topo nav a:hover { color: var(--acento); }
+
+main { padding-block: 2.5rem 3rem; }
+
+/* O Franklin põe o conteúdo dentro de .franklin-content; a coluna já é a do main. */
+.franklin-content { max-width: none; padding: 0; }
+
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: clamp(1.9rem, 5vw, 2.5rem); margin: 0 0 0.6rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.45rem; margin: 2.4rem 0 0.6rem; }
+h3 { font-size: 1.15rem; margin: 1.8rem 0 0.4rem; }
+p { margin: 0 0 1.05rem; }
+
+/* O Franklin transforma cada título de seção num link para ele mesmo. */
+.header-anchor { color: inherit; text-decoration: none; }
+.header-anchor:hover { color: var(--acento); }
+
+/* O que o Kanon escreveu em volta do texto: o cabeçalho e o fecho. */
+.cabecalho p, .fecho p {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--apagado);
+  margin: 0 0 0.35rem;
+}
+.cabecalho p:has(> em:only-child) {       /* a descrição */
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  margin-bottom: 0.9rem;
+}
+.cabecalho p:has(> a) {                    /* a tradução */
+  display: inline-block;
+  margin-top: 0.5rem;
+  background: var(--acento-fundo);
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+}
+.cabecalho strong { color: var(--tinta); font-weight: 600; }
+
+.post .corpo, .pagina .corpo { border-top: 1px solid var(--linha); margin-top: 1.5rem; padding-top: 1.75rem; }
+.post .fecho p { border-top: 1px solid var(--linha); padding-top: 1rem; margin-top: 2.5rem; font-size: 0.9rem; }
+
+/* A página inicial: a grade de cards. A coluna de leitura se alarga só aqui. */
+.inicio main, .inicio .topo, .inicio .rodape { max-width: 64rem; }
+.inicio .cabecalho, .inicio .corpo { max-width: 40rem; }
+.inicio .corpo { font-size: 1.2rem; border-top: 0; padding-top: 0; margin-top: 0; }
+
+.inicio .fecho h2 {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--apagado);
+  margin: 2.75rem 0 1.25rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.25rem 1.35rem;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.card[hidden] { display: none; }
+.fecho .card p { font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; color: var(--apagado); margin: 0 0 0.5rem; }
+
+.fecho .card > p:has(> img) { margin: -1.25rem -1.25rem 1rem; }   /* a imagem, de ponta a ponta */
+.card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+
+.fecho .card > p:has(> strong:only-child) {                 /* o selo "Novo" */
+  display: inline-block;
+  align-self: flex-start;
+  margin-bottom: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 3px;
+  background: var(--acento);
+  color: var(--papel);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.card > p:has(> strong:only-child) strong { color: inherit; font-weight: 600; }
+
+.card h3 { font-family: var(--serif); font-size: 1.25rem; margin-block: 0.15rem 0.6rem; }
+.card h3 a { color: var(--tinta); text-decoration: none; }
+.card h3 a:hover, .card h3 a:focus-visible { color: var(--acento); text-decoration: underline; }
+.fecho .card > p:last-child { margin-bottom: 0; }
+
+.fecho .mais { text-align: center; margin: 2rem 0 0; }
+.mais[hidden] { display: none; }
+#mostrar-mais {
+  font: 600 0.95rem var(--sans);
+  color: var(--papel);
+  background: var(--acento);
+  border: 0;
+  border-radius: 6px;
+  padding: 0.65rem 1.4rem;
+  cursor: pointer;
+}
+#mostrar-mais:hover { filter: brightness(1.1); }
+#mostrar-mais:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; }
+
+.cabecalho p:has(> img) { margin: 0.5rem 0 1rem; }
+.cabecalho img { display: block; width: 100%; border-radius: 6px; }
+
+table { border-collapse: collapse; margin: 1.25rem 0; font-family: var(--sans); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 0.4rem 0.9rem; border-bottom: 1px solid var(--linha); }
+th { font-weight: 600; color: var(--apagado); }
+
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.25rem 0; }
+
+code { font-size: 0.9em; background: var(--acento-fundo); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  justify-content: space-between;
+  padding-block: 1.25rem 2.5rem;
+  border-top: 1px solid var(--linha);
+  font: 400 0.85rem/1.5 var(--sans);
+  color: var(--apagado);
+}
+
+.nao-encontrada { padding-block: 3rem; }

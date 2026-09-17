@@ -111,7 +111,7 @@ function plain_number(v::Real, ctx)
         return assemble_number(neg, int, "", ctx)
     end
     if v isa AbstractFloat
-        isfinite(v) || throw(UndecodableValue(typeof(v), v, "nao e um numero finito."))
+        isfinite(v) || throw(UndecodableValue(typeof(v), v, "não é um número finito."))
         isinteger(v) && return assemble_number(v < 0, string(abs(BigInt(v))), "", ctx)
     end
     neg, int, frac = scaled_digits(v, MAX_DECIMALS)
@@ -133,11 +133,11 @@ kanon_compare(a::NumberValue, b::NumberValue) = cmp(a, b)
 function kanon_decode(::Type{NumberValue}, raw, ctx)
     raw isa NumberValue && return raw
     raw isa Bool && throw(UndecodableValue(NumberValue, raw,
-        "verdadeiro e falso nao sao numeros; declare o campo como `boolean`."))
+        "verdadeiro e falso não são números; declare o campo como `boolean`."))
     # Como a data: a cadeia é o erro de quem escreve o arquivo, e a mensagem dá a forma.
     raw isa AbstractString && throw(UndecodableValue(NumberValue, raw,
         "o número se escreve com ponto decimal e sem separador de milhar na entrada."))
-    throw(UndecodableValue(NumberValue, raw, "esperava um numero."))
+    throw(UndecodableValue(NumberValue, raw, "esperava um número."))
 end
 
 # --- money -------------------------------------------------------------------
@@ -216,13 +216,13 @@ end
 function decode_amount(x)
     x isa NumberValue && return Rational{Int128}(x)
     x isa AbstractString && return parse_decimal(x)
-    throw(UndecodableValue(Money, x, "a quantia nao e um numero."))
+    throw(UndecodableValue(Money, x, "a quantia não é um número."))
 end
 
 "Lê uma quantia decimal exata, sem passar por ponto flutuante."
 function parse_decimal(s::AbstractString)
     m = match(r"^([+-]?)([0-9]+)(?:\.([0-9]+))?$", strip(s))
-    m === nothing && throw(UndecodableValue(Money, s, "a quantia nao e um numero decimal."))
+    m === nothing && throw(UndecodableValue(Money, s, "a quantia não é um número decimal."))
     sign = m.captures[1] == "-" ? -1 : 1
     int = parse(Int128, m.captures[2])
     frac = m.captures[3]
@@ -243,7 +243,7 @@ kanon_compare(a::Date, b::Date) = cmp(a, b)
 function kanon_decode(::Type{Date}, raw, ctx)
     raw isa Date && return raw
     raw isa DateTime && throw(UndecodableValue(Date, raw,
-        "e um instante, nao uma data; corte a hora na origem."))
+        "é um instante, não uma data; corte a hora na origem."))
     if raw isa AbstractString
         m = match(r"^([0-9]{4})-([0-9]{2})-([0-9]{2})$", strip(raw))
         m === nothing && throw(UndecodableValue(Date, raw,
@@ -252,7 +252,7 @@ function kanon_decode(::Type{Date}, raw, ctx)
             return Date(parse(Int, m.captures[1]), parse(Int, m.captures[2]),
                         parse(Int, m.captures[3]))
         catch
-            throw(UndecodableValue(Date, raw, "nao e uma data do calendario."))
+            throw(UndecodableValue(Date, raw, "não é uma data do calendário."))
         end
     end
     throw(UndecodableValue(Date, raw, "esperava uma data."))

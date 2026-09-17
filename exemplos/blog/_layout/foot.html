@@ -1,0 +1,18 @@
+<!-- CONTENT ENDS HERE -->
+  </main>
+  <footer class="rodape">
+    <span>{{fill author}}</span>
+    <span>Conteúdo validado pelo <a href="https://dantebertuzzi.github.io/Kanon.jl/">Kanon</a>, site montado pelo <a href="https://franklinjl.org/">Franklin</a>.</span>
+  </footer>
+  <script src="/assets/mostrar-mais.js" defer></script>
+  {{if hasmath}}
+  <script src="/libs/katex/katex.min.js"></script>
+  <script src="/libs/katex/contrib/auto-render.min.js"></script>
+  <script>
+    // Só no texto do redator: o que o Kanon escreveu em volta dele é valor de contrato, e
+    // um `\[` num título não é fórmula.
+    document.querySelectorAll(".corpo").forEach(function (el) { renderMathInElement(el); });
+  </script>
+  {{end}}
+</body>
+</html>

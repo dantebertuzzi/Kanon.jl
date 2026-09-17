@@ -235,6 +235,40 @@ renomear um campo interno quebraria os modelos do acervo (D-023).
 kanon_getfield(v, ::Val{name}) where {name} = getproperty(v, name)
 
 """
+    kanon_json_schema(::Type{T}) -> Nothing | forma JSON
+
+A forma JSON que [`kanon_decode`](@ref) aceita para `T`, em JSON Schema — o que o
+checklist (`contract`) publica no `\$defs` do tipo. O padrão é `nothing`, e então o
+checklist deriva a forma de [`kanon_schema`](@ref).
+
+As duas descrições são coisas diferentes, e é por isso que esta função existe (D-079).
+`kanon_schema` é a **interface de leitura**: os campos que um modelo alcança com
+`{pessoa.nome}`. A entrada pode pedir mais do que isso — `pessoa` precisa de `genero`,
+que decide `portador(a)` e nenhum modelo escreve —, e um checklist derivado só do esquema
+proibia (`additionalProperties: false`) a chave que o decodificador exige. Os JSON de
+cinco modelos reais, que o motor renderiza byte a byte, eram recusados pelo próprio
+checklist num validador de JSON Schema.
+
+A forma se escreve com vetores de pares, que guardam a ordem — o checklist é comparável em
+`diff` (D-009):
+
+```julia
+Kanon.kanon_json_schema(::Type{Pessoa}) = [
+    "type" => "object",
+    "properties" => [
+        "nome"   => ["type" => "string", "title" => "Nome completo"],
+        "genero" => ["type" => "string", "enum" => ["f", "m"], "title" => "Gênero"],
+    ],
+    "required" => ["nome", "genero"],
+    "additionalProperties" => false,
+]
+```
+
+Uma referência a outro tipo — `"\$ref" => "#/\$defs/pessoa"` — entra no checklist junto.
+"""
+kanon_json_schema(::Type) = nothing
+
+"""
     kanon_decode(::Type{T}, raw, ctx) -> T
 
 Converte um valor da entrada externa (JSON, planilha, `DataFrame`) para o tipo. É o

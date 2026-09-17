@@ -132,6 +132,10 @@ function type_schema(env::Environment, name::Symbol)
     T = typefor(env, name)
     T === nothing && return JObj(["x-kanon" => JObj(["type" => String(name)])])
 
+    # a forma de entrada declarada pela camada, quando ela a declara (D-079)
+    declarada = kanon_json_schema(T)
+    declarada === nothing || return json_de_camada(declarada, T)
+
     schema = kanon_schema(T)
     isempty(schema) && return JObj(["x-kanon" => JObj(["type" => String(name)])])
 
@@ -146,6 +150,35 @@ function type_schema(env::Environment, name::Symbol)
     push!(o, "additionalProperties" => false)
     return o
 end
+
+"""
+A forma que a camada declarou, no `JObj` que o escritor do checklist sabe escrever. Vetor
+de pares é objeto, na ordem dada; `Dict` é objeto em ordem alfabética, para o checklist
+continuar determinístico (I4).
+"""
+function json_de_camada(x, T::Type)
+    x isa AbstractVector{<:Pair} && return JObj([String(first(p)) => json_de_camada(last(p), T) for p in x])
+    x isa NamedTuple && return JObj([String(k) => json_de_camada(v, T) for (k, v) in pairs(x)])
+    x isa AbstractDict && return JObj([String(k) => json_de_camada(x[k], T) for k in sort!(collect(keys(x)); by = string)])
+    x isa AbstractVector && return Any[json_de_camada(v, T) for v in x]
+    x isa Symbol && return String(x)
+    (x isa AbstractString || x isa Real || x isa Nothing) && return x
+    throw(ArgumentError("`kanon_json_schema($T)` tem um valor que não é JSON: `$(repr(x))`."))
+end
+
+"Os tipos que uma forma declarada referencia por `\$ref`."
+function refs_de(x::JObj, out = Symbol[])
+    for (k, v) in x.entries
+        if k == "\$ref" && v isa AbstractString && startswith(v, "#/\$defs/")
+            push!(out, Symbol(v[(length("#/\$defs/") + 1):end]))
+        else
+            refs_de(v, out)
+        end
+    end
+    out
+end
+refs_de(x::AbstractVector, out = Symbol[]) = (foreach(v -> refs_de(v, out), x); out)
+refs_de(x, out = Symbol[]) = out
 
 "A referência a um tipo, com o invólucro de array quando a cardinalidade é de lista."
 function field_schema(tn::Symbol, card::Cardinality)
@@ -226,6 +259,12 @@ function reachable_types(env::Environment, fields)
         for spec in kanon_schema(T)
             spec.type in vistos || push!(fila, spec.type)
         end
+        declarada = kanon_json_schema(T)
+        if declarada !== nothing
+            for r in refs_de(json_de_camada(declarada, T))
+                r in vistos || push!(fila, r)
+            end
+        end
     end
     sort!(collect(vistos))
 end
@@ -266,7 +305,9 @@ function contract(m::Model)
         push!(defs, String(tn) => type_schema(m.env, tn))
     end
 
-    nome = isempty(m.template.sources) ? "<string>" : m.template.sources[1]
+    # o nome do arquivo, e não o caminho: o caminho absoluto mudava o checklist de uma
+    # máquina para outra — e o publicava junto (D-079)
+    nome = isempty(m.template.sources) ? "<string>" : basename(m.template.sources[1])
     doc = JObj([
         "\$schema" => "https://json-schema.org/draft/2020-12/schema",
         "\$id" => "kanon:" * nome,
