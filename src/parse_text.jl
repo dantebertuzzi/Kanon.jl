@@ -329,6 +329,11 @@ function scan_run!(ctx::ParseCtx, c::Cursor, stop_at_bracket::Bool)
             advance!(c); advance!(c); push_char!(')', pl, pc)
         elseif ch === '\\' && (nx === '[' || nx === ']' || nx === '\\')
             advance!(c); advance!(c); push_char!(nx, pl, pc)
+        elseif ch === '\\' && nx === ':' && pc == 1
+            # O escape de coluna 0: `\\:` é prosa iniciada por dois-pontos, que de outro
+            # modo seria cabeçalho de bloco. É resolvido aqui, e não reescrevendo a linha
+            # antes da varredura, para que as colunas dos diagnósticos sejam as do arquivo.
+            advance!(c); advance!(c); push_char!(':', pl, pc)
 
         elseif ch === '{'
             flush!()
@@ -423,18 +428,6 @@ end
 
 # --- montagem do plano -------------------------------------------------------
 
-"""
-Aplica o escape de coluna 0: `\\:` produz uma linha de prosa iniciada por dois-pontos,
-que de outro modo colidiria com o cabeçalho de bloco. Uma linha iniciada por contrabarra
-literal se escreve `\\\\`, e quem cuida disso é o varredor, não esta função.
-
-Consequência conhecida: a linha escapada fica com as colunas deslocadas em um caractere
-nos diagnósticos. É o preço de ter exatamente uma contrabarra na linguagem.
-"""
-function unescape_column0(s::AbstractString)
-    startswith(s, "\\:") ? s[2:end] : s
-end
-
 function parse_text_plane!(ctx::ParseCtx, range)
     blocks = Block[]
     includes = IncludePoint[]
@@ -493,7 +486,7 @@ function parse_text_plane!(ctx::ParseCtx, range)
             continue
         end
 
-        push!(content, (i, unescape_column0(s)))
+        push!(content, (i, s))
     end
     close_block!()
 
