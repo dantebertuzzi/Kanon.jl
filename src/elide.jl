@@ -21,15 +21,15 @@ is_terminator(c::Char) = c == '.' || c == '!' || c == '?'
 is_blank(c::Char) = c == ' ' || c == '\t'
 
 """
-    repair(chars, seams) -> (texto, emendas)
+    repair(chars, seams) -> (text, seams)
 
-Aplica o procedimento da §5.2: funde emendas adjacentes, aplica R1–R5 uma vez, da
-esquerda para a direita, e limpa as linhas que ficaram vazias por causa de uma emenda.
+Applies the procedure of §5.2: merges adjacent seams, applies R1–R5 once from left to
+right, and removes lines left empty by a seam.
 
-`seams` são posições no texto **como ele saiu da elisão**: a emenda `p` fica entre
-`chars[p-1]` e `chars[p]`. Devolve também as posições **depois** do reparo, porque é
-delas que o gancho de idioma precisa: passar as de antes o mandaria olhar para o texto
-errado (§5.4).
+`seams` are positions in the text **as it came out of elision**: seam `p` lies between
+`chars[p-1]` and `chars[p]`. It also returns the positions **after** the repair, because
+those are what the language hook needs; passing the earlier ones would point it at the
+wrong text (§5.4).
 """
 function repair(chars::Vector{Char}, seams::Vector{Int})
     v = copy(chars)

@@ -1,7 +1,7 @@
-# Tipos e extensão
+# Types and extension
 
-Um tipo Kanon é um conjunto de métodos de funções genéricas do núcleo. Não há tabela de
-despacho mantida à mão, não há registro mutável, não há `eval`.
+A Kanon type is a set of methods of the core's generic functions. There is no hand-kept
+dispatch table, no mutable registry, and no `eval`.
 
 ```@docs
 kanon_typename
@@ -20,24 +20,24 @@ kanon_compare
 FieldSpec
 ```
 
-## A forma declarativa
+## The declarative form
 
 ```@docs
 @kanon_type
 ```
 
-## Os tipos do núcleo
+## Core types
 
 ```@docs
 Money
 Kanon.NumberValue
 ```
 
-## Falhas do protocolo
+## Protocol failures
 
-São exceções, e não diagnósticos: acontecem fora de um arquivo de modelo, e portanto não
-têm linha nem coluna. `check` e `analyze` as convertem em diagnóstico onde há uma posição
-a que atribuí-las.
+These are exceptions, not diagnostics: they happen outside a template file, so they have
+no line or column. `check` and `analyze` turn them into diagnostics where there is a
+position to attribute them to.
 
 ```@docs
 Kanon.KanonProtocolError

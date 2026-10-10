@@ -9,11 +9,11 @@
 """
     ResolvedPath
 
-O que um caminho escrito no modelo quer dizer, depois de consultado o ambiente.
+What a path written in the template means, once the environment has been consulted.
 
-`nullable` é o campo que o teorema da lacuna usa: ele é verdadeiro se **qualquer**
-segmento do caminho for opcional — a opcionalidade atravessa o tipo composto, senão o
-teorema valeria só no primeiro nível, que é o mesmo que não valer.
+`nullable` is the field the gap theorem relies on: it is true if **any** segment of the
+path is optional. Optionality propagates through composite types; otherwise the theorem
+would hold only at the first level.
 """
 struct ResolvedPath
     kind::Symbol                 # :field | :element | :subject_field | :constant
@@ -29,13 +29,12 @@ const NO_FORMATTER = Symbol("")
 """
     Analysis
 
-O resultado de `analyze`: tabelas laterais endereçadas por `NodeId`, mais os
-diagnósticos acumulados.
+The result of `analyze`: side tables indexed by `NodeId`, plus the accumulated
+diagnostics.
 
-Preenchimento por fase, para que a leitura do arquivo não engane: `paths` e `formatter`
-são da F2.2; `attribute`, que guarda o nome canônico de um `is` escrito com apelido de
-idioma, é da D-076; `guarded` é da F2.3; `block_index`, `block_rule` e `block_foreach` são da
-F2.4; `numbering` é da F5.
+Filled in by phase: `paths` and `formatter` come from F2.2; `attribute`, which holds the
+canonical name of an `is` written with a language alias, from D-076; `guarded` from F2.3;
+`block_index`, `block_rule` and `block_foreach` from F2.4; `numbering` from F5.
 """
 struct Analysis
     # por nó
@@ -93,11 +92,11 @@ end
 """
     Model
 
-Um modelo carregado: a árvore, a análise e o ambiente em que ela foi feita.
+A loaded template: the syntax tree, its analysis, and the environment it was analysed in.
 
-`Template` é a árvore sintática pura, que não conhece ambiente nenhum; `Model` é o
-modelo pronto para uso. A separação é o que permite analisar a mesma árvore em dois
-ambientes — o que o teste de neutralidade faz.
+`Template` is the bare syntax tree and knows no environment; `Model` is the template
+ready to use. Keeping them apart is what allows the same tree to be analysed in two
+environments, which the neutrality test does.
 """
 struct Model
     env::Environment

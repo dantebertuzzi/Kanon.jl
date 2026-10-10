@@ -1,9 +1,9 @@
-# Ferramentas
+# Tools
 
-## Ingestão
+## Ingestion
 
-Extensões: carregadas quando `Tables.jl` ou `JSON3.jl` estão presentes. O núcleo não
-depende de nenhum dos dois.
+Package extensions, loaded when `Tables.jl` or `JSON3.jl` is present. The core depends on
+neither.
 
 ```@docs
 rows
@@ -12,17 +12,17 @@ read_json
 parse_json
 ```
 
-## Inclusão de fragmentos
+## Including fragments
 
 ```@docs
 Loader
 Kanon.compose
 ```
 
-## Inspeção
+## Inspection
 
-O que uma ferramenta de edição consome — a estrutura do modelo já resolvida, sem
-reimplementar a análise (D-029).
+What an editing tool consumes: the template's structure, already resolved, without
+reimplementing the analysis (D-029).
 
 ```@docs
 outline
@@ -31,29 +31,29 @@ FieldUse
 format_outline
 ```
 
-## Linha de comando
+## Command line
 
-A lógica da CLI está em `Kanon.main`, que recebe os fluxos como argumento e devolve o
-código de saída em vez de encerrar o processo — é o que permite testar os cinco códigos
-sem processo filho.
+The CLI logic is in `Kanon.main`, which takes the streams as arguments and returns the
+exit code instead of ending the process, so the five exit codes can be tested without a
+child process.
 
-O que isso **não** testa é o carregamento: dentro de uma suíte que já fez `using` da
-camada e do `JSON3`, o `--domain` e a leitura de `.json` não têm o que carregar. O fluxo
-com camada se testa pelo `bin/kanon`, num processo à parte (D-059, D-060).
+What that does **not** test is loading: inside a test suite that has already loaded the
+layer and `JSON3`, `--domain` and reading `.json` have nothing to load. The flow with a
+layer is tested through `bin/kanon`, in a separate process (D-059, D-060).
 
-    kanon check    modelo.kanon [dados.json]
-    kanon render   modelo.kanon dados.json [-o saida.md] [--to markdown|typst]
-    kanon contract modelo.kanon
-    kanon preview  modelo.kanon [dados.json]
-    kanon outline  modelo.kanon
-    kanon ask      modelo.kanon [dados] [-o dados.json]
+    kanon check    template.kanon [data.json]
+    kanon render   template.kanon data.json [-o out.md] [--to markdown|typst]
+    kanon contract template.kanon
+    kanon preview  template.kanon [data.json]
+    kanon outline  template.kanon
+    kanon ask      template.kanon [data] [-o data.json]
 
-Com camada de domínio: `--locale pt --domain KanonLegal`. Em português sem camada de
-domínio, o pacote do idioma se carrega do mesmo jeito: `--locale pt --domain Extenso`
-(D-068). O `ask` pergunta todo campo escalar que falta, confere cada resposta pelo
-`check`, e emite os dados na forma em que vieram — JSON se a entrada era JSON ou se `-o`
-termina em `.json` (D-061). Um número escrito na forma do documento é recusado com a forma
-da resposta, e o ambíguo — `1.320`, num idioma em que o ponto separa milhares — com as
-duas leituras (D-069).
+With a domain layer: `--locale pt --domain KanonLegal`. For Portuguese with no domain
+layer, the language package is loaded the same way: `--locale pt --domain Extenso`
+(D-068). `ask` asks for every missing scalar field, checks each answer with `check`, and
+writes the data back in the shape it came in: JSON if the input was JSON or if `-o` ends
+in `.json` (D-061). A number written the way the document prints it is refused, showing
+the expected form, and an ambiguous one (`1.320`, in a language where the dot separates
+thousands) is refused with both readings (D-069).
 
-Códigos de saída: `0` sucesso, `1` contrato, `2` modelo, `3` uso, `4` recurso.
+Exit codes: `0` success, `1` contract, `2` template, `3` usage, `4` resources.

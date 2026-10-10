@@ -200,9 +200,8 @@ as `load.value` becomes a field of a composite value.
 
 ## Language
 
-The code and this page are in English. The specification, the decision record, the
-diagnostic messages and, for now, the docstrings in the API reference are in Portuguese,
-the author's language. Generated documents are not affected: the language a template is
+The code, this page and the API reference are in English. The specification, the
+decision record and the diagnostic messages are in Portuguese, the author's language. Generated documents are not affected: the language a template is
 written in is chosen by the layers loaded, not by the engine.
 
 The normative documents are in the repository: the

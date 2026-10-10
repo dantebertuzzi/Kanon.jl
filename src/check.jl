@@ -26,11 +26,11 @@ const MAX_COMPOSITE_DEPTH = 32
 """
     Bound
 
-Dados validados e decodificados, prontos para o render. `values` é indexado pela posição
-do campo em `template.data.fields` — a ordem do arquivo, que é a ordem do checklist e a
-dos erros.
+Validated and decoded data, ready to render. `values` is indexed by the field's position
+in `template.data.fields`: file order, which is also the order of the contract and of
+the errors.
 
-O render não redecodifica nada: o que chega nele já passou por aqui.
+The renderer decodes nothing again: everything that reaches it has been through here.
 """
 struct Bound
     model::Model
@@ -403,31 +403,31 @@ function check_extras!(ctx::CheckCtx, data)
 end
 
 """
-    rows(tabela)
+    rows(table)
 
-As linhas de uma tabela como dados. Precisa de `Tables.jl` carregado — o núcleo não
-depende dele, e a extensão só existe quando ele existe.
+The rows of a table, as data. Requires `Tables.jl` to be loaded: the core does not
+depend on it, and the extension exists only when it does.
 """
 function rows end
 
 """
-    render_each(modelo, tabela; today, budget) -> Vector{String}
+    render_each(model, table; today, budget) -> Vector{String}
 
-Um documento por linha da tabela. Precisa de `Tables.jl` carregado.
+One document per row of the table. Requires `Tables.jl` to be loaded.
 """
 function render_each end
 
 """
-    read_json(caminho) -> Dict{String,Any}
+    read_json(path) -> Dict{String,Any}
 
-Lê dados de um arquivo JSON. Precisa de `JSON3.jl` carregado.
+Reads data from a JSON file. Requires `JSON3.jl` to be loaded.
 """
 function read_json end
 
 """
-    parse_json(texto) -> Dict{String,Any}
+    parse_json(text) -> Dict{String,Any}
 
-Como [`read_json`](@ref), a partir do texto. Precisa de `JSON3.jl` carregado.
+Like [`read_json`](@ref), from a string. Requires `JSON3.jl` to be loaded.
 """
 function parse_json end
 
@@ -446,8 +446,9 @@ with_row(d::Diagnostic, i::Integer) =
 """
     bind(model, data; today = nothing) -> Bound
 
-Valida os dados contra o contrato e decodifica o que passar. Não lança: devolve o
-`Bound` com os diagnósticos acumulados, para que o chamador decida.
+Validates the data against the contract and decodes what passes. Does not throw: it
+returns the `Bound` with the accumulated diagnostics and leaves the decision to the
+caller.
 """
 function bind(m::Model, data; today::Union{Nothing,Date} = nothing,
               budget::Budget = Budget(), preview::Bool = false)
@@ -521,10 +522,10 @@ end
 """
     check(model, data; today = nothing) -> DiagnosticSet
 
-Os dados satisfazem o contrato? Conjunto vazio quer dizer que sim.
+Does the data satisfy the contract? An empty set means yes.
 
-Não lança, de propósito: `check` é a pergunta, e quem responde "não" merece a lista
-inteira do que falta, e não o primeiro problema.
+Deliberately does not throw: `check` asks the question, and a "no" should come with the
+whole list of what is missing, not just the first problem.
 """
 check(m::Model, data; today::Union{Nothing,Date} = nothing,
       budget::Budget = Budget()) =

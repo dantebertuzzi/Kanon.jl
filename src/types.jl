@@ -10,9 +10,9 @@
 """
     FieldSpec
 
-Um campo de tipo composto. `optional` é o que estende o teorema da lacuna para dentro
-dos compostos: se `person.spouse` é opcional, `{seller.spouse.name}` é nulável e exige
-grupo (`docs/especificacao.md` §3.1 e §14).
+A field of a composite type. `optional` is what extends the gap theorem into composites:
+if `person.spouse` is optional, `{seller.spouse.name}` is nullable and needs a group
+(`docs/especificacao.md` §3.1 and §14).
 """
 struct FieldSpec
     name::Symbol
@@ -33,32 +33,32 @@ FieldSpec(name::Symbol, type::Symbol; optional::Bool = false,
 """
     KanonProtocolError
 
-Falha do **protocolo de tipo**: o tipo não sabe fazer o que lhe foi pedido.
+A failure of the **type protocol**: the type cannot do what was asked of it.
 
-São exceções e não diagnósticos porque acontecem fora de um arquivo de modelo, e portanto
-não têm linha nem coluna. `analyze` e `check` as capturam e as convertem em diagnóstico
-quando há uma posição a que atribuí-las.
+These are exceptions rather than diagnostics because they happen outside a template file,
+so they have no line or column. `analyze` and `check` catch them and turn them into
+diagnostics when there is a position to attribute them to.
 """
 abstract type KanonProtocolError <: Exception end
 
-"O tipo Julia não implementa `kanon_typename` — não é um tipo Kanon."
+"The Julia type does not implement `kanon_typename`, so it is not a Kanon type."
 struct UnregisteredType <: KanonProtocolError
     type::Type
 end
 
-"O tipo não tem o formatador pedido. A mensagem lista os que ele tem."
+"The type has no such formatter. The message lists the ones it has."
 struct UnknownFormatter <: KanonProtocolError
     type::Type
     name::Symbol
 end
 
-"O tipo não tem o atributo pedido. A mensagem lista os que ele tem."
+"The type has no such attribute. The message lists the ones it has."
 struct UnknownAttribute <: KanonProtocolError
     type::Type
     name::Symbol
 end
 
-"Valor da entrada externa que o tipo não sabe decodificar (§3.4: não há coerção implícita)."
+"A value from external input that the type cannot decode (§3.4: there is no implicit coercion)."
 struct UndecodableValue <: KanonProtocolError
     type::Type
     raw::Any
@@ -83,7 +83,7 @@ struct UnwritableValue <: KanonProtocolError
     reason::String
 end
 
-"O tipo não declara como se comparar com aquele valor (§8.1)."
+"The type does not declare how to compare itself with that value (§8.1)."
 struct IncomparableValues <: KanonProtocolError
     type::Type
     other::Any
@@ -134,50 +134,50 @@ end
 """
     kanon_typename(::Type{T}) -> Symbol
 
-Nome do tipo na linguagem. Obrigatória: é ela que faz de um tipo Julia um tipo Kanon.
+The type's name in the language. Required: it is what makes a Julia type a Kanon type.
 """
 kanon_typename(::Type{T}) where {T} = throw(UnregisteredType(T))
 
 """
     kanon_schema(::Type{T}) -> Tuple{Vararg{FieldSpec}}
 
-Campos do tipo composto, em ordem de declaração. `()` para escalar — o padrão.
+The fields of a composite type, in declaration order. `()` for a scalar, the default.
 """
 kanon_schema(::Type) = ()
 
 """
     kanon_validate(v, ctx) -> Nothing | Vector{Diagnostic}
 
-Verificação do valor além do tipo Julia. O padrão não verifica nada.
+Checks on the value beyond its Julia type. The default checks nothing.
 """
 kanon_validate(v, ctx) = nothing
 
 """
     format(v, ::Val{name}, ctx) -> AbstractString
 
-Formatador. `Val{:default}` é obrigatório em todo tipo; os demais são opcionais e
-enumeráveis por [`kanon_formats`](@ref).
+A formatter. `Val{:default}` is required for every type; the others are optional and
+listed by [`kanon_formats`](@ref).
 """
 format(v, ::Val{name}, ctx) where {name} = throw(UnknownFormatter(typeof(v), name))
 
 """
     kanon_formats(::Type{T}) -> Tuple{Vararg{Symbol}}
 
-Formatadores nomeados de `T`, ordenados, **sem** `:default` — que não é um nome
-escrevível na interpolação: quem quer o padrão escreve `{price}`.
+The named formatters of `T`, sorted, **without** `:default`, which cannot be written in an
+interpolation: the default is just `{price}`.
 
-A implementação padrão introspecta a tabela de métodos de [`format`](@ref) procurando
-assinaturas `Tuple{typeof(format), T′, Val{S}, Any}` com `T <: T′` e `S::Symbol`. É o
-que faz a promessa da §2.1 de `docs/api-extensao.md` valer: um formatador acrescentado
-por despacho direto, sem passar por nenhuma fachada, passa a existir para a validação
-do modelo e para a mensagem de erro sem registro adicional.
+The default implementation inspects the method table of [`format`](@ref) for signatures
+`Tuple{typeof(format), T′, Val{S}, Any}` with `T <: T′` and `S::Symbol`. This is what keeps
+the promise of `docs/api-extensao.md` §2.1: a formatter added by plain dispatch, through no
+facade, exists for template validation and for error messages with no extra
+registration.
 
-Isso é introspecção de **tabela de métodos**, não de dados do usuário: não executa
-código do modelo e é determinística por causa da ordenação.
+This inspects the **method table**, not user data: it runs no template code and is
+deterministic because the result is sorted.
 
-Uma camada pode sobrescrever este método para documentar, ou para cobrir formatadores
-definidos genericamente (`format(v::T, ::Val{N}, ctx) where {N}`), que a introspecção
-não tem como enumerar.
+A layer may override this method to document its formatters, or to cover formatters
+defined generically (`format(v::T, ::Val{N}, ctx) where {N}`), which inspection cannot
+enumerate.
 """
 function kanon_formats(::Type{T}) where {T}
     out = Symbol[]
@@ -208,71 +208,71 @@ end
 """
     kanon_format_locale(::Type{T}, ::Val{name}) -> Symbol | Nothing
 
-O idioma a que um formatador pertence, ou `nothing` se ele vale em qualquer ambiente.
-O padrão é `nothing`; uma camada de idioma declara os seus.
+The language a formatter belongs to, or `nothing` if it applies in any environment. The
+default is `nothing`; a language layer declares its own.
 
-Existe porque método em Julia é **global e aditivo**: sem esta declaração, bastaria
-carregar `Extenso` no processo para que `{preco:extenso}` passasse a valer num ambiente
-neutro e um relatório em inglês saísse com `mil e duzentos reais`. O comportamento
-continua sendo despacho — o que o ambiente decide é a **visibilidade** (D-026).
+It exists because Julia methods are **global and additive**: without this declaration,
+loading `Extenso` in the process would make `{preco:extenso}` valid in a neutral
+environment, and an English report would come out with `mil e duzentos reais`. Behaviour
+is still dispatch; what the environment decides is **visibility** (D-026).
 """
 kanon_format_locale(::Type, ::Val) = nothing
 
 """
     kanon_attribute(v, ::Val{name}) -> Bool
 
-Predicado nomeado, usado no plano das regras (`when property is rural`).
+A named predicate, used in the rules plane (`when property is rural`).
 """
 kanon_attribute(v, ::Val{name}) where {name} = throw(UnknownAttribute(typeof(v), name))
 
 """
     kanon_attributes(::Type{T}) -> Tuple{Vararg{Symbol}}
 
-Atributos de `T`, ordenados — para validar a regra sem dados e para a mensagem de erro.
+The attributes of `T`, sorted, to validate rules without data and for error messages.
 
-`present` e `absent` não aparecem aqui: valem para todo campo e são do motor, não do
-tipo (ver [`UNIVERSAL_ATTRIBUTES`](@ref)).
+`present` and `absent` are not listed here: they apply to every field and belong to the
+engine, not to the type (see [`UNIVERSAL_ATTRIBUTES`](@ref)).
 """
 kanon_attributes(::Type) = ()
 
 """
     UNIVERSAL_ATTRIBUTES
 
-Atributos que todo campo tem, independentemente do tipo. São do motor: decorrem da
-presença do valor, e nenhum tipo os implementa.
+Attributes every field has, whatever its type. They belong to the engine: they follow from
+whether the value is present, and no type implements them.
 """
 const UNIVERSAL_ATTRIBUTES = (:absent, :present)
 
 """
     kanon_getfield(v, ::Val{name})
 
-Lê um campo declarado por [`kanon_schema`](@ref). O padrão é `getproperty(v, name)`, que
-serve quando o nome do campo no esquema é o nome da propriedade Julia; um tipo cujo
-esquema não espelha a `struct` define métodos seus.
+Reads a field declared by [`kanon_schema`](@ref). The default is `getproperty(v, name)`,
+which works when the field's name in the schema is the Julia property name; a type whose
+schema does not mirror its `struct` defines its own methods.
 
-Existe porque o esquema é a **interface** do tipo e a `struct` é a implementação dele:
-sem separar as duas, `kanon_schema` viraria uma promessa sobre nomes de campos Julia, e
-renomear um campo interno quebraria os modelos do acervo (D-023).
+It exists because the schema is the type's **interface** and the `struct` is its
+implementation: without separating them, `kanon_schema` would become a promise about
+Julia field names, and renaming an internal field would break existing templates (D-023).
 """
 kanon_getfield(v, ::Val{name}) where {name} = getproperty(v, name)
 
 """
-    kanon_json_schema(::Type{T}) -> Nothing | forma JSON
+    kanon_json_schema(::Type{T}) -> Nothing | JSON shape
 
-A forma JSON que [`kanon_decode`](@ref) aceita para `T`, em JSON Schema — o que o
-checklist (`contract`) publica no `\$defs` do tipo. O padrão é `nothing`, e então o
-checklist deriva a forma de [`kanon_schema`](@ref).
+The JSON shape [`kanon_decode`](@ref) accepts for `T`, as JSON Schema: what the contract
+(`contract`) publishes under the type's `\$defs`. The default is `nothing`, and the
+contract then derives the shape from [`kanon_schema`](@ref).
 
-As duas descrições são coisas diferentes, e é por isso que esta função existe (D-079).
-`kanon_schema` é a **interface de leitura**: os campos que um modelo alcança com
-`{pessoa.nome}`. A entrada pode pedir mais do que isso — `pessoa` precisa de `genero`,
-que decide `portador(a)` e nenhum modelo escreve —, e um checklist derivado só do esquema
-proibia (`additionalProperties: false`) a chave que o decodificador exige. Os JSON de
-cinco modelos reais, que o motor renderiza byte a byte, eram recusados pelo próprio
-checklist num validador de JSON Schema.
+The two descriptions are different things, which is why this function exists (D-079).
+`kanon_schema` is the **read interface**: the fields a template reaches with
+`{pessoa.nome}`. Input may require more than that (`pessoa` needs `genero`, which decides
+`portador(a)` and which no template writes), and a contract derived only from the schema
+forbade (`additionalProperties: false`) the key the decoder requires. The JSON data of
+five real templates, which the engine renders byte for byte, was rejected by their own
+contract in a JSON Schema validator.
 
-A forma se escreve com vetores de pares, que guardam a ordem — o checklist é comparável em
-`diff` (D-009):
+The shape is written with vectors of pairs, which keep their order, so the contract can
+be compared with `diff` (D-009):
 
 ```julia
 Kanon.kanon_json_schema(::Type{Pessoa}) = [
@@ -286,18 +286,19 @@ Kanon.kanon_json_schema(::Type{Pessoa}) = [
 ]
 ```
 
-Uma referência a outro tipo — `"\$ref" => "#/\$defs/pessoa"` — entra no checklist junto.
+A reference to another type (`"\$ref" => "#/\$defs/pessoa"`) is included in the contract
+along with it.
 """
 kanon_json_schema(::Type) = nothing
 
 """
     kanon_decode(::Type{T}, raw, ctx) -> T
 
-Converte um valor da entrada externa (JSON, planilha, `DataFrame`) para o tipo. É o
-único ponto de conversão: não há coerção implícita em lugar nenhum (§3.4).
+Converts a value from external input (JSON, a spreadsheet, a `DataFrame`) to the type.
+It is the only conversion point: there is no implicit coercion anywhere (§3.4).
 
-O padrão aceita o que já é do tipo e recusa o resto — falhando alto, com o nome do tipo
-na mensagem.
+The default accepts what is already of the type and rejects everything else, failing
+loudly with the type's name in the message.
 """
 function kanon_decode(::Type{T}, raw, ctx) where {T}
     raw isa T && return raw
@@ -307,7 +308,7 @@ end
 """
     kanon_compare(a::T, b) -> Int
 
-Ordem para o plano das regras (`price > 0`). Devolve `-1`, `0` ou `1`. O padrão recusa:
-comparar exige que o tipo declare como.
+Ordering for the rules plane (`price > 0`). Returns `-1`, `0` or `1`. The default
+refuses: comparison requires the type to declare how.
 """
 kanon_compare(a::T, b) where {T} = throw(IncomparableValues(T, b))

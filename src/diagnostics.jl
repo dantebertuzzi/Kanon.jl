@@ -11,8 +11,8 @@
 """
     Diagnostic
 
-Um problema encontrado em um modelo ou nos seus dados. `code` é estável entre versões
-e está registrado em [`CODE_TITLES`](@ref).
+A problem found in a template or in its data. `code` is stable across versions and is
+listed in [`CODE_TITLES`](@ref).
 """
 struct Diagnostic
     code::String
@@ -31,27 +31,27 @@ end
 """
     CODE_TITLES
 
-Registro de todos os códigos de diagnóstico. O título é a linha curta que aparece no
-cabeçalho do problema; a mensagem completa vem do ponto de emissão.
+Registry of every diagnostic code. The title is the short line shown in the problem's
+header; the full message comes from where the diagnostic is emitted.
 
-Um código, uma vez publicado, nunca muda de significado (política de compatibilidade,
-`docs/especificacao.md` §13). Códigos novos são aditivos.
+Once published, a code never changes meaning (compatibility policy,
+`docs/especificacao.md` §13). New codes are additive.
 
-**Todo código aqui é emitido em algum lugar de `src/` ou `lib/`, e há um teste que
-verifica isso.** Um código que nunca erra é um código a menos: ele engorda a tabela, dá a
-impressão de que o motor distingue um caso que ele não distingue, e a primeira pessoa a
-escrever uma ferramenta contra ele descobre que a condição nunca acontece. `K1213`
-(marcador desconhecido) e `K1304` (operador desconhecido) foram removidos por isso — o
-primeiro é impossível por construção (o parser não consulta o ambiente, `ast.md` §8, e
-quem acusa marcador sem estilo é o `K2030`), e o segundo estava coberto pelo `K1302`.
+**Every code here is emitted somewhere in `src/` or `lib/`, and a test checks that.** A
+code that is never raised misleads: it suggests the engine distinguishes a case it does
+not, and the first person to build a tool on it finds out the condition never happens.
+`K1213` (unknown marker) and `K1304` (unknown operator) were removed for that reason: the
+first is impossible by construction (the parser does not consult the environment,
+`ast.md` §8, and a marker without a style is reported as `K2030`), and the second was
+covered by `K1302`.
 
-    K10xx  estrutura do arquivo e pragma
-    K11xx  plano de dados
-    K12xx  plano do texto
-    K13xx  plano das regras
-    K20xx  referência: caminhos, tipos e formatadores
-    K30xx  contrato: os dados contra o contrato
-    K40xx  recurso: o orçamento do render
+    K10xx  file structure and pragma
+    K11xx  data plane
+    K12xx  text plane
+    K13xx  rules plane
+    K20xx  references: paths, types and formatters
+    K30xx  contract: the data against the contract
+    K40xx  resources: the render budget
 """
 const CODE_TITLES = Dict{String,String}(
     # --- estrutura do arquivo e pragma ---
@@ -172,8 +172,8 @@ end
 """
     DiagnosticSet
 
-Coleção ordenada de diagnósticos. A ordem é determinística — arquivo, linha, coluna,
-código — para que a saída seja comparável em `diff` e estável em teste.
+An ordered collection of diagnostics. The order is deterministic (file, line, column,
+code) so the output can be compared with `diff` and is stable in tests.
 """
 struct DiagnosticSet
     diagnostics::Vector{Diagnostic}
@@ -198,31 +198,31 @@ haserrors(s::DiagnosticSet) = any(d -> d.severity === :error, s.diagnostics)
 """
     KanonError
 
-A raiz das exceções do motor. Cada categoria de erro do §10.1 tem a sua, e todas trazem
-um [`DiagnosticSet`](@ref) — nunca uma mensagem solta.
+The root of the engine's exceptions. Each error category in §10.1 has its own, and all
+of them carry a [`DiagnosticSet`](@ref), never a bare message.
 """
 abstract type KanonError <: Exception end
 
-"Modelo malformado. Reportado na leitura, sem dados e sem ambiente."
+"Malformed template. Reported when reading, with no data and no environment."
 struct KanonSyntaxError <: KanonError
     diagnostics::DiagnosticSet
 end
 
-"Campo, formatador ou bloco inexistente. Detectável sem dados."
+"Field, formatter or block that does not exist. Detectable without data."
 struct KanonReferenceError <: KanonError
     diagnostics::DiagnosticSet
 end
 
-"Modelo válido, dados incompatíveis."
+"Valid template, data that does not satisfy it."
 struct KanonContractError <: KanonError
     diagnostics::DiagnosticSet
 end
 
 """
-Excedeu o orçamento de recursos — a única falha que o render pode ter (§11, D-010).
+The resource budget was exceeded: the only way rendering can fail (§11, D-010).
 
-Mora aqui, com as outras exceções, e não no renderizador, porque `check` também pode
-estourar o orçamento: as regras são avaliadas antes de qualquer texto sair.
+It lives here with the other exceptions, not in the renderer, because `check` can also
+exceed the budget: rules are evaluated before any text is produced.
 """
 struct KanonResourceError <: KanonError
     diagnostics::DiagnosticSet
@@ -240,7 +240,7 @@ const CATEGORY_LABEL = Dict(
 """
     format_diagnostics(io, set)
 
-Escreve os diagnósticos no formato de `docs/especificacao.md` §10.4.
+Writes the diagnostics in the format of `docs/especificacao.md` §10.4.
 """
 function format_diagnostics(io::IO, set::DiagnosticSet)
     ds = sorted(set).diagnostics

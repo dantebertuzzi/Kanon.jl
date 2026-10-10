@@ -1444,8 +1444,9 @@ end
 """
     analyze(env, tmpl) -> Analysis
 
-Resolve o modelo contra o ambiente. Não muta o `Template` e não lança: devolve a
-`Analysis` com os diagnósticos acumulados. Quem lança é [`load_template`](@ref).
+Resolves the template against the environment. Does not mutate the `Template` and does
+not throw: it returns the `Analysis` with the accumulated diagnostics.
+[`load_template`](@ref) is what throws.
 """
 function analyze(env::Environment, tmpl::Template)
     ctx = AnalysisCtx(env, tmpl)
@@ -1465,10 +1466,11 @@ end
 """
     load_string(env, text; name = "<string>") -> Model
 
-Lê, analisa e devolve o modelo pronto. Lança `KanonSyntaxError` se o arquivo é
-malformado e `KanonReferenceError` se algum caminho, tipo ou formatador não resolve.
+Parses and analyses a template and returns it ready to use. Throws `KanonSyntaxError` if
+the text is malformed and `KanonReferenceError` if a path, type or formatter does not
+resolve.
 
-Um erro de sintaxe suprime a análise: não há árvore para validar (§10.3).
+A syntax error skips analysis: there is no tree to validate (§10.3).
 """
 function load_string(env::Environment, text::AbstractString;
                      name::AbstractString = "<string>", root = nothing)
@@ -1533,8 +1535,9 @@ end
 """
     load_template(env, path; root = dirname(path)) -> Model
 
-Como [`load_string`](@ref), lendo do disco. `root` é a raiz de onde os fragmentos podem
-vir; o padrão é o diretório do próprio modelo, e nada fora dela é carregável (D-005).
+Like [`load_string`](@ref), reading from disk. `root` is the directory fragments may be
+included from; it defaults to the template's own directory, and nothing outside it can be
+loaded (D-005).
 """
 function load_template(env::Environment, path::AbstractString; root = nothing)
     # Sem raiz explícita, a do arquivo: incluir um irmão é o caso normal, e obrigar a

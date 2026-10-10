@@ -1,7 +1,7 @@
-# Modelo e ambiente
+# Templates and environments
 
-O caminho de um documento: um `Environment` diz que camadas existem; `load_template` lê e
-analisa; `check` confronta os dados; `render` escreve.
+The path of a document: an `Environment` says which layers exist; `load_template` reads
+and analyses; `check` confronts the data; `render` writes.
 
 ```@docs
 Environment
@@ -11,10 +11,10 @@ load_string
 Model
 ```
 
-## Registro de nomes
+## Registering names
 
-O que uma camada registra no ambiente é **nome**, e nome é local. Comportamento é método,
-e método é global e aditivo — a divisão está em D-025.
+What a layer registers in the environment is a **name**, and names are local. Behaviour
+is methods, and methods are global and additive; the split is in D-025.
 
 ```@docs
 register_type!
@@ -33,7 +33,7 @@ configure!
 configure_locale!
 ```
 
-## Consulta
+## Lookup
 
 ```@docs
 typefor

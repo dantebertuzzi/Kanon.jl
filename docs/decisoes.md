@@ -2999,3 +2999,30 @@ dentro do formatador da camada. Do lado do núcleo, a mesma forma: `Rational{Big
 **O que isto custa.** Nada no corpus. `{medicao:relative}` de uma leitura de zero passa a
 ser recusado, dizendo o que escrever no lugar (`{campo}` ou `{campo:bare}`) — antes ele
 derrubava o processo.
+
+## D-083 — A referência da API é em inglês
+
+*2026-10-10 · aceita · surgida na revisão do registro no General (#168696)*
+
+**A observação.** A revisão do registro apontou que a documentação só existia em
+português, num registro cujo público é internacional. A D-027 tinha separado a
+neutralidade da linguagem do idioma em que o motor fala com quem o opera, mas não
+distinguia **quem** lê cada texto: a mensagem de diagnóstico é lida por quem escreve o
+modelo; a docstring da referência, por quem programa contra o pacote — e esse leitor é o
+do registro, não o do documento.
+
+**Decisão.** As docstrings que a referência publica (as listadas nos blocos `@docs` de
+`docs/src/referencia/`), as páginas da referência e a visão geral do site passam a ser em
+inglês. Ficam em português, como estavam: a especificação, este registro, o roadmap, os
+comentários de código, as docstrings internas que a referência não publica e as mensagens
+de diagnóstico (D-027). A visão geral em português continua no site, em `pt.md`.
+
+**Por que não traduzir as mensagens também.** Elas são lidas por quem escreve o modelo, e
+os modelos do acervo são em português; e cada uma tem código estável, que é o que uma
+ferramenta ou um teste consulta. Trocar a redação não muda nenhum byte de documento, e
+fica para quando houver quem escreva modelos em outro idioma — com o idioma da mensagem
+vindo da camada, como já vem o das palavras-chave.
+
+**O que isto custa.** Nada no corpus nem na API. Os exemplos da visão geral passam a ser
+blocos `@example`, que o Documenter executa: um exemplo que deixa de rodar quebra a
+construção da documentação, em vez de ficar errado em silêncio.

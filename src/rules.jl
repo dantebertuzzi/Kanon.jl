@@ -17,13 +17,13 @@
 """
     Budget
 
-Limites **contados**, nunca de tempo de parede (D-010): um limite de tempo tornaria não
-determinístico *se* o motor erra — a mesma entrada erraria numa máquina carregada e
-passaria numa ociosa, e a suíte golden ficaria instável justamente em CI, que é onde a
-máquina lenta aparece.
+Limits that are **counted**, never wall-clock time (D-010): a time limit would make
+*whether* the engine fails non-deterministic. The same input would fail on a loaded
+machine and pass on an idle one, and the golden suite would become flaky precisely in CI,
+where slow machines are.
 
-Mora neste arquivo porque a primeira contagem acontece aqui: as repetições que as regras
-produzem são contadas antes de qualquer texto sair.
+It lives in this file because the first count happens here: the repetitions the rules
+produce are counted before any text is written.
 """
 struct Budget
     nodes::Int
@@ -38,9 +38,9 @@ Budget(; nodes = 1_000_000, bytes = 64 * 1024 * 1024, depth = 64, iterations = 1
 """
     BlockInstance
 
-Uma ocorrência de um bloco na saída. `subject` é o valor do sujeito — o elemento
-corrente, quando o bloco se repete — e `number` é o número que ela consumiu, vazio se o
-bloco não é numerado.
+One occurrence of a block in the output. `subject` is the subject's value (the current
+element, when the block repeats) and `number` is the number it took, empty if the block is
+not numbered.
 """
 struct BlockInstance
     pos::Int32
@@ -51,11 +51,12 @@ end
 """
     Plan
 
-O que as regras decidiram, dados estes dados: as instâncias na ordem da saída, e o
-número de cada bloco para efeito de remissão.
+What the rules decided for this data: the instances in output order, and each block's
+number for cross-references.
 
-`numbers[pos]` fica vazio para bloco removido ou não numerado. Bloco repetido não é
-remetível (`K2034`, verificado sem dados), então o número de remissão nunca é ambíguo.
+`numbers[pos]` is empty for a removed or unnumbered block. A repeated block cannot be
+cross-referenced (`K2034`, checked without data), so a cross-reference number is never
+ambiguous.
 """
 struct Plan
     instances::Vector{BlockInstance}

@@ -343,7 +343,7 @@ end
 """
     render(bound; budget = Budget()) -> String
 
-Renderiza dados já validados. Puro: sem I/O, sem relógio, sem aleatoriedade.
+Renders data that has already been validated. Pure: no I/O, no clock, no randomness.
 """
 function render(b::Bound; budget::Budget = Budget(), preview::Bool = false,
                 to = PlainText())
@@ -361,10 +361,13 @@ function render(b::Bound; budget::Budget = Budget(), preview::Bool = false,
 end
 
 """
-    render(model, dados; today = nothing, budget = Budget()) -> String
+    render(model, data; today = nothing, budget = Budget(), to = PlainText()) -> String
 
-Valida e renderiza. Lança `KanonContractError` se os dados não satisfazem o contrato —
-**não existe render sem validação**, nem como opção (§14).
+Validates and renders. Throws `KanonContractError` if the data does not satisfy the
+contract: **there is no rendering without validation**, not even as an option (§14).
+
+`to` selects the output format, as an `OutputFormat` or by name (`:text`, `:markdown`,
+`:typst`).
 """
 function render(m::Model, data; today::Union{Nothing,Date} = nothing,
                 budget::Budget = Budget(), to = PlainText())
@@ -372,15 +375,14 @@ function render(m::Model, data; today::Union{Nothing,Date} = nothing,
 end
 
 """
-    preview(model, dados; today = nothing) -> String
+    preview(model, data; today = nothing) -> String
 
-O rascunho: o documento com «marcadores» no lugar do que ainda não veio. **Não é um modo
-leniente** — é um comando à parte, a saída é sempre visivelmente marcada, e `render`
-continua recusando exatamente os mesmos dados.
+The draft: the document with «markers» where data has not arrived yet. **It is not a
+lenient mode.** It is a separate command, its output is always visibly marked, and
+`render` still refuses exactly the same data.
 
-A necessidade real por trás do pedido de "modo leniente" é ver o texto enquanto os dados
-estão sendo reunidos. Atendê-la aqui é o que permite que o motor nunca relaxe em lugar
-nenhum.
+What people usually want from a "lenient mode" is to see the text while the data is still
+being gathered. Serving that here is what lets the engine never relax anywhere else.
 """
 function preview(m::Model, data; today::Union{Nothing,Date} = nothing,
                  budget::Budget = Budget(), to = PlainText())

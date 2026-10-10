@@ -12,7 +12,7 @@
 # no render. Dois ambientes com domínios diferentes coexistem no mesmo processo porque
 # o que é global é aditivo e o que é conflitante é local.
 
-"Modelo mal configurado: dois domínios disputam um nome, ou uma camada registrou algo inválido."
+"Misconfigured environment: two domains claim the same name, or a layer registered something invalid."
 struct KanonEnvironmentError <: KanonError
     message::String
 end
@@ -83,13 +83,13 @@ end
 """
     EnvironmentBuilder
 
-Estado de construção de um [`Environment`](@ref). É mutável; o `Environment` não é. Só
-o builder tem `register_*!`, e ele existe apenas durante a construção — não há como
-mutar um ambiente já em uso.
+Construction state of an [`Environment`](@ref). It is mutable; the `Environment` is not.
+Only the builder has `register_*!`, and it exists only while the environment is being
+built, so an environment already in use cannot be mutated.
 
-`domain` é a camada que está sendo aplicada agora. O construtor o mantém atualizado
-para que a mensagem de conflito possa nomear os dois culpados sem que a camada precise
-se identificar.
+`domain` is the layer currently being applied. The constructor keeps it up to date so
+that a conflict message can name both culprits without the layer having to identify
+itself.
 """
 mutable struct EnvironmentBuilder
     locale::Union{Nothing,Symbol}
@@ -124,12 +124,12 @@ EnvironmentBuilder(locale::Union{Nothing,Symbol} = nothing) =
 """
     register_type!(b, T::Type; aliases = (,))
 
-Dá ao tipo Julia `T` um nome na linguagem. O nome canônico vem de `kanon_typename(T)`;
-`aliases` dá apelidos por idioma (`aliases = (pt = :dinheiro,)`), e só o do idioma
-ativo entra no ambiente.
+Gives the Julia type `T` a name in the language. The canonical name comes from
+`kanon_typename(T)`; `aliases` gives per-language names (`aliases = (pt = :dinheiro,)`),
+and only the one for the active language enters the environment.
 
-O que o tipo **faz** — formatar, validar, decodificar, comparar — não passa por aqui:
-são métodos das funções genéricas de `types.jl`, definidos no módulo da camada (D-019).
+What the type **does** (format, validate, decode, compare) does not go through here: it
+is methods of the generic functions in `types.jl`, defined in the layer's module (D-019).
 """
 function register_type!(b::EnvironmentBuilder, T::Type; aliases = NamedTuple())
     name = kanon_typename(T)
@@ -160,10 +160,10 @@ end
 """
     register_type_alias!(b, alias, canonical)
 
-Dá a um tipo **já registrado** um nome no idioma ativo. É como `dinheiro` vira apelido
-de `money`: os seis tipos do núcleo são registrados pelo próprio núcleo, que é neutro e
-não tem apelido nenhum a dar, e `register_type!` só aceita apelidos de quem registra o
-tipo (D-025).
+Gives an **already registered** type a name in the active language. This is how
+`dinheiro` becomes an alias of `money`: the core registers its own types and, being
+neutral, has no aliases to give, and `register_type!` only accepts aliases from whoever
+registers the type (D-025).
 """
 function register_type_alias!(b::EnvironmentBuilder, alias::Symbol, canonical::Symbol)
     prev = findfirst(e -> e.alias === alias, b.typealiases)
@@ -180,22 +180,22 @@ end
 """
     register_attribute_alias!(b, lang, alias, canonical)
 
-Dá ao atributo `canonical` um nome no idioma `lang`: `quando pontos é preciso` num modelo
-`pt` pergunta o mesmo que `when pontos is precise`. Aplicado só quando `lang` é o idioma
-ativo.
+Gives the attribute `canonical` a name in language `lang`: `quando pontos é preciso` in a
+`pt` template asks the same as `when pontos is precise`. Applied only when `lang` is the
+active language.
 
-É **aditivo**: o nome canônico continua valendo, e nenhum modelo muda de sentido. Um
-atributo não é palavra-chave, e por isso a D-003 não se aplica — como o nome de tipo, que
-também convive com o apelido.
+It is **additive**: the canonical name keeps working, and no template changes meaning. An
+attribute is not a keyword, so D-003 does not apply, just as a type name coexists with
+its alias.
 
-Quem registra é a **camada de idioma**, e não a camada que define o atributo: `preciso` é
-palavra portuguesa, e o `KanonScience` não tem idioma (a forma do glossário da D-056). Um
-canônico pode ter mais de um apelido, e tem, quando o adjetivo concorda em gênero com o
-campo — `a estimativa é precisa`, `o ponto é preciso`. O **primeiro** registrado é o que o
-motor escreve de volta nas mensagens.
+The **language layer** registers it, not the layer that defines the attribute: `preciso`
+is a Portuguese word, and `KanonScience` has no language (the glossary form of D-056). A
+canonical name may have more than one alias, and does when the adjective agrees in gender
+with the field (`a estimativa é precisa`, `o ponto é preciso`). The **first** one
+registered is the one the engine writes back in messages.
 
-O apelido **não** pode ser uma palavra-chave do idioma: `verdadeiro` já é `true`, e o
-parser o leria como palavra-chave antes de o ambiente ser consultado (D-076).
+The alias **cannot** be a keyword of the language: `verdadeiro` is already `true`, and
+the parser would read it as a keyword before the environment is consulted (D-076).
 """
 function register_attribute_alias!(b::EnvironmentBuilder, lang::Symbol, alias::Symbol,
                                    canonical::Symbol)
@@ -206,13 +206,14 @@ end
 """
     register_formatter_alias!(b, lang, alias, canonical)
 
-Dá ao formatador `canonical` um nome no idioma `lang`: `{nome:maiusculo}` num modelo `pt`
-é `{nome:upper}`. Aplicado só quando `lang` é o idioma ativo, aditivo, e registrado pela
-camada de idioma — as mesmas regras de [`register_attribute_alias!`](@ref).
+Gives the formatter `canonical` a name in language `lang`: `{nome:maiusculo}` in a `pt`
+template is `{nome:upper}`. Applied only when `lang` is the active language, additive, and
+registered by the language layer: the same rules as
+[`register_attribute_alias!`](@ref).
 
-Não confundir com um formatador **do idioma**, como `extenso`: esse é comportamento, existe
-por despacho e é declarado por `kanon_format_locale` (D-026). O apelido é só nome, e não
-formata nada que o canônico não formate (D-076).
+Not to be confused with a formatter **of a language**, such as `extenso`: that is
+behaviour, exists through dispatch and is declared by `kanon_format_locale` (D-026). An
+alias is only a name, and formats nothing the canonical formatter does not (D-076).
 """
 function register_formatter_alias!(b::EnvironmentBuilder, lang::Symbol, alias::Symbol,
                                    canonical::Symbol)
@@ -238,13 +239,13 @@ end
 """
     register_list_joiner!(b, lang, f)
 
-Como o idioma junta os elementos de uma lista. `f` recebe as **partes já formatadas** e
-devolve o texto inteiro: `["a","b","c"]` ⟶ `"a, b e c"`.
+How the language joins the elements of a list. `f` receives the **already formatted
+parts** and returns the whole text: `["a","b","c"]` ⟶ `"a, b e c"`.
 
-O núcleo junta por `", "` — a única convenção tipográfica dele, declarada como tal na
-§3.3 e explicitamente substituível. A substituição é **gancho no ambiente**, e não um
-método sobre `AbstractVector`: um método seria global e aditivo, e carregar a camada
-mudaria a saída do núcleo puro, quebrando a neutralidade que a F6 verifica (D-025).
+The core joins with `", "`, its only typographic convention, stated as such in §3.3 and
+explicitly replaceable. The replacement is a **hook in the environment**, not a method on
+`AbstractVector`: a method would be global and additive, so loading the layer would change
+the output of the bare core and break the neutrality that F6 checks (D-025).
 """
 function register_list_joiner!(b::EnvironmentBuilder, lang::Symbol, f::Function)
     lang === b.locale || return b
@@ -258,16 +259,16 @@ end
 """
     register_aliases!(b, lang, forms)
 
-Formas escritas das palavras-chave no idioma `lang`. Aceita um `NamedTuple`
-(`(data = "dados", when = "quando")`) ou qualquer iterável de pares
-(`[:data => "dados", Symbol("for") => "para"]`) — a segunda forma existe porque
-`for`, `and` e outras palavras-chave da linguagem são reservadas em Julia e não cabem
-num `NamedTuple`.
+The written forms of the keywords in language `lang`. Accepts a `NamedTuple`
+(`(data = "dados", when = "quando")`) or any iterable of pairs
+(`[:data => "dados", Symbol("for") => "para"]`); the second form exists because `for`,
+`and` and other keywords of the language are reserved in Julia and cannot be
+`NamedTuple` keys.
 
-Aplicado só quando `lang` é o idioma ativo.
+Applied only when `lang` is the active language.
 
-A forma inglesa correspondente **deixa** de ser palavra-chave: um arquivo que declara
-`pt` escreve `dados`, não `data`. Misturar é erro (D-003).
+The corresponding English form **stops** being a keyword: a file that declares `pt`
+writes `dados`, not `data`. Mixing them is an error (D-003).
 """
 function register_aliases!(b::EnvironmentBuilder, lang::Symbol, forms)
     lang === b.locale || return b
@@ -291,8 +292,8 @@ end
 """
     register_block_style!(b, name; unit, layout, separator, number, ref)
 
-Estilo de bloco de um domínio. `unit` é a unidade do marcador; dois domínios que
-registrem a mesma unidade é erro aqui.
+A domain's block style. `unit` is the marker unit; two domains registering the same unit
+is an error here.
 """
 function register_block_style!(b::EnvironmentBuilder, name::Symbol; unit::Char,
                                layout::Symbol = :prefix, separator::AbstractString = " ",
@@ -320,9 +321,10 @@ end
 """
     register_inflection!(b, lang; marks, apply)
 
-Marcas de flexão do idioma e a função que as aplica. `apply` recebe
-`(palavra, marca, sujeito, ctx)` e devolve a **palavra inteira** já flexionada — é o que
-permite `portador(a)` → `portadoras` sem que o núcleo saiba pluralizar (D-013).
+The language's inflection marks and the function that applies them. `apply` receives
+`(word, mark, subject, ctx)` and returns the **whole word** already inflected, which is
+what allows `portador(a)` → `portadoras` without the core knowing how to pluralise
+(D-013).
 """
 function register_inflection!(b::EnvironmentBuilder, lang::Symbol; marks, apply::Function)
     lang === b.locale || return b
@@ -343,8 +345,8 @@ end
 """
     register_repair_hook!(b, lang, hook)
 
-Gancho de reparo de emenda, chamado depois da elisão com `(texto, emendas, ctx)`. O
-reparo é local à emenda, nunca global (D-014).
+Seam repair hook, called after elision with `(text, seams, ctx)`. Repair is local to the
+seam, never global (D-014).
 """
 function register_repair_hook!(b::EnvironmentBuilder, lang::Symbol, hook::Function)
     lang === b.locale || return b
@@ -358,8 +360,8 @@ end
 """
     register_currency!(b, code, symbol)
 
-Símbolo de uma moeda. `money:symbol` usa o que está declarado aqui — o núcleo não
-embute nenhuma convenção nacional (§3.3).
+A currency's symbol. `money:symbol` uses what is declared here; the core embeds no
+national convention (§3.3).
 """
 function register_currency!(b::EnvironmentBuilder, code::Symbol, symbol::AbstractString)
     prev = findfirst(p -> first(p) === code, b.currency)
@@ -402,8 +404,8 @@ end
 """
     register_separators!(b; decimal, group)
 
-Separador decimal e de milhar do idioma. O núcleo emite `0.42` e `1200`; a camada de
-idioma é quem faz `0,42` e `1.200` (§3.3).
+The language's decimal and thousands separators. The core prints `0.42` and `1200`; the
+language layer is what makes them `0,42` and `1.200` (§3.3).
 """
 function register_separators!(b::EnvironmentBuilder; decimal = nothing, group = nothing)
     decimal === nothing || (b.decimal_separator = String(decimal))
@@ -411,7 +413,7 @@ function register_separators!(b::EnvironmentBuilder; decimal = nothing, group = 
     return b
 end
 
-"Padrão de data de `date:numeric`. Valor de fábrica ISO."
+"Date pattern for `date:numeric`. The factory default is ISO."
 function register_date_pattern!(b::EnvironmentBuilder, pattern::AbstractString)
     b.date_pattern = String(pattern)
     return b
@@ -422,13 +424,15 @@ end
 """
     Environment(; locale = nothing, domains = [])
 
-O vocabulário congelado de uma configuração de camadas. Imutável: não há `register_*!`
-sobre um `Environment`.
+The frozen vocabulary of one configuration of layers. Immutable: there is no
+`register_*!` on an `Environment`.
 
-Construção, em ordem determinística e visível: núcleo, camada de idioma, cada domínio
-na ordem do vetor. Conflito de nome é erro **aqui**, com os dois domínios na mensagem.
+Built in a deterministic, visible order: core, language layer, then each domain in the
+order of the vector. A name conflict is an error **here**, with both domains in the
+message.
 
-`Environment()` sem argumentos é o núcleo puro — o ambiente do teste de neutralidade.
+`Environment()` with no arguments is the bare core, the environment of the neutrality
+test.
 """
 struct Environment
     locale::Union{Nothing,Symbol}
@@ -453,15 +457,16 @@ end
 """
     configure!(b::EnvironmentBuilder)
 
-Registro do núcleo: os seis tipos e os valores de fábrica. Definido em `core_types.jl`.
+The core's registration: its types and factory defaults. Defined in `core_types.jl`.
 """
 function configure! end
 
 """
     configure_locale!(b, ::Val{lang})
 
-Ponto de extensão da camada de idioma. `Extenso.jl` define
-`Kanon.configure_locale!(b, ::Val{:pt})`; carregar o módulo basta para o idioma existir.
+Extension point for a language layer. `Extenso.jl` defines
+`Kanon.configure_locale!(b, ::Val{:pt})`; loading the module is enough for the language
+to exist.
 """
 configure_locale!(b::EnvironmentBuilder, ::Val{L}) where {L} =
     enverr("o idioma `$L` não tem camada carregada. Carregue o pacote que define " *
@@ -548,7 +553,7 @@ end
 
 # --- consulta ----------------------------------------------------------------
 
-"O tipo Julia registrado sob `name`, resolvendo apelido de idioma. `nothing` se não há."
+"The Julia type registered under `name`, resolving language aliases. `nothing` if there is none."
 function typefor(env::Environment, name::Symbol)
     i = findfirst(e -> e.name === name, env.types)
     i === nothing || return env.types[i].juliatype
@@ -592,9 +597,9 @@ function written_typename(env::Environment, canonical::Symbol)
 end
 
 """
-Todo nome de tipo **declarável** neste ambiente, ordenado — para a mensagem de erro e a
-completação do editor. O comportamento de coleção fica de fora com os apelidos dele: ele
-existe, e se escreve pela cardinalidade (D-071).
+Every type name that can be **declared** in this environment, sorted, for error messages
+and editor completion. Collection behaviour and its aliases are left out: it exists, but
+is written through cardinality (D-071).
 """
 typenames(env::Environment) =
     sort!(vcat([e.name for e in env.types if e.name !== COLLECTION_TYPENAME],
@@ -652,23 +657,23 @@ const KEYWORD_ATTRIBUTES = (:absent, :present, Symbol("true"), Symbol("false"))
 written_formatters(env::Environment, T::Type) =
     sort!([written_name(env.formatteraliases, f) for f in kanon_formats(T, env)])
 
-"Estilo de bloco da unidade de marcador, ou `nothing`."
+"Block style for the marker unit, or `nothing`."
 function stylefor(env::Environment, unit::Char)
     i = findfirst(s -> s.unit == unit, env.styles)
     i === nothing ? nothing : env.styles[i]
 end
 
-"A marca de flexão está registrada? Se não, `analyze` trata o candidato como prosa."
+"Is the inflection mark registered? If not, `analyze` treats the candidate as prose."
 hasmark(env::Environment, mark::AbstractString) = String(mark) in env.marks
 
 """
     kanon_formats(T, env) -> Tuple{Vararg{Symbol}}
 
-Os formatadores de `T` **visíveis neste ambiente**: os sem idioma, mais os do idioma
-ativo. É esta a lista que a validação usa e que aparece na mensagem de erro.
+The formatters of `T` **visible in this environment**: the language-independent ones plus
+those of the active language. This is the list validation uses and error messages show.
 
-`kanon_formats(T)` sozinho continua enumerando tudo que existe no processo — é o
-protocolo, e ele não conhece ambiente. Quem filtra é aqui (D-026).
+`kanon_formats(T)` on its own still lists everything that exists in the process; that is
+the protocol, and it knows no environment. The filtering happens here (D-026).
 """
 kanon_formats(::Type{T}, env::Environment) where {T} =
     Tuple(f for f in kanon_formats(T) if format_visible(T, f, env))
@@ -682,7 +687,7 @@ end
 "O idioma em que um formatador existe, para a mensagem de quem o pediu sem a camada."
 format_locale_of(T::Type, name::Symbol) = kanon_format_locale(T, Val(name))
 
-"Símbolo da moeda, ou o próprio código quando o ambiente não declara símbolo (§3.3)."
+"Currency symbol, or the code itself when the environment declares no symbol (§3.3)."
 function currency_symbol(env::Environment, code::Symbol)
     i = findfirst(p -> first(p) === code, env.currency)
     i === nothing ? String(code) : last(env.currency[i])
@@ -699,11 +704,11 @@ end
 """
     FormatContext
 
-O que um formatador pode consultar. Deliberadamente pequeno: ambiente e `today`.
+What a formatter may consult. Deliberately small: the environment and `today`.
 
-`today` é **injetado**, nunca lido do relógio — é o que torna o determinismo
-verificável em vez de aspiracional (§2.2). Um modelo que usa `today` e um `render` que
-não o recebeu produz erro de contrato.
+`today` is **injected**, never read from the clock, which makes determinism something
+that can be checked (§2.2). A template that uses `today`, rendered without it, is a
+contract error.
 """
 struct FormatContext
     env::Environment

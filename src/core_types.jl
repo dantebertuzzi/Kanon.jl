@@ -30,8 +30,8 @@ end
 """
     NumberValue
 
-O que conta como `number`. `Bool` fica de fora de propósito: em Julia ele é `Integer`,
-e em Kanon `boolean` é tipo à parte — sem isso, `{flag:fixed2}` seria válido.
+What counts as a `number`. `Bool` is left out on purpose: in Julia it is an `Integer`,
+but in Kanon `boolean` is a separate type; otherwise `{flag:fixed2}` would be valid.
 """
 const NumberValue = Union{AbstractFloat,Rational,Signed,Unsigned}
 
@@ -159,11 +159,12 @@ end
 """
     Money(amount, currency)
 
-Valor monetário: quantia exata e código de moeda. A quantia é `Rational{Int128}`, e não
-ponto flutuante, porque um documento que diz `R\$ 1.234,57` não pode depender do
-arredondamento binário.
+A monetary value: an exact amount and a currency code. The amount is a
+`Rational{Int128}`, not a float, because a document that says `R\$ 1.234,57` cannot
+depend on binary rounding.
 
-O núcleo emite duas casas decimais. É convenção declarada, não propriedade da moeda.
+The core prints two decimal places. That is a stated convention, not a property of the
+currency.
 """
 struct Money
     amount::Rational{Int128}
@@ -173,7 +174,7 @@ end
 Money(amount::Real, currency::Symbol) = Money(Rational{Int128}(amount), currency)
 Money(amount::Real, currency::AbstractString) = Money(amount, Symbol(currency))
 
-"Quantia escrita como decimal. Passa por `Rational`, nunca por ponto flutuante."
+"Amount written as a decimal string. Goes through `Rational`, never through floating point."
 Money(amount::AbstractString, currency) = Money(parse_decimal(amount), Symbol(currency))
 
 Base.:(==)(a::Money, b::Money) = a.amount == b.amount && a.currency === b.currency
@@ -191,7 +192,7 @@ format(v::Money, ::Val{:code}, ctx) =
 format(v::Money, ::Val{:symbol}, ctx) =
     string(currency_symbol(ctx, v.currency), ' ', fixed_number(v.amount, MONEY_DECIMALS, ctx))
 
-"O padrão é o símbolo — que cai no código da moeda quando o ambiente não declara nenhum."
+"The default is the symbol, which falls back to the currency code when the environment declares none."
 format(v::Money, ::Val{:default}, ctx) = format(v, Val(:symbol), ctx)
 
 kanon_attributes(::Type{Money}) = (:negative, :positive, :zero)
@@ -206,8 +207,9 @@ end
 kanon_compare(a::Money, b::NumberValue) = cmp(a.amount, b)
 
 """
-Dinheiro não se decodifica de um número solto: faltaria a moeda, e adivinhá-la seria a
-coerção implícita que a §3.4 proíbe. Aceita `Money`, ou um par quantia + moeda.
+Money is not decoded from a bare number: the currency would be missing, and guessing it
+would be the implicit coercion that §3.4 forbids. Accepts a `Money`, or an amount and a
+currency.
 """
 function kanon_decode(::Type{Money}, raw, ctx)
     raw isa Money && return raw
@@ -332,8 +334,8 @@ end
 # --- registro do núcleo ------------------------------------------------------
 
 """
-Os cinco tipos, o comportamento de coleção e os valores de fábrica. Nenhum apelido de idioma: o núcleo é neutro, e
-`aliases` é assunto da camada (§2.2).
+The five types, collection behaviour and the factory defaults. No language aliases: the
+core is neutral, and `aliases` belong to a layer (§2.2).
 """
 function configure!(b::EnvironmentBuilder)
     register_type!(b, AbstractString)

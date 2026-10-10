@@ -1,7 +1,7 @@
-# Renderização
+# Rendering
 
-`render` é puro: sem I/O, sem relógio, sem aleatoriedade. `today` é injetado. Se `analyze`
-e `check` passaram, a única falha possível é o orçamento.
+`render` is pure: no I/O, no clock, no randomness. `today` is injected. If `analyze` and
+`check` passed, the only possible failure is the resource budget.
 
 ```@docs
 render
@@ -9,10 +9,10 @@ preview
 Budget
 ```
 
-## Formatos de saída
+## Output formats
 
-O valor interpolado nunca altera a estrutura do documento (D-028): a prosa do autor passa
-intacta, o dado é escapado.
+An interpolated value never changes the structure of the document (D-028): the author's
+prose passes through untouched, and the data is escaped.
 
 ```@docs
 OutputFormat
@@ -25,7 +25,7 @@ Kanon.heading
 Kanon.line_breaks
 ```
 
-## Elisão e reparo de emenda
+## Elision and seam repair
 
 ```@docs
 Kanon.repair
