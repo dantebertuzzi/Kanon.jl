@@ -83,6 +83,14 @@
         @test (nodes1(t)[1]::TextLit).value == ": isto é prosa"
     end
 
+    @testset "a linha escapada mantém as colunas do arquivo" begin
+        # o `{` está na coluna 6 de `\: x {a`; reescrever a linha antes da varredura
+        # o apontava na 5
+        d = diags("kanon 1\n\ntext\n\n: b\n\\: x {a\n")
+        @test [x.code for x in d] == ["K1203"]
+        @test (d[1].line, d[1].col) == (6, 6)
+    end
+
     @testset "grupos opcionais aninham" begin
         t = ok(withtext("{a}[, {b}[ e {c}]], fim"))
         ns = nodes1(t)
