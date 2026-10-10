@@ -19,7 +19,8 @@ makedocs(
         canonical = "https://dantebertuzzi.github.io/Kanon.jl",
     ),
     pages = [
-        "Início" => "index.md",
+        "Overview" => "index.md",
+        "Visão geral (pt)" => "pt.md",
         "Referência" => [
             "Modelo e ambiente" => "referencia/modelo.md",
             "Tipos e extensão" => "referencia/tipos.md",
