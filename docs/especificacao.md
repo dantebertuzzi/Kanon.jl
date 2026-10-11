@@ -1073,6 +1073,10 @@ obrigatório, opcional ou com padrão —, diz a forma da resposta, e a confere 
 `check`, repetindo a pergunta com a mensagem dele. Enter deixa o opcional em branco e
 mantém o padrão.
 
+**[acrescentado — D-084]** O arquivo `chave = valor` não adivinha o número agrupado: num
+idioma em que o ponto separa os milhares, `1.320` sem aspas fica cadeia, e o campo `number`
+o recusa dizendo as duas leituras, como o `ask`.
+
 **[acrescentado na F10 — D-059, D-060]** A camada pedida por `--domain` e o leitor de JSON
 carregado por um arquivo `.json` valem para a execução inteira. Um JSON sem o `JSON3`
 instalado no ambiente é erro de uso (código 3).

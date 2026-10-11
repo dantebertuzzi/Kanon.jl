@@ -149,9 +149,49 @@ function kanon_decode(::Type{NumberValue}, raw, ctx)
     raw isa Bool && throw(UndecodableValue(NumberValue, raw,
         "verdadeiro e falso não são números; declare o campo como `boolean`."))
     # Como a data: a cadeia é o erro de quem escreve o arquivo, e a mensagem dá a forma.
-    raw isa AbstractString && throw(UndecodableValue(NumberValue, raw,
-        "o número se escreve com ponto decimal e sem separador de milhar na entrada."))
+    raw isa AbstractString && throw(UndecodableValue(NumberValue, raw, recusa_de_numero(ctx.env, raw)))
     throw(UndecodableValue(NumberValue, raw, "esperava um número."))
+end
+
+const NUMERO_DE_ENTRADA = r"^-?[0-9]+(\.[0-9]+)?$"
+
+"""
+As duas leituras de `1.320` — `("1320", "1.32")` — num idioma em que o ponto separa os
+milhares, ou `nothing`.
+
+Um grupo só, sem zero à esquerda: `1.234.567` não é decimal em forma nenhuma, e cai na
+forma do documento. A leitura decimal tira **um** zero, e não todos: `1.000` é *mil*, e é
+o que mais se digita; tirar todos mandava escrever `1.`, que não é número (D-069).
+"""
+function leituras_do_grupo(env::Environment, texto::AbstractString)
+    env.group_separator == "." && occursin(r"^-?[1-9][0-9]{0,2}\.[0-9]{3}$", texto) ||
+        return nothing
+    (replace(texto, "." => ""), endswith(texto, "0") ? chop(texto) : texto * "0")
+end
+
+"`12.480,50` escrito na forma de entrada — `12480.50` —, ou `nothing` se não é número na forma do documento."
+function forma_de_entrada(env::Environment, texto::AbstractString)
+    occursin(NUMERO_DE_ENTRADA, texto) && return nothing
+    convertido = replace(replace(texto, env.group_separator => ""), env.decimal_separator => ".")
+    occursin(NUMERO_DE_ENTRADA, convertido) ? String(convertido) : nothing
+end
+
+"""
+Por que uma cadeia não serve como número, com a forma a escrever quando há uma.
+
+`1.320` chega como cadeia do arquivo `chave = valor`, que não adivinha a leitura num idioma
+em que o ponto separa os milhares; antes lia `1.32`, e o documento dizia `1,32` onde o autor
+escreveu mil trezentos e vinte (D-084).
+"""
+function recusa_de_numero(env::Environment, texto::AbstractString)
+    leituras = leituras_do_grupo(env, texto)
+    leituras === nothing ||
+        return "`$texto` é ambíguo: no documento o ponto separa os milhares, e na entrada " *
+               "ele separa os decimais. Escreva `$(leituras[1])` se é o número inteiro, ou " *
+               "`$(leituras[2])` se é decimal."
+    convertido = forma_de_entrada(env, texto)
+    sufixo = convertido === nothing ? "." : ": `$convertido`."
+    "o número se escreve com ponto decimal e sem separador de milhar na entrada" * sufixo
 end
 
 # --- money -------------------------------------------------------------------
