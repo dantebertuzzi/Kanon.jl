@@ -272,10 +272,10 @@ end
 """
     contract(model) -> String
 
-O checklist de dados do modelo, em JSON Schema draft 2020-12 com a extensão `x-kanon`
+The template's data contract, as JSON Schema draft 2020-12 with the `x-kanon` extension
 (`docs/api-extensao.md` §7).
 
-Determinístico: duas chamadas sobre o mesmo modelo dão a mesma cadeia, byte a byte.
+Deterministic: two calls on the same model return the same string, byte for byte.
 """
 function contract(m::Model)
     campos = m.template.data.fields
@@ -324,7 +324,7 @@ function contract(m::Model)
     String(take!(io))
 end
 
-"Escreve o checklist num arquivo. Feito para ser versionado ao lado do modelo."
+"Writes the contract to a file, meant to be versioned next to the template."
 function contract(m::Model, path::AbstractString)
     open(io -> print(io, contract(m)), path, "w")
     return path

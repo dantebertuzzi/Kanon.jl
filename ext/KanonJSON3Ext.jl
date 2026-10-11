@@ -14,18 +14,18 @@ using Kanon
 using JSON3
 
 """
-    Kanon.read_json(caminho) -> Dict{String,Any}
+    Kanon.read_json(path) -> Dict{String,Any}
 
-Lê um JSON como dados. Objetos aninhados viram `Dict`, e listas viram `Vector` — que é
-exatamente o que `kanon_decode` de um tipo composto recebe.
+Reads a JSON file as data. Nested objects become `Dict` and arrays become `Vector`, which
+is what `kanon_decode` of a composite type receives.
 
-**Não decodifica nada**: converter para o tipo declarado é do contrato, e é `check` quem
-faz, com as mensagens que nomeiam o campo. Um JSON com `"2026-03-12"` num campo `date`
-chega aqui como cadeia e sai de `check` como `Date`, ou como erro.
+**It decodes nothing.** Converting to the declared type belongs to the contract, and
+`check` does it, with messages that name the field. A JSON `"2026-03-12"` in a `date`
+field arrives here as a string and leaves `check` as a `Date`, or as an error.
 """
 Kanon.read_json(caminho::AbstractString) = Kanon.parse_json(read(caminho, String))
 
-"Como `read_json`, a partir do texto."
+"Like `read_json`, from a string."
 Kanon.parse_json(texto::AbstractString) = plano(JSON3.read(texto))
 
 plano(x::JSON3.Object) = Dict{String,Any}(String(k) => plano(v) for (k, v) in pairs(x))

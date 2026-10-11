@@ -1,7 +1,7 @@
-# Validação
+# Validation
 
-Três passos, três categorias de erro. Cada um tem o que o anterior não tinha: `parse` não
-tem ambiente, `analyze` não tem dados, `render` tem os dois.
+Three steps, three categories of error. Each has what the previous one lacked: `parse`
+has no environment, `analyze` has no data, `render` has both.
 
 ```@docs
 analyze
@@ -13,11 +13,11 @@ Bound
 contract
 ```
 
-## Diagnósticos
+## Diagnostics
 
-Erro é interface de usuário aqui, não detalhe de implementação. Todo diagnóstico tem
-**código estável**: a suíte afirma sobre o código, e a redação da mensagem pode melhorar
-sem quebrar teste.
+Errors are user interface here, not an implementation detail. Every diagnostic has a
+**stable code**: the test suite asserts on the code, so the wording of a message can
+improve without breaking a test. The messages themselves are in Portuguese.
 
 ```@docs
 Diagnostic

@@ -5,7 +5,8 @@
 # o registro do projeto, escritos para serem lidos no repositório, e uma versão gerada
 # deles seria uma segunda cópia a manter em dia.
 #
-# O que este arquivo gera é a **referência da API**, a partir das docstrings.
+# O que este arquivo gera é a **referência da API**, a partir das docstrings, e a visão
+# geral. As duas em inglês (D-083); a visão geral em português fica em `pt.md`.
 
 using Documenter
 using Kanon
@@ -19,13 +20,14 @@ makedocs(
         canonical = "https://dantebertuzzi.github.io/Kanon.jl",
     ),
     pages = [
-        "Início" => "index.md",
-        "Referência" => [
-            "Modelo e ambiente" => "referencia/modelo.md",
-            "Tipos e extensão" => "referencia/tipos.md",
-            "Validação" => "referencia/validacao.md",
-            "Renderização" => "referencia/render.md",
-            "Ferramentas" => "referencia/ferramentas.md",
+        "Overview" => "index.md",
+        "Visão geral (pt)" => "pt.md",
+        "Reference" => [
+            "Templates and environments" => "referencia/modelo.md",
+            "Types and extension" => "referencia/tipos.md",
+            "Validation" => "referencia/validacao.md",
+            "Rendering" => "referencia/render.md",
+            "Tools" => "referencia/ferramentas.md",
         ],
     ],
     checkdocs = :exports,

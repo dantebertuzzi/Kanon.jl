@@ -16,11 +16,11 @@
 """
     Loader
 
-De onde os fragmentos podem vir. `root` é a raiz configurada, e nada fora dela é
-carregável — nem por caminho absoluto, nem por `..`, nem por link simbólico.
+Where fragments may come from. `root` is the configured root, and nothing outside it can
+be loaded: not by absolute path, not by `..`, not by symbolic link.
 
-Sem raiz, a inclusão é recusada: o padrão é não ler arquivo nenhum, e quem quer incluir
-diz de onde.
+Without a root, inclusion is refused: by default no file is read, and whoever wants to
+include says from where.
 """
 struct Loader
     root::Union{Nothing,String}
@@ -124,11 +124,12 @@ end
 """
     compose(template, loader, keywords) -> Template
 
-Resolve as inclusões e devolve o modelo composto: um `Template` só, em que nada indica
-que houve fragmento — quem analisa e renderiza não sabe da inclusão.
+Resolves inclusions and returns the composed template: a single `Template` in which
+nothing shows there was a fragment, so analysis and rendering do not know about
+inclusion.
 
-Os identificadores de nó continuam únicos porque todos os arquivos são analisados com o
-**mesmo** contador; é o que evita reconstruir a árvore para renumerá-la.
+Node identifiers stay unique because every file is parsed with the **same** counter,
+which avoids rebuilding the tree to renumber it.
 """
 function compose(t::Template, ldr::Loader, kw::KeywordTable)
     isempty(t.text.includes) && return t

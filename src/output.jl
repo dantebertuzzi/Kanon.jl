@@ -18,33 +18,33 @@
 """
     OutputFormat
 
-Como o texto vira arquivo. `PlainText` é o padrão e não toca em nada; os demais escapam
-o que o formato deles trataria como marcação.
+How the text becomes a file. `PlainText` is the default and touches nothing; the others
+escape what their format would read as markup.
 """
 abstract type OutputFormat end
 
-"Texto puro: nada é marcação, nada precisa de escape."
+"Plain text: nothing is markup, nothing needs escaping."
 struct PlainText <: OutputFormat end
 
-"Markdown. Escapa o que o CommonMark leria como marcação."
+"Markdown. Escapes what CommonMark would read as markup."
 struct Markdown <: OutputFormat end
 
 """
-Typst. Candidato a backend de página: o Kanon garante o conteúdo e o Typst compõe a
-página — que era a melhor ideia do levantamento (`estado-da-arte.md`).
+Typst. A candidate page backend: Kanon guarantees the content and Typst lays out the
+page (`estado-da-arte.md`).
 """
 struct Typst <: OutputFormat end
 
 """
-    escape_value(fmt, texto, inicio_de_linha) -> String
+    escape_value(fmt, text, at_line_start) -> String
 
-Escapa um valor **vindo dos dados**. Não se aplica à prosa do modelo: o autor que
-escreve `**importante**` num modelo Markdown quer negrito, e tirá-lo dele seria editar o
-texto que ele digitou — o mesmo erro que o reparo global de emenda seria (D-014).
+Escapes a value **that comes from the data**. It does not apply to the template's prose:
+an author who writes `**important**` in a Markdown template wants bold, and removing it
+would be editing what they typed, the same mistake a global seam repair would be (D-014).
 
-`inicio_de_linha` diz se o valor está sendo emitido no começo de uma linha, e o render é
-quem sabe disso. Sem essa informação, um `12.345` no meio de uma frase teria de ser
-escapado como se pudesse abrir uma lista — e nenhum valor sairia legível.
+`at_line_start` says whether the value is being emitted at the start of a line, which
+only the renderer knows. Without it, a `12.345` in the middle of a sentence would have to
+be escaped as if it could open a list, and no value would come out readable.
 """
 escape_value(f::OutputFormat, s::AbstractString) = escape_value(f, s, true)
 escape_value(::OutputFormat, s::AbstractString, ::Bool) = String(s)
@@ -70,11 +70,11 @@ preço de um contrato não virar fórmula, e o modelo real nº 11 é quem o paga
 const MARKDOWN_INICIO = raw"#+->=~"
 
 """
-Escapa um valor para Markdown.
+Escapes a value for Markdown.
 
-Rastreia o início de linha porque um valor pode conter quebras: `"X\n\n# Cláusula"`
-poria um título no documento se o `#` não fosse escapado **ali**, e escapá-lo em toda
-posição encheria o texto de barras sem proteger nada.
+Tracks line starts because a value can contain line breaks: `"X\n\n# Cláusula"` would
+put a heading in the document if the `#` were not escaped **there**, and escaping it
+everywhere would fill the text with backslashes without protecting anything.
 """
 function escape_value(::Markdown, s::AbstractString, inicio_de_linha::Bool)
     io = IOBuffer()
@@ -113,39 +113,38 @@ porque ela começa por dígito.
 const TYPST_INICIO = raw"-+/="
 
 """
-Escapa um valor para Typst.
+Escapes a value for Typst.
 
-A contrabarra vai **antes do dígito**, e não antes do ponto: `1. x` no começo de uma
-linha é item de enumeração explícita, e a forma de escrever o parágrafo é `\\1. x` — o
-inverso do Markdown, onde o ponto é que leva a barra. Duas linguagens de marcação, duas
-regras, e é por isso que o escape é método de formato e não uma função só.
+The backslash goes **before the digit**, not before the dot: `1. x` at the start of a
+line is an explicitly numbered list item, and the way to write it as a paragraph is
+`\\1. x`, the opposite of Markdown, where the dot takes the backslash. Two markup
+languages, two rules, which is why escaping is a method per format and not one function.
 
-E três construções que **não abrem nada visível — apagam**, conferidas contra o Typst
-0.15.1 ao compilar o golden do modelo real nº 12 (D-062):
+Three constructs **do not open anything visible; they delete**, checked against Typst
+0.15.1 while compiling the golden output of real template no. 12 (D-062):
 
-- `//` começa um comentário em qualquer posição da linha: `processo 123//2026, vara` sai
-  `processo 123`, e o resto da linha some sem erro nenhum;
-- `~` é espaço inseparável: `~200 m²` perde o til;
-- `-?` é hífen opcional, e some inteiro.
+- `//` starts a comment anywhere on a line: `processo 123//2026, vara` comes out as
+  `processo 123`, and the rest of the line disappears without any error;
+- `~` is a non-breaking space: `~200 m²` loses its tilde;
+- `-?` is a soft hyphen, and disappears entirely.
 
-Os três são o pior tipo de defeito que um formato pode ter — o documento compila, sai, e
-diz menos do que o dado dizia. A barra só leva escape onde forma comentário: junto de outra
-barra, ou na borda do valor, onde a vizinha é prosa que o escape não vê.
+These are the worst kind of defect a format can have: the document compiles and says less
+than the data did. The slash is escaped only where it forms a comment: next to another
+slash, or at the edge of the value, where the neighbour is prose the escaper cannot see.
 
-E mais três, da mesma família e achadas pela mesma conferência levada ao fim — varrendo o
-alfabeto inteiro contra o compilador, em vez de ir atrás de uma suspeita (D-080). Estas
-não apagam: **trocam**, e por isso a D-062 passou por elas.
+Three more of the same family were found by taking that check to its end, sweeping the
+whole alphabet against the compiler rather than following a suspicion (D-080). These do
+not delete, they **replace**, which is why D-062 missed them:
 
-- `--` é meia-risca e `---` é travessão: `SEI 0001--2026` sai `SEI 0001–2026`;
-- `...` são reticências: `disse que ... não sabia` sai com `…`.
+- `--` is an en dash and `---` an em dash: `SEI 0001--2026` comes out as `SEI 0001–2026`;
+- `...` is an ellipsis: `disse que ... não sabia` comes out with `…`.
 
-Um número de processo que muda de caractere no documento que vai à assinatura é a mesma
-falha do `//`, com o agravante de ser legível — ninguém confere o que parece certo. O
-hífen leva escape pela regra da barra, que é a regra de todo atalho de **dois**
-caracteres: junto de outro hífen, ou na borda, onde a vizinha é prosa. O ponto não: são
-**três** para formar reticências, e só uma sequência dentro do próprio valor as alcança —
-um ponto sozinho na borda precisaria que a prosa trouxesse os outros dois, e aí as
-reticências são do autor, que as escreveu.
+A case number that changes a character in a document going to be signed is the same
+failure as `//`, made worse by being readable: nobody checks what looks right. The hyphen
+is escaped by the slash rule, which is the rule for every **two**-character shortcut:
+next to another hyphen, or at the edge. The dot is not: an ellipsis needs **three**, and
+only a sequence inside the value itself can form one. A single dot at the edge would need
+the prose to supply the other two, and then the ellipsis is the author's.
 """
 function escape_value(::Typst, s::AbstractString, inicio_de_linha::Bool)
     io = IOBuffer()
@@ -170,11 +169,11 @@ function escape_value(::Typst, s::AbstractString, inicio_de_linha::Bool)
 end
 
 """
-    heading(fmt, nivel, texto) -> String
+    heading(fmt, level, text) -> String
 
-O rótulo de um bloco cujo estilo declara `layout = :heading`. Em texto puro ele é o
-parágrafo que o estilo produziu; num formato com títulos, ele vira título de verdade, e
-o nível vem da profundidade da numeração.
+The label of a block whose style declares `layout = :heading`. In plain text it is the
+paragraph the style produced; in a format with headings it becomes a real heading, with
+the level taken from the depth of the numbering.
 """
 heading(::OutputFormat, ::Int, texto::AbstractString) = String(texto)
 heading(::Markdown, nivel::Int, texto::AbstractString) = repeat('#', min(nivel, 6)) * " " * texto
@@ -200,25 +199,26 @@ label(f::Markdown, texto::AbstractString) = escape_value(f, texto, true)
 label(f::Typst, texto::AbstractString) = escape_value(f, texto, true)
 
 """
-    line_breaks(fmt, paragrafo) -> String
+    line_breaks(fmt, paragraph) -> String
 
-As quebras de linha **dentro** de um parágrafo, que a §4.1 preserva e deixa ao formato
-decidir se são rígidas. Em texto puro a quebra já é a linha que o autor escreveu. No
-Markdown e no Typst, uma quebra simples é **espaço**, e o formato que não decidia nada
-decidia juntar: `Nestes termos,` e `pede deferimento.` saíam numa linha só no `.docx`, e o
-bloco de assinatura virava `PAULO HENRIQUE LINS OAB/PE 12.345` — sem aviso nenhum, com o
-texto puro do mesmo modelo certo (D-070, modelo real nº 15).
+Line breaks **inside** a paragraph, which §4.1 preserves and leaves to the format to make
+hard or not. In plain text the break is already the line the author wrote. In Markdown
+and Typst a single newline is a **space**, so a format that decided nothing was in effect
+joining lines: `Nestes termos,` and `pede deferimento.` came out on one line in the
+`.docx`, and the signature block became `PAULO HENRIQUE LINS OAB/PE 12.345`, with no
+warning, while the plain-text output of the same template was right (D-070, real template
+no. 15).
 
-A quebra rígida é a contrabarra no fim da linha, que o CommonMark, o leitor padrão do
-pandoc e o Typst leem igual — e que se vê no arquivo, ao contrário dos dois espaços que
-todo editor apaga. Só vai onde a quebra seria espaço: no trecho de linhas seguidas em que
-**nenhuma** abre construção de bloco. Uma lista, uma tabela ou um título escritos pelo
-autor são marcação dele e passam intactos (D-028), e a barra ali quebraria a tabela e
-sairia literal no fim do item.
+A hard break is a backslash at the end of the line, which CommonMark, pandoc's default
+reader and Typst all read the same way, and which is visible in the file, unlike the two
+trailing spaces every editor strips. It is added only where the break would otherwise be a
+space: in runs of consecutive lines where **none** opens a block construct. A list, table
+or heading written by the author is their markup and passes through untouched (D-028);
+a backslash there would break the table and appear literally at the end of the item.
 
-A pergunta é feita ao texto **já escapado**: um valor que começa a linha com `#` ou `1.`
-chega aqui como `\\#` e `1\\.`, e não abre nada — é o que torna a regra segura contra o
-dado.
+The question is asked of the **already escaped** text: a value that starts a line with
+`#` or `1.` arrives here as `\\#` and `1\\.` and opens nothing, which is what makes the
+rule safe against the data.
 """
 line_breaks(::OutputFormat, s::AbstractString) = String(s)
 line_breaks(f::Markdown, s::AbstractString) = hard_breaks(f, s)
@@ -279,10 +279,10 @@ document(::OutputFormat, paragrafos::Vector{String}) = join(paragrafos, "\n\n")
 const FORMATOS = (text = PlainText, markdown = Markdown, md = Markdown, typst = Typst)
 
 """
-    output_format(nome) -> OutputFormat
+    output_format(name) -> OutputFormat
 
-O formato de saída pelo nome. Erra nomeando os que existem — um formato desconhecido
-escreveria o documento errado em silêncio, e é a última coisa que este motor deve fazer.
+The output format by name. Fails naming the formats that exist: an unknown format would
+silently write the wrong document, the last thing this engine should do.
 """
 function output_format(nome::Symbol)
     haskey(FORMATOS, nome) && return FORMATOS[nome]()

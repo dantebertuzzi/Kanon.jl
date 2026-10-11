@@ -12,9 +12,9 @@
 #      mecânica de que a macro não é um atalho para dentro do núcleo.
 
 """
-    @kanon_type <nome> <TipoJulia> begin ... end
+    @kanon_type <name> <JuliaType> begin ... end
 
-Define um tipo Kanon por despacho, a partir de uma descrição declarativa.
+Defines a Kanon type through dispatch, from a declarative description.
 
 ```julia
 @kanon_type person Pessoa begin
@@ -30,15 +30,15 @@ Define um tipo Kanon por despacho, a partir de uma descrição declarativa.
 end
 ```
 
-Só `default` é obrigatório; o resto é opcional. `getfield` só precisa listar os campos
-cujo nome no esquema difere do nome da propriedade Julia.
+Only `default` is required. `getfield` only needs to list the fields whose name in the
+schema differs from the Julia property name.
 
-**`aliases` não entra aqui.** Nome é local ao ambiente e se registra no `configure!` da
-camada, com `register_type!(b, Pessoa; aliases = (pt = :pessoa,))` — é a divisão que a
-D-019 estabeleceu e a D-025 confirmou.
+**`aliases` do not go here.** A name is local to the environment and is registered in
+the layer's `configure!`, with `register_type!(b, Pessoa; aliases = (pt = :pessoa,))`:
+the split set by D-019 and confirmed by D-025.
 
-`locale`, quando presente, declara que os formatadores nomeados deste tipo pertencem a
-um idioma e só são visíveis onde ele está ativo (D-026).
+`locale`, when present, declares that this type's named formatters belong to a language
+and are visible only where it is active (D-026).
 """
 macro kanon_type(nome, T, corpo)
     corpo isa Expr && corpo.head === :block ||

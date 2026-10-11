@@ -16,11 +16,10 @@
 """
     FieldUse
 
-Um campo usado por um bloco: onde, com que formatador, e se ele pode faltar.
+A field used by a block: where, with which formatter, and whether it may be absent.
 
-`guarded` é o que a coluna do meio precisa mostrar em vermelho quando falta: um campo
-nulável **tem** de estar dentro de um grupo, e o editor pode dizer isso enquanto o
-redator digita.
+`guarded` is what the editor's middle column shows in red when missing: a nullable field
+**must** sit inside a group, and the editor can say so while the author types.
 """
 struct FieldUse
     path::String
@@ -34,11 +33,10 @@ end
 """
     BlockOutline
 
-Um bloco, como uma ferramenta precisa vê-lo: o que ele é, o que o governa, e o que ele
-usa.
+A block as a tool needs to see it: what it is, what governs it, and what it uses.
 
-`rule` e `foreach` são o texto da regra que prende o bloco — a **coluna do meio** do
-editor —, e `number` é o número que ele consome quando nada é removido.
+`rule` and `foreach` are the text of the rule attached to the block (the editor's
+**middle column**), and `number` is the number it takes when nothing is removed.
 """
 struct BlockOutline
     name::Symbol
@@ -61,8 +59,8 @@ repeated(b::BlockOutline) = b.foreach !== nothing
 """
     outline(model) -> Vector{BlockOutline}
 
-O esqueleto do modelo, na ordem do arquivo — que é a ordem da saída, porque regras só
-removem e repetem (D-015).
+The template's skeleton, in file order, which is output order because rules only remove
+and repeat blocks (D-015).
 """
 function outline(m::Model)
     t = m.template
@@ -176,10 +174,11 @@ end
 """
     format_outline(io, model)
 
-O esqueleto em texto, alinhado: o bloco à esquerda, a regra à direita.
+The skeleton as aligned text: the block on the left, the rule on the right.
 
-São as duas primeiras colunas do editor, no terminal — e é o que responde à pergunta que
-o roadmap chama de risco 16.2: *o que sai deste modelo, e sob que condição?*
+These are the editor's first two columns, in the terminal, and they answer the question
+the roadmap calls risk 16.2: *what comes out of this template, and under which
+condition?*
 """
 function format_outline(io::IO, m::Model)
     blocos = outline(m)

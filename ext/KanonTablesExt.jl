@@ -16,22 +16,22 @@ using Kanon
 using Tables
 
 """
-    Kanon.rows(tabela) -> Vector
+    Kanon.rows(table) -> Vector
 
-As linhas de uma tabela, cada uma pronta para `check` e `render`. Uma linha de
-`Tables.jl` já responde a `propertynames`/`getproperty`, que é o que
-`Kanon.input_field` usa — numa tabela plana não há conversão no caminho.
+The rows of a table, each ready for `check` and `render`. A `Tables.jl` row already
+answers `propertynames`/`getproperty`, which is what `Kanon.input_field` uses, so a flat
+table needs no conversion.
 
-**Coluna com ponto é campo de composto** (D-052). Uma planilha é plana, e todo tipo de
-domínio é composto: sem esta regra, `carga : measure` não tinha como vir de um CSV, e
-`render_each` — que existe para planilhas — não alcançava camada de domínio nenhuma. As
-colunas `carga.value`, `carga.uncertainty` e `carga.unit` viram o objeto `carga`, que é o
-que `kanon_decode` do tipo recebe de um JSON; o ponto é o mesmo separador que o modelo usa
-em `{carga.value}`.
+**A dotted column is a field of a composite** (D-052). A spreadsheet is flat and every
+domain type is composite: without this rule, `load : measure` could not come from a CSV,
+and `render_each` could not reach any domain layer. The columns `load.value`,
+`load.uncertainty` and `load.unit` become the object `load`, which is what the type's
+`kanon_decode` receives from JSON; the dot is the same separator the template uses in
+`{load.value}`.
 
-Célula vazia vale chave ausente, pela razão da D-046: a origem dos dados não pode mudar o
-significado do contrato. E um grupo com **todas** as células vazias vale campo ausente —
-é a única forma de uma linha dizer que a medição opcional não foi feita.
+An empty cell is an absent key, for the reason in D-046: where the data comes from must
+not change what the contract means. A group whose cells are **all** empty is an absent
+field, which is the only way a row can say that an optional measurement was not taken.
 """
 function Kanon.rows(tabela)
     Tables.istable(tabela) ||
@@ -79,13 +79,12 @@ function podar!(d::Dict{String,Any})
 end
 
 """
-    Kanon.render_each(modelo, tabela; today, budget) -> Vector{String}
+    Kanon.render_each(model, table; today, budget) -> Vector{String}
 
-Um documento por linha. É o caso que a ingestão existe para atender: a mesma minuta para
-cada linha de uma planilha.
+One document per row: the same template filled from each row of a spreadsheet.
 
-Falha **na primeira linha que não satisfaz o contrato**, com a linha nomeada — e não
-depois de gerar metade dos documentos.
+Fails **at the first row that does not satisfy the contract**, naming the row, rather
+than after generating half of the documents.
 """
 function Kanon.render_each(m::Kanon.Model, tabela; today = nothing,
                            budget::Kanon.Budget = Kanon.Budget())
