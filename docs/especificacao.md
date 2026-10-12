@@ -1077,6 +1077,12 @@ mantém o padrão.
 idioma em que o ponto separa os milhares, `1.320` sem aspas fica cadeia, e o campo `number`
 o recusa dizendo as duas leituras, como o `ask`.
 
+**[acrescentado — D-085]** O orçamento da §11.6 se ajusta pela linha de comando:
+`--budget nodes=N`, `--budget bytes=N` e `--budget iterations=N`, repetível, um limite por
+vez, para `check`, `render`, `preview` e `ask`. Limite desconhecido, repetido ou que não seja
+inteiro positivo é erro de uso. A profundidade de inclusão não entra: ela é teto do
+carregador.
+
 **[acrescentado na F10 — D-059, D-060]** A camada pedida por `--domain` e o leitor de JSON
 carregado por um arquivo `.json` valem para a execução inteira. Um JSON sem o `JSON3`
 instalado no ambiente é erro de uso (código 3).
