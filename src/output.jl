@@ -26,7 +26,7 @@ abstract type OutputFormat end
 "Texto puro: nada é marcação, nada precisa de escape."
 struct PlainText <: OutputFormat end
 
-"Markdown. Escapa o que o CommonMark leria como marcação."
+"Markdown. Escapa o que o CommonMark ou o leitor padrão do pandoc leriam como marcação."
 struct Markdown <: OutputFormat end
 
 """
@@ -50,10 +50,17 @@ escape_value(f::OutputFormat, s::AbstractString) = escape_value(f, s, true)
 escape_value(::OutputFormat, s::AbstractString, ::Bool) = String(s)
 
 """
-O que o CommonMark trata como marcação **em qualquer posição**. Ênfase, código, links,
-HTML embutido, matemática e atributos.
+O que é marcação **em qualquer posição**. No CommonMark: ênfase, código, links, HTML
+embutido, matemática e atributos. No leitor padrão do pandoc, que é o que lê o
+`| pandoc -o saida.docx` da ajuda da CLI, também: subscrito e tachado (`~`), sobrescrito
+(`^`) e as aspas retas, que ele troca por curvas — `D'Ávila` saía `D’Ávila`, e `"x"` saía
+`“x”` (D-086).
+
+A arroba não está aqui: ela só abre citação quando **não** vem depois de letra ou dígito, e
+um endereço eletrônico, `marta_soares@correio.com.br`, não precisa de barra nenhuma — o
+golden do modelo real nº 15 o prova, e não muda.
 """
-const MARKDOWN_SEMPRE = raw"\`*_[]<>&$|{}"
+const MARKDOWN_SEMPRE = raw"\`*_[]<>&$|{}~^\"'"
 
 """
 O que só é marcação **no início de uma linha**: títulos, citações, itens de lista, e a
@@ -67,7 +74,14 @@ O cifrão **não** está nesta lista, e é de propósito: ele abre matemática e
 GitHub, e escapado é literal nos dois e no CommonMark. `R\\\$ 42.000,00` no fonte é o
 preço de um contrato não virar fórmula, e o modelo real nº 11 é quem o paga.
 """
-const MARKDOWN_INICIO = raw"#+->=~"
+const MARKDOWN_INICIO = raw"#+->=:(%"
+
+"""
+A palavra que, no começo de uma linha e seguida de `.` ou `)`, o pandoc lê como marcador de
+lista: número, uma letra só, ou algarismo romano — `1.`, `a)`, `B.`, `iv.`. O CommonMark só
+lê a primeira; o pandoc, as três.
+"""
+const MARKDOWN_MARCADOR = r"^(?:\d{1,9}|[A-Za-z]|[ivxlcdmIVXLCDM]+)$"
 
 """
 Escapa um valor para Markdown.
@@ -75,28 +89,48 @@ Escapa um valor para Markdown.
 Rastreia o início de linha porque um valor pode conter quebras: `"X\n\n# Cláusula"`
 poria um título no documento se o `#` não fosse escapado **ali**, e escapá-lo em toda
 posição encheria o texto de barras sem proteger nada.
+
+O hífen e o ponto seguem a regra que a D-080 deu ao Typst, porque o leitor do pandoc tem
+os mesmos atalhos: `--` é meia-risca, `---` é travessão e `...` são reticências, e
+`SEI 0001--2026` saía `SEI 0001–2026` no `.docx`. O hífen leva a barra junto de outro
+hífen ou na borda do valor, onde a vizinha é prosa; o ponto, só junto de outro ponto.
+
+A tabela foi conferida varrendo o alfabeto contra o pandoc 3.11 — todo valor de um e de
+dois caracteres, e os de três formados pelos sinais e por uma amostra de letras e
+dígitos, no começo, no meio e no fim da frase e colado à prosa (D-086).
 """
 function escape_value(::Markdown, s::AbstractString, inicio_de_linha::Bool)
     io = IOBuffer()
     inicio = inicio_de_linha    # estamos no começo de uma linha?
-    digitos = false        # viemos de dígitos desde o começo da linha?
-    for c in s
-        if c in MARKDOWN_SEMPRE
-            print(io, '\\', c)
-        elseif inicio && c in MARKDOWN_INICIO
-            print(io, '\\', c)
-        elseif digitos && (c == '.' || c == ')')
-            # `1.` e `1)` no começo da linha abrem lista ordenada
-            print(io, '\\', c)
-        else
-            print(io, c)
+    palavra = inicio ? "" : nothing   # a primeira palavra da linha, enquanto ela dura
+    cs = collect(s)
+    n = length(cs)
+    for (i, c) in enumerate(cs)
+        anterior = i > 1 ? cs[i - 1] : nothing
+        seguinte = i < n ? cs[i + 1] : nothing
+        if c in MARKDOWN_SEMPRE || (inicio && c in MARKDOWN_INICIO) ||
+           # `@doe99` é citação; `ana@x.com` não é — salvo na primeira palavra da linha, onde
+           # `1@)` abre a lista de exemplos do pandoc
+           (c == '@' && (anterior === nothing || palavra !== nothing ||
+                         !(isletter(anterior) || isdigit(anterior)))) ||
+           (c == '-' && (i == 1 || i == n || anterior == '-' || seguinte == '-')) ||
+           (c == '.' && (anterior == '.' || seguinte == '.')) ||
+           # na borda, a prosa pode ter trazido o marcador: `a` no começo da linha e `) x`
+           ((c == ')' || c == '.') && i == 1 && !inicio) ||
+           # `1.`, `a)` e `iv.` no começo da linha abrem lista ordenada
+           ((c == '.' || c == ')') && palavra !== nothing &&
+            occursin(MARKDOWN_MARCADOR, palavra))
+            print(io, '\\')
         end
+        print(io, c)
         if c == '\n'
             inicio = true
-            digitos = false
+            palavra = ""
         else
-            digitos = (inicio || digitos) && isdigit(c)
-            inicio = inicio && (c == ' ' || c == '\t')
+            em_branco = c == ' ' || c == '\t'
+            palavra = palavra === nothing ? nothing :
+                      em_branco ? (inicio ? "" : nothing) : palavra * c
+            inicio = inicio && em_branco
         end
     end
     String(take!(io))

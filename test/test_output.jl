@@ -145,6 +145,89 @@ Matrícula {b} da comarca.
     end
 end
 
+"""
+Os valores que o leitor padrão do pandoc lia como outra coisa (D-086). É ele que lê o
+`--to markdown | pandoc -o saida.docx` da ajuda da CLI, e ele lê mais que o CommonMark.
+"""
+const HOSTIS_PANDOC = [
+    "SEI 0001--2026", "faixa 10---20", "disse que ... não sabia",   # trocam de caractere
+    "D'Ávila", "Sant'Ana", "\"Comercial\"",                         # aspas retas viram curvas
+    "H~2~O", "10^3^", "a ~~b~~ c",                                   # subscrito, sobrescrito, tachado
+    "@doe99 diz", "conforme @fulano",                                # citação
+    "a) primeiro", "B. segundo", "iv. quarto", "(1) item", "(a) item", "1@) x",   # listas
+    "Termo\n: definição", "::: aviso", "% título",                  # definição, div, título
+    "x-", "-x",                                                       # a borda, onde a vizinha é prosa
+]
+
+@testset "markdown: o leitor do pandoc também não lê marcação no valor (D-086)" begin
+    e(x, ini = false) = Kanon.escape_value(Kanon.Markdown(), x, ini)
+
+    @testset "trocas de caractere: `--`, `---`, `...` e as aspas" begin
+        @test e("SEI 0001--2026") == "SEI 0001\\-\\-2026"
+        @test e("disse que ... não sabia") == "disse que \\.\\.\\. não sabia"
+        @test e("D'Ávila") == "D\\'Ávila"
+        @test e("\"Comercial\"") == "\\\"Comercial\\\""
+        # o hífen sozinho no meio e o ponto sozinho continuam limpos
+        @test e("0001234-56.2026.5.06.0001") == "0001234-56.2026.5.06.0001"
+        @test e("Acme S.A.") == "Acme S.A."
+    end
+
+    @testset "subscrito, sobrescrito e tachado, em qualquer posição" begin
+        @test e("H~2~O") == "H\\~2\\~O"
+        @test e("10^3^") == "10\\^3\\^"
+    end
+
+    @testset "a arroba só onde abre citação" begin
+        @test e("@doe99") == "\\@doe99"
+        @test e("conforme @fulano") == "conforme \\@fulano"
+        # depois de letra ou dígito não há citação: o endereço eletrônico sai limpo, e é
+        # o que mantém o golden do modelo real nº 15 byte a byte
+        @test e("marta@correio.com.br") == "marta@correio.com.br"
+        # salvo na primeira palavra da linha, onde `1@)` abre a lista de exemplos
+        @test e("1@) x", true) == "1\\@) x"
+    end
+
+    @testset "os marcadores de lista que só o pandoc lê, no começo da linha" begin
+        @test e("a) primeiro", true) == "a\\) primeiro"
+        @test e("B. segundo", true) == "B\\. segundo"
+        @test e("iv. quarto", true) == "iv\\. quarto"
+        @test e("(1) item", true) == "\\(1) item"
+        @test e(": definição", true) == "\\: definição"
+        # no meio da frase não são marcador, e não levam barra
+        @test e("alínea a) do inciso iv.") == "alínea a) do inciso iv."
+        # na borda, a prosa pode ter trazido a letra: `a` no começo da linha e `) x`
+        @test e(") x") == "\\) x"
+    end
+
+    @testset "o pandoc de verdade devolve o valor intacto" begin
+        pandoc = let p = get(ENV, "KANON_PANDOC", "")
+            isempty(p) ? Sys.which("pandoc") : p
+        end
+        if pandoc === nothing
+            get(ENV, "CI", "") == "true" &&
+                error("o CI precisa do pandoc para conferir o escape do Markdown (D-086)")
+            @info "pandoc ausente: a ida e volta do escape do Markdown não rodou"
+        else
+            # cada valor no começo e no meio de uma frase, um parágrafo por vez
+            frases = String[]
+            fonte = IOBuffer()
+            for v in HOSTIS_PANDOC, (antes, ini) in (("", true), ("texto ", false))
+                push!(frases, antes * v * " fim.")
+                print(fonte, Kanon.line_breaks(Kanon.Markdown(), antes * e(v, ini) * " fim."), "\n\n")
+            end
+            json = read(pipeline(`$pandoc -f markdown -t json`; stdin = IOBuffer(take!(fonte))), String)
+            blocos = JSON3.read(json).blocks
+            texto(inl) = join(x.t == "Str" ? x.c : x.t == "LineBreak" ? "\n" : " " for x in inl)
+            @test length(blocos) == length(frases)
+            for (b, f) in zip(blocos, frases)
+                @test b.t == "Para"
+                @test all(x -> x.t in ("Str", "Space", "SoftBreak", "LineBreak"), b.c)
+                @test texto(b.c) == f
+            end
+        end
+    end
+end
+
 @testset "o escape não atrapalha o resto do motor" begin
     @testset "a elisão continua funcionando com o valor escapado" begin
         d = Dict("nome" => "Ana", "nota" => "*urgente*")

@@ -3032,3 +3032,52 @@ como em todo valor que entra.
 **O que não mudou.** Nada no corpus. Sem idioma, ou num idioma sem ponto de milhar, `1.320`
 só tem uma leitura e continua sendo lido `1.32`. O JSON não muda: lá o número é da gramática
 do JSON, e a cadeia `"1.320"` já era recusada — agora dizendo por quê.
+
+## D-086 — O Markdown se escapa também para o leitor do pandoc
+
+*2026-10-12 · aceita · dívida da D-070, issue #25*
+
+**A observação.** O escape do Markdown seguia o CommonMark, e o caminho que a ajuda da CLI
+ensina para o `.docx` é `--to markdown | pandoc -o saida.docx` — o leitor **padrão** do
+pandoc, que lê mais. A D-070 registrou a dívida; a varredura do alfabeto contra o pandoc
+3.11, no método da D-080, achou o tamanho dela:
+
+| No valor | O pandoc lê | O documento |
+|---|---|---|
+| `SEI 0001--2026`, `10---20`, `...` | meia-risca, travessão, reticências | `SEI 0001–2026` |
+| `D'Ávila`, `"Comercial"` | aspas tipográficas | `D’Ávila`, `“Comercial”` |
+| `H~2~O`, `10^3^`, `~~x~~` | subscrito, sobrescrito, tachado | `H2O` com o `2` rebaixado e os tis sumidos |
+| `@doe99` | citação | o mesmo texto sem `--citeproc`; com ele, a referência ou um aviso |
+| `a)`, `B.`, `iv.`, `(1)`, `1@)` no começo da linha | item de lista | o número que o pandoc escolher |
+| `:` e `:::` no começo da linha | definição, bloco `div` | o parágrafo anterior vira termo; o `div` só fecha no fim do documento |
+
+**Decisão.** O escape do Markdown passa a servir aos dois leitores:
+
+1. `~`, `^` e as aspas retas levam barra em qualquer posição.
+2. O hífen leva barra junto de outro hífen ou na borda do valor, e o ponto junto de outro
+   ponto — a regra que a D-080 deu ao Typst, pelo mesmo motivo.
+3. A arroba leva barra onde abre citação: no começo do valor, depois do que não é letra
+   nem dígito, e na primeira palavra da linha.
+4. No começo da linha, `:`, `(` e `%` levam barra, e o `.` ou `)` depois de uma letra só ou
+   de um algarismo romano, como já levava depois de número. Na borda do valor, o `.` ou `)`
+   que abre o valor também, porque a letra pode ter vindo da prosa.
+
+Toda barra nova vai antes de pontuação ASCII, que o CommonMark lê como literal: a mesma
+conferência contra o CommonMark.jl volta sem nenhuma diferença, antes e depois.
+
+**Alternativas.** (a) Outro formato de saída, `--to pandoc`: dois Markdowns para quem
+escreve a ajuda da CLI explicar, e o `--to markdown` continuaria quebrando o `.docx` que ela
+ensina. (b) Passar `-f commonmark` na ajuda: põe no redator o peso de lembrar a opção, e o
+pandoc lido sem ela continuaria trocando o processo. (c) Escapar para os dois leitores
+(escolhida): o custo é uma barra a mais no fonte, só onde o pandoc leria marcação.
+
+**O que fica de fora, e por quê.** Três coisas que a varredura mostra e que não são
+marcação: o pandoc junta espaços e troca tabulação por espaço, como faz com a prosa; põe
+espaço inseparável depois de abreviações como `p.` e `e.g.`, o que não muda o que se lê; e
+uma letra da prosa colada sem espaço a um valor no começo da linha (`x` + `iv.`) forma o
+marcador — a construção é do autor, que a escreveu.
+
+**O que não mudou.** Nenhum byte do corpus. O `@` do endereço eletrônico da reclamação nº
+15 era a única barra nova que a primeira versão da regra punha num golden, e foi o que a
+restringiu ao caso que abre citação. A suíte do núcleo agora faz a ida e volta pelo pandoc
+de verdade, e o passo do pandoc no CI vem antes dela.
