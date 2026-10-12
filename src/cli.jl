@@ -46,6 +46,9 @@ Opções
   --locale IDIOMA
   --domain NOME  carrega uma camada (repetível): --domain KanonLegal. Um idioma sem
                  camada de domínio que o traga se carrega igual: --domain Extenso
+  --budget LIMITE=N
+                 aumenta um limite do orçamento (repetível): nodes, bytes ou
+                 iterations. Ex.: --budget nodes=5000000
   --version
   --help
 
@@ -84,7 +87,7 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
 
     opts = parse_options(args[2:end], err)
     opts === nothing && return EXIT_USAGE
-    posicionais, saida, hoje, idioma, dominios, formato = opts
+    posicionais, saida, hoje, idioma, dominios, formato, orcamento = opts
 
     isempty(posicionais) &&
         (println(err, "kanon: falta o arquivo do modelo."); return EXIT_USAGE)
@@ -100,7 +103,7 @@ function main(args::Vector{String}; out::IO = Base.stdout, err::IO = Base.stderr
         # método da camada — nem o `configure!`, nem o decodificador de `pessoa` — é
         # visível daqui, e a CLI de verdade não alcança camada nenhuma (D-059).
         return Base.invokelatest(run_command, cmd, posicionais, saida, hoje, formato,
-                                 ambiente, out, err, input)
+                                 orcamento, ambiente, out, err, input)
     catch e
         e isa CliUsageError && (println(err, "kanon: ", e.msg); return EXIT_USAGE)
         e isa KanonSyntaxError && return report(err, e, EXIT_MODEL)
@@ -195,6 +198,7 @@ function parse_options(args::Vector{String}, err::IO)
     idioma = nothing
     dominios = Symbol[]
     formato = PlainText()
+    limites = Dict{Symbol,Int}()
     i = 1
     while i <= length(args)
         a = args[i]
@@ -229,6 +233,11 @@ function parse_options(args::Vector{String}, err::IO)
             nome in dominios &&
                 (println(err, "kanon: a camada `", nome, "` foi pedida duas vezes."); return nothing)
             push!(dominios, nome)
+        elseif a == "--budget"
+            i += 1
+            i > length(args) && (println(err, "kanon: `--budget` precisa de um limite: `--budget nodes=5000000`."); return nothing)
+            recusa = budget_option!(limites, args[i])
+            recusa === nothing || (println(err, "kanon: ", recusa); return nothing)
         elseif startswith(a, "-")
             println(err, "kanon: opção desconhecida `", a, "`.")
             return nothing
@@ -237,7 +246,33 @@ function parse_options(args::Vector{String}, err::IO)
         end
         i += 1
     end
-    (posicionais, saida, hoje, idioma, dominios, formato)
+    (posicionais, saida, hoje, idioma, dominios, formato, Budget(; limites...))
+end
+
+"Os limites do orçamento que a linha de comando alcança, com os nomes de `Budget`."
+const BUDGET_LIMITS = (:nodes, :bytes, :iterations)
+
+"""
+Lê um `--budget LIMITE=N` para `limites`. Devolve a recusa, ou `nothing`.
+
+`depth` fica de fora: o campo existe em `Budget`, mas nada o lê — a profundidade de
+inclusão é teto do carregador (`K4003`). Uma opção que aceitasse `depth=` e não mudasse
+nada seria pior que a recusa.
+"""
+function budget_option!(limites::Dict{Symbol,Int}, texto::AbstractString)
+    m = match(r"^(\w+)=(.*)$", texto)
+    nomes = join(("`$n`" for n in BUDGET_LIMITS), ", ")
+    m === nothing &&
+        return "`--budget` se escreve `LIMITE=N`, e veio `$texto`. Os limites são $nomes."
+    nome = Symbol(m.captures[1])
+    nome in BUDGET_LIMITS ||
+        return "`$(m.captures[1])` não é um limite do orçamento. Os limites são $nomes."
+    haskey(limites, nome) && return "o limite `$nome` foi pedido duas vezes."
+    n = tryparse(Int, m.captures[2])
+    (n === nothing || n <= 0) &&
+        return "`$(m.captures[2])` não serve para `$nome`: o limite é um inteiro positivo."
+    limites[nome] = n
+    nothing
 end
 
 function tryparse_date(s::AbstractString)
@@ -250,8 +285,8 @@ function tryparse_date(s::AbstractString)
     end
 end
 
-function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::IO,
-                    entrada::IO)
+function run_command(cmd, posicionais, saida, hoje, formato, orcamento, env, out::IO,
+                     err::IO, entrada::IO)
     modelo = load_template(env, posicionais[1])
     dados = length(posicionais) == 2 ? read_data(posicionais[2]; env = modelo.env) : nothing
 
@@ -262,7 +297,7 @@ function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::
 
     if cmd == "ask"
         origem = length(posicionais) == 2 ? posicionais[2] : nothing
-        return do_ask(modelo, dados, origem, saida, hoje, out, err, entrada)
+        return do_ask(modelo, dados, origem, saida, hoje, orcamento, out, err, entrada)
     end
 
     if cmd == "contract"
@@ -272,19 +307,19 @@ function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::
 
     if cmd == "check"
         dados === nothing && (println(err, "kanon: modelo válido."); return EXIT_OK)
-        conjunto = check(modelo, dados; today = hoje)
+        conjunto = check(modelo, dados; today = hoje, budget = orcamento)
         isempty(conjunto) && (println(err, "kanon: modelo e dados válidos."); return EXIT_OK)
         format_diagnostics(err, conjunto)
         return haserrors(conjunto) ? EXIT_CONTRACT : EXIT_OK
     end
 
     if cmd == "preview"
-        return do_preview(modelo, dados, saida, hoje, formato, out, err)
+        return do_preview(modelo, dados, saida, hoje, formato, orcamento, out, err)
     end
 
     dados === nothing &&
         (println(err, "kanon: `render` precisa dos dados."); return EXIT_USAGE)
-    emit(out, saida, render(modelo, dados; today = hoje, to = formato))
+    emit(out, saida, render(modelo, dados; today = hoje, budget = orcamento, to = formato))
     return EXIT_OK
 end
 
@@ -297,12 +332,12 @@ A necessidade real por trás do pedido de "modo leniente" é ver o rascunho enqu
 dados ainda estão sendo reunidos. Atendê-la aqui é o que permite que o motor nunca
 relaxe em lugar nenhum.
 """
-function do_preview(modelo, dados, saida, hoje, formato, out::IO, err::IO)
+function do_preview(modelo, dados, saida, hoje, formato, orcamento, out::IO, err::IO)
     dados = dados === nothing ? Dict{String,Any}() : dados
-    conjunto = check(modelo, dados; today = hoje)
+    conjunto = check(modelo, dados; today = hoje, budget = orcamento)
     isempty(conjunto) || format_diagnostics(err, conjunto)
     println(err, "kanon: rascunho — não exporte este arquivo.")
-    emit(out, saida, preview(modelo, dados; today = hoje, to = formato))
+    emit(out, saida, preview(modelo, dados; today = hoje, budget = orcamento, to = formato))
     return EXIT_OK
 end
 
@@ -335,7 +370,8 @@ o `render` lê de volta** (D-061):
   lista nem composto, e uma `pessoa` vinda de um JSON saía como `Dict{String, Any}(...)`
   — um arquivo que o `render` recusava com "é uma coleção, e veio um valor único".
 """
-function do_ask(modelo, dados, origem, saida, hoje, out::IO, err::IO, entrada::IO)
+function do_ask(modelo, dados, origem, saida, hoje, orcamento, out::IO, err::IO,
+                entrada::IO)
     formato = formato_dos_dados(saida, origem)
     valores = Dict{String,Any}()
     dados === nothing || for (k, v) in pairs(dados)
@@ -364,14 +400,14 @@ function do_ask(modelo, dados, origem, saida, hoje, out::IO, err::IO, entrada::I
             recusa = recusa_da_forma(modelo.env, f, linha)
             recusa === nothing || (println(err, "  ", recusa); continue)
             valor = coerce_answer(modelo.env, f, linha)
-            recusa = recusa_da_resposta(modelo, f, valor, hoje)
+            recusa = recusa_da_resposta(modelo, f, valor, hoje, orcamento)
             recusa === nothing && (valores[nome] = valor; break)
             println(err, "  ", recusa)
         end
     end
 
     texto = serialize_data(formato, valores)   # antes do diagnóstico: formato errado é uso
-    conjunto = check(modelo, valores; today = hoje)
+    conjunto = check(modelo, valores; today = hoje, budget = orcamento)
     if haserrors(conjunto)
         format_diagnostics(err, conjunto)
         println(err, "kanon: os dados ainda não bastam.")
@@ -446,8 +482,9 @@ Pergunta ao `check`, e não a uma validação própria: um `ask` que aceitasse o
 `render` recusa seria a ferramenta discordando do motor, que a D-029 diz ser pior que
 nenhuma.
 """
-function recusa_da_resposta(modelo, f::FieldDecl, valor, hoje)
-    conjunto = check(modelo, Dict{String,Any}(String(f.name) => valor); today = hoje)
+function recusa_da_resposta(modelo, f::FieldDecl, valor, hoje, orcamento)
+    conjunto = check(modelo, Dict{String,Any}(String(f.name) => valor); today = hoje,
+                     budget = orcamento)
     for d in conjunto
         d.severity === :error && d.path == String(f.name) && d.code != "K3001" &&
             return d.message

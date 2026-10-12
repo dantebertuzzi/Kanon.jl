@@ -114,13 +114,11 @@ end
     end
 
     @testset "4 — recurso" begin
-        # o orçamento não é exposto na CLI ainda; a garantia é que o código existe e é
-        # o que `render` produz quando o orçamento estoura
-        m = load_string(Environment(), "kanon 1\n\ndata\n  a : text !\n\ntext\n\n: b\n{a}\n";
-                        name = "t")
-        e = try; render(m, Dict("a" => "x"); budget = Budget(bytes = 0)); catch err; err; end
-        @test e isa KanonResourceError
-        @test Kanon.EXIT_RESOURCE == 4
+        r = cli("render", MODELO_CLI, DADOS_CLI, "--today", "2026-03-12", "--budget", "bytes=10")
+        @test r.codigo == Kanon.EXIT_RESOURCE
+        @test occursin("[K4002]", r.err)
+        @test occursin("--budget bytes=", r.err)        # a dica fala a língua de quem a lê
+        @test isempty(r.out)
     end
 
     @testset "arquivo que não existe é erro de uso, não uma pilha de Julia" begin
@@ -129,6 +127,39 @@ end
         @test occursin("kanon:", r.err)
         @test !occursin("Stacktrace", r.err)
     end
+end
+
+@testset "CLI: o orçamento se ajusta pela linha de comando (#28)" begin
+    comum = ("--today", "2026-03-12")
+    r = cli("render", MODELO_CLI, DADOS_CLI, comum...)
+    @test r.codigo == Kanon.EXIT_OK
+    @test cli("render", MODELO_CLI, DADOS_CLI, comum..., "--budget", "nodes=1").codigo ==
+          Kanon.EXIT_RESOURCE
+    # e o teto alto devolve o mesmo documento: o orçamento não muda o texto, só o deixa sair
+    alto = cli("render", MODELO_CLI, DADOS_CLI, comum..., "--budget", "nodes=5000000",
+               "--budget", "bytes=1000000000", "--budget", "iterations=1000000")
+    @test alto.codigo == Kanon.EXIT_OK
+    @test alto.out == r.out
+
+    # o check e o preview também montam o plano, e lá vivem as iterações
+    rep = tmpfile("rep.kanon", "kanon 1\n\ndata\n  itens : text[] !\n\ntext\n\n: b <- itens\nItem.\n\n" *
+                               "rules\n  b one for each itens\n")
+    rep_dados = tmpfile("rep.json", "{\"itens\": [\"a\", \"b\", \"c\"]}")
+    for cmd in ("check", "preview", "render")
+        @test cli(cmd, rep, rep_dados, "--budget", "iterations=2").codigo == Kanon.EXIT_RESOURCE
+        @test cli(cmd, rep, rep_dados, "--budget", "iterations=3").codigo == Kanon.EXIT_OK
+    end
+
+    @testset "o que não é limite é erro de uso, dizendo os que existem" for ruim in
+            ("nodes", "nodes=", "nodes=0", "nodes=-3", "nodes=1e6", "depth=10", "tempo=5")
+        r = cli("check", MODELO_CLI, "--budget", ruim)
+        @test r.codigo == Kanon.EXIT_USAGE
+        @test occursin("kanon:", r.err)
+    end
+    @test occursin("`nodes`, `bytes`, `iterations`", cli("check", MODELO_CLI, "--budget", "depth=10").err)
+    @test occursin("duas vezes",
+                   cli("check", MODELO_CLI, "--budget", "nodes=10", "--budget", "nodes=20").err)
+    @test cli("check", MODELO_CLI, "--budget").codigo == Kanon.EXIT_USAGE
 end
 
 @testset "CLI: preview é o único que produz saída incompleta (§12)" begin

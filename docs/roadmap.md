@@ -944,7 +944,6 @@ Nenhuma bloqueia nada. Estão em ordem de quanto incomodariam se aparecessem.
 |---|---|---|
 | `is not` em português vira `é não`, que é agramatical | `parse_rules.jl` | escrever `não (x é y)` resolve hoje; mudar a **ordem** da gramática por idioma seria versão maior |
 | `money` emite duas casas para toda moeda; JPY não tem centavos | `core_types.jl` | alguém escrever em iene. Exige casas por moeda no ambiente |
-| O orçamento não é configurável pela CLI | `cli.jl` | um documento legítimo estourar o padrão |
 | A mensagem de palavra-chave errada não diz "`rules` é a forma inglesa de `regras`" | `lex.jl`, `parse.jl` | a `KeywordTable` precisaria guardar o mapa reverso. Melhoria pura de mensagem |
 | O escape do Markdown é o do CommonMark, e o leitor padrão do pandoc lê mais: `a)`, `(1)` e `iv.` no começo da linha abrem lista; `H~2~O` e `10^3^` são subscrito e sobrescrito no meio dela; `--` vira travessão e a aspa reta vira curva | `output.jl` | um valor com uma dessas formas chegar a um `.docx`. Registrado na D-070, conferido no pandoc 3.11: a reclamação nº 15 não tem nenhuma, e escapar `(` e `^` em todo Markdown encheria de barras o fonte de quem o lê no CommonMark |
 | Os cinco pacotes vivem num repo só | `lib/` | o General aceita `subdir=`, e o TagBot tagueia cada um; extrair só se o registro exigir |

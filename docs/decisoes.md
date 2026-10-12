@@ -3032,3 +3032,37 @@ como em todo valor que entra.
 **O que não mudou.** Nada no corpus. Sem idioma, ou num idioma sem ponto de milhar, `1.320`
 só tem uma leitura e continua sendo lido `1.32`. O JSON não muda: lá o número é da gramática
 do JSON, e a cadeia `"1.320"` já era recusada — agora dizendo por quê.
+
+## D-085 — O orçamento se ajusta pela linha de comando
+
+*2026-10-12 · aceita · dívida da F3, issue #28*
+
+**A observação.** O orçamento da §11.6 (D-010) era configurável de Julia, por
+`Budget(nodes = …)`, e não pela CLI. Um documento legítimo que passasse do padrão saía com
+o código 4 e uma dica que mandava escrever Julia — a quem tinha chamado `kanon render`.
+
+**Decisão.**
+
+1. `--budget LIMITE=N`, repetível, com os nomes dos campos de `Budget`: `nodes`, `bytes` e
+   `iterations`. Os limites não pedidos ficam no padrão. Vale para `check`, `render`,
+   `preview` e `ask`, porque o `check` também monta o plano, e é no plano que as iterações
+   são contadas.
+2. Limite desconhecido, repetido, sem `=` ou que não seja inteiro positivo é erro de uso
+   (código 3), e a mensagem diz quais limites existem.
+3. As dicas de `K4001`, `K4002` e `K4004` dizem as duas formas: a de Julia e a da linha de
+   comando.
+
+**Alternativas.** (a) Quatro opções, `--max-nodes` e as irmãs: três nomes novos na ajuda
+para dizer o que `Budget` já nomeia. (b) Um teto único, multiplicando todos os limites:
+quem estoura bytes não precisa de mais nós, e o limite que importa é o que estourou —
+que é o que o diagnóstico diz. (c) Uma opção com os nomes de `Budget` (escolhida): a
+dica do diagnóstico vira a opção a digitar.
+
+**O que ficou de fora.** `depth`. O campo existe em `Budget`, mas nada o lê: a profundidade
+de inclusão é o teto do carregador, `Loader(raiz; limit = n)`, e o seu diagnóstico
+(`K4003`) já o diz. Uma opção que aceitasse `depth=` sem mudar nada seria pior que a
+recusa. Remover o campo de `Budget` mudaria a API pública, e fica para quando ele tiver
+uso ou para a próxima versão maior do pacote.
+
+**O que não mudou.** Nenhum byte do corpus. O padrão é o mesmo, e um teto alto devolve o
+mesmo documento: o orçamento decide se o texto sai, nunca qual texto.

@@ -66,7 +66,8 @@ function spend!(ctx::RenderCtx, n::Int = 1)
     overbudget(ctx, "K4001",
         "o documento visitou mais de $(ctx.budget.nodes) nós e o render foi interrompido.",
         "O limite é uma contagem, não um tempo: a mesma entrada erra em toda máquina. " *
-        "Aumente o orçamento com `render(...; budget = Budget(nodes = ...))`.")
+        "Aumente o orçamento com `render(...; budget = Budget(nodes = ...))`, ou " *
+        "`--budget nodes=...` na linha de comando.")
 end
 
 # --- o valor de um caminho ---------------------------------------------------
@@ -335,7 +336,8 @@ function check_bytes!(ctx::RenderCtx, s::AbstractString)
     ncodeunits(s) <= ctx.budget.bytes && return nothing
     overbudget(ctx, "K4002",
         "o documento passou de $(ctx.budget.bytes) bytes e o render foi interrompido.",
-        "Aumente o orçamento com `render(...; budget = Budget(bytes = ...))`.")
+        "Aumente o orçamento com `render(...; budget = Budget(bytes = ...))`, ou " *
+        "`--budget bytes=...` na linha de comando.")
 end
 
 # --- a API -------------------------------------------------------------------

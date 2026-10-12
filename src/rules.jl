@@ -276,6 +276,7 @@ function overbudget_iterations(m::Model, budget)
                    isempty(m.template.sources) ? "<string>" : m.template.sources[1],
                    "as regras produziram mais de $(budget.iterations) repetições de bloco.";
                    hint = "O limite é uma contagem, não um tempo. Aumente o orçamento " *
-                          "com `render(...; budget = Budget(iterations = ...))`.")
+                          "com `render(...; budget = Budget(iterations = ...))`, ou " *
+                          "`--budget iterations=...` na linha de comando.")
     throw(KanonResourceError(DiagnosticSet([d])))
 end
