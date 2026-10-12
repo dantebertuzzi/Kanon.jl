@@ -253,7 +253,7 @@ end
 function run_command(cmd, posicionais, saida, hoje, formato, env, out::IO, err::IO,
                     entrada::IO)
     modelo = load_template(env, posicionais[1])
-    dados = length(posicionais) == 2 ? read_data(posicionais[2]) : nothing
+    dados = length(posicionais) == 2 ? read_data(posicionais[2]; env = modelo.env) : nothing
 
     if cmd == "outline"
         format_outline(out, modelo)
@@ -427,21 +427,13 @@ entrada, e a ambiguidade de `1.320` continuaria sem resposta.
 """
 function recusa_da_forma(env::Environment, f::FieldDecl, texto::AbstractString)
     canonical_typename(env, f.type) === :number || return nothing
-    grupo, decimal = env.group_separator, env.decimal_separator
-    # um grupo só: `1.234.567` não é decimal em forma nenhuma, e cai na forma do documento
-    if grupo == "." && occursin(r"^-?[1-9][0-9]{0,2}\.[0-9]{3}$", texto)
-        inteiro = replace(texto, "." => "")
-        # Um zero de cada vez: `rstrip` tirava todos, e `1.000` — que é *mil*, e é o que
-        # mais se digita — mandava escrever `1.`, que a linha seguinte desta mesma função
-        # recusa. O fiscal ia e voltava entre duas grafias recusadas.
-        fracao = endswith(texto, "0") ? chop(texto) : texto * "0"
+    leituras = leituras_do_grupo(env, texto)
+    leituras === nothing ||
         return "`$texto` é ambíguo: no documento o ponto separa os milhares, e na resposta " *
-               "ele separa os decimais. Escreva `$inteiro` se é o número inteiro, ou " *
-               "`$fracao` se é decimal."
-    end
-    occursin(r"^-?[0-9]+(\.[0-9]+)?$", texto) && return nothing
-    convertido = replace(replace(texto, grupo => ""), decimal => ".")
-    occursin(r"^-?[0-9]+(\.[0-9]+)?$", convertido) &&
+               "ele separa os decimais. Escreva `$(leituras[1])` se é o número inteiro, ou " *
+               "`$(leituras[2])` se é decimal."
+    convertido = forma_de_entrada(env, texto)
+    convertido === nothing ||
         return "`$texto` está na forma do documento; a resposta se escreve com ponto " *
                "decimal e sem separador de milhar: `$convertido`."
     nothing
@@ -543,8 +535,13 @@ json_de(v) = v
 Lê os dados. Um arquivo `.json` passa pela extensão de `JSON3`; qualquer outro é lido no
 formato mínimo `chave = valor`, que existe para o núcleo não precisar de dependência
 nenhuma para funcionar.
+
+O ambiente é o do modelo, e só serve para não adivinhar: num idioma em que o ponto separa os
+milhares, `drenagem = 1.320` tem duas leituras, e fica cadeia — o campo `number` a recusa
+dizendo as duas, e o campo `text` a recebe como foi escrita (D-084). O JSON não tem o
+problema, porque lá o número é da gramática do JSON.
 """
-function read_data(path::AbstractString)
+function read_data(path::AbstractString; env::Environment = Environment())
     if extensao_json(path)
         json_disponivel() || throw(CliUsageError(
             "para ler `$path`, o JSON3 precisa estar instalado neste ambiente Julia: " *
@@ -557,7 +554,8 @@ function read_data(path::AbstractString)
         (isempty(s) || startswith(s, '#')) && continue
         partes = split(s, '='; limit = 2)
         length(partes) == 2 || continue
-        d[strip(partes[1])] = parse_data_value(strip(partes[2]))
+        v = strip(partes[2])
+        d[strip(partes[1])] = leituras_do_grupo(env, v) === nothing ? parse_data_value(v) : String(v)
     end
     d
 end

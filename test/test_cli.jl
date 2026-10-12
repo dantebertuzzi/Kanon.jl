@@ -236,3 +236,48 @@ end
         @test r.codigo == Kanon.EXIT_OK
     end
 end
+
+@testset "CLI: o arquivo `chave = valor` não adivinha `1.320` (D-084)" begin
+    # Num idioma em que o ponto separa os milhares, `drenagem = 1.320` tem duas leituras.
+    # O arquivo lia `1.32`, e o documento saía com `1,32` onde o autor escreveu mil trezentos
+    # e vinte — o mesmo defeito que a D-069 tirou do `ask`, pelo outro caminho dos dados.
+    env = Environment(locale = :xx)
+    modelo = tmpfile("drenagem.kanon", """
+    kanon 1 xx
+
+    dados
+      drenagem : number !
+      processo : text !
+
+    texto
+
+    : b
+    {drenagem} m, processo {processo}.
+    """)
+    roda(cmd, dados) = begin
+        o, e = IOBuffer(), IOBuffer()
+        c = Kanon.main(String[cmd, modelo, tmpfile("drenagem.kdata", dados)];
+                       out = o, err = e, env = env)
+        (codigo = c, out = String(take!(o)), err = String(take!(e)))
+    end
+
+    r = roda("render", "drenagem = 1.320\nprocesso = \"7\"\n")
+    @test r.codigo == Kanon.EXIT_CONTRACT
+    @test isempty(r.out)
+    @test occursin("`1.320` é ambíguo", r.err)
+    @test occursin("Escreva `1320` se é o número inteiro, ou `1.32` se é decimal", r.err)
+
+    # as duas grafias que a mensagem manda escrever passam, e dizem o que dizem
+    @test roda("render", "drenagem = 1320\nprocesso = \"7\"\n").out == "1.320 m, processo 7.\n"
+    @test roda("render", "drenagem = 1.32\nprocesso = \"7\"\n").out == "1,32 m, processo 7.\n"
+
+    # a forma do documento vem com a forma de entrada pronta
+    r = roda("check", "drenagem = 12.480,50\nprocesso = \"7\"\n")
+    @test occursin("sem separador de milhar na entrada: `12480.50`", r.err)
+
+    # no campo de texto, a mesma grafia é o que o autor escreveu, e é o que sai
+    @test roda("render", "drenagem = 1320\nprocesso = 1.320\n").out == "1.320 m, processo 1.320.\n"
+
+    # sem idioma não há separador de milhar, e `1.320` só tem uma leitura
+    @test Kanon.read_data(tmpfile("n.kdata", "n = 1.320\n"))["n"] == 1.32
+end

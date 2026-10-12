@@ -2999,3 +2999,36 @@ dentro do formatador da camada. Do lado do núcleo, a mesma forma: `Rational{Big
 **O que isto custa.** Nada no corpus. `{medicao:relative}` de uma leitura de zero passa a
 ser recusado, dizendo o que escrever no lugar (`{campo}` ou `{campo:bare}`) — antes ele
 derrubava o processo.
+
+---
+
+## D-084 — O arquivo `chave = valor` não adivinha `1.320`
+
+*2026-10-10 · aceita · dívida da D-069, issue #29*
+
+**A observação.** A D-069 tirou do `ask` a leitura silenciosa de `1.320` como `1.32`, e
+deixou registrado que o arquivo `chave = valor` escrito à mão tinha a mesma ambiguidade:
+`drenagem = 1.320` passava pelo `check` e saía no documento como `1,32 m`. O arquivo não
+passava pela recusa porque `parse_data_value` lia o valor sem saber o idioma do modelo.
+
+**Decisão.**
+
+1. `read_data` recebe o ambiente do modelo. Num idioma em que o ponto separa os milhares,
+   o valor sem aspas com a forma de **um** grupo (`1.320`, `-12.480`) fica **cadeia** — o
+   arquivo deixa de escolher uma leitura.
+2. O campo `number` recusa a cadeia, e a recusa do `kanon_decode` passa a dizer as duas
+   leituras, com o texto do `ask`: *"Escreva `1320` se é o número inteiro, ou `1.32` se é
+   decimal."* A cadeia na forma do documento (`12.480,50`) ganha a forma pronta
+   (`12480.50`), do JSON também.
+3. O campo `text` recebe a cadeia como foi escrita: `processo = 1.320` vira o texto
+   `1.320`, e não mais o número `1.32` recusado por tipo.
+
+**Alternativas.** (a) Recusar no `read_data`, antes do `check`: o leitor não sabe o tipo
+do campo, e recusaria `processo = 1.320` num campo de texto. (b) Conferir só no CLI, com o
+texto bruto guardado ao lado dos dados: um segundo caminho de validação, o que a D-029
+recusa. (c) Deixar a cadeia chegar ao `check` (escolhida): quem decide é o tipo declarado,
+como em todo valor que entra.
+
+**O que não mudou.** Nada no corpus. Sem idioma, ou num idioma sem ponto de milhar, `1.320`
+só tem uma leitura e continua sendo lido `1.32`. O JSON não muda: lá o número é da gramática
+do JSON, e a cadeia `"1.320"` já era recusada — agora dizendo por quê.
